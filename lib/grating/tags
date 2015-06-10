@@ -1,0 +1,95 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+Accumulate	src/grating.cu	/^__global__ void Accumulate(float4 *pf4FFTOut,$/;"	f
+BENCHMARKING	src/grating.h	22;"	d
+BYTE	src/grating.h	/^typedef unsigned char BYTE;$/;"	t
+CUDASafeCallWithCleanUp	src/grating.h	120;"	d
+CleanUp	src/grating.cu	/^void CleanUp()$/;"	f
+CopyDataForFFT	src/grating.cu	/^__global__ void CopyDataForFFT(char4 *pc4Data,$/;"	f
+DEBUG	src/grating.h	20;"	d
+DEF_ACC	src/grating.h	56;"	d
+DEF_LEN_SPEC	src/grating.h	47;"	d
+DEF_NUM_SUBBANDS	src/grating.h	64;"	d
+DEF_PFB_ON	src/grating.h	44;"	d
+DEF_SIZE_READ	src/grating.h	52;"	d
+DoFFT	src/grating.cu	/^int DoFFT()$/;"	f
+DoPFB	src/grating.cu	/^__global__ void DoPFB(char4 *pc4Data,$/;"	f
+FALSE	src/grating.h	41;"	d
+FFTPLAN_BATCH	src/grating.h	71;"	d
+FFTPLAN_IDIST	src/grating.h	69;"	d
+FFTPLAN_ISTRIDE	src/grating.h	67;"	d
+FFTPLAN_ODIST	src/grating.h	70;"	d
+FFTPLAN_OSTRIDE	src/grating.h	68;"	d
+FFTPLAN_RANK	src/grating.h	66;"	d
+FILE_COEFF_DATATYPE	src/grating.h	61;"	d
+FILE_COEFF_PREFIX	src/grating.h	60;"	d
+FILE_COEFF_SUFFIX	src/grating.h	62;"	d
+HandleStopSignals	src/grating.cu	/^void HandleStopSignals(int iSigNo)$/;"	f
+Init	src/grating.cu	/^int Init()$/;"	f
+InitPlot	src/grating.cu	/^int InitPlot()$/;"	f
+LEN_DATA	src/grating.h	54;"	d
+LoadDataToMem	src/grating.cu	/^int LoadDataToMem()$/;"	f
+NUM_BYTES_PER_SAMP	src/grating.h	46;"	d
+NUM_TAPS	src/grating.h	59;"	d
+OUTFILE	src/grating.h	23;"	d
+PG_CI_DEF	src/grating.h	83;"	d
+PG_CI_PLOT	src/grating.h	84;"	d
+PG_DEV	src/grating.h	77;"	d
+PG_SYMBOL	src/grating.h	82;"	d
+PG_VP_MB	src/grating.h	80;"	d
+PG_VP_ML	src/grating.h	78;"	d
+PG_VP_MR	src/grating.h	79;"	d
+PG_VP_MT	src/grating.h	81;"	d
+PL	src/grating.cu	10;"	d	file:
+PLOT	src/grating.h	21;"	d
+Plot	src/grating.cu	/^void Plot()$/;"	f
+PrintBenchmarks	src/grating.cu	/^void PrintBenchmarks(float fTotPFB,$/;"	f
+PrintUsage	src/grating.cu	/^void PrintUsage(const char *pcProgName)$/;"	f
+ReadData	src/grating.cu	/^int ReadData()$/;"	f
+RegisterSignalHandlers	src/grating.cu	/^int RegisterSignalHandlers()$/;"	f
+TRUE	src/grating.h	42;"	d
+USEC2SEC	src/grating.h	73;"	d
+__CUDASafeCallWithCleanUp	src/grating.cu	/^void __CUDASafeCallWithCleanUp(cudaError_t iRet,$/;"	f
+__VEGAS_GPU_STANDALONE_H__	src/grating.h	10;"	d
+g_acFileCoeff	src/grating.cu	/^char g_acFileCoeff[256] = {0};$/;"	v
+g_acFileData	src/grating.cu	/^char g_acFileData[256] = {0};$/;"	v
+g_cuStart	src/grating.cu	/^cudaEvent_t g_cuStart;$/;"	v
+g_cuStop	src/grating.cu	/^cudaEvent_t g_cuStop;$/;"	v
+g_fFSamp	src/grating.cu	/^float g_fFSamp = 1.0;                   \/* 1 [frequency] *\/$/;"	v
+g_fTimeCpIn	src/grating.cu	/^float g_fTimeCpIn = 0.0;$/;"	v
+g_fTotCpIn	src/grating.cu	/^float g_fTotCpIn = 0.0;$/;"	v
+g_iCountCpIn	src/grating.cu	/^int g_iCountCpIn = 0;$/;"	v
+g_iFileCoeff	src/grating.cu	/^int g_iFileCoeff = 0;$/;"	v
+g_iIsDataReadDone	src/grating.cu	/^int g_iIsDataReadDone = FALSE;$/;"	v
+g_iIsPFBOn	src/grating.cu	/^int g_iIsPFBOn = DEF_PFB_ON;$/;"	v
+g_iIsProcDone	src/grating.cu	/^int g_iIsProcDone = FALSE;$/;"	v
+g_iMaxThreadsPerBlock	src/grating.cu	/^int g_iMaxThreadsPerBlock = 0;$/;"	v
+g_iNFFT	src/grating.cu	/^int g_iNFFT = DEF_LEN_SPEC;$/;"	v
+g_iNTaps	src/grating.cu	/^int g_iNTaps = 1;                       \/* 1 if no PFB, NUM_TAPS if PFB *\/$/;"	v
+g_iNumSubBands	src/grating.cu	/^int g_iNumSubBands = DEF_NUM_SUBBANDS;$/;"	v
+g_iReadCount	src/grating.cu	/^int g_iReadCount = 0;$/;"	v
+g_iSizeFile	src/grating.cu	/^int g_iSizeFile = 0;$/;"	v
+g_iSizeRead	src/grating.cu	/^int g_iSizeRead = DEF_SIZE_READ;$/;"	v
+g_pc4DataRead_d	src/grating.cu	/^char4* g_pc4DataRead_d = NULL;          \/* raw data read pointer *\/$/;"	v
+g_pc4Data_d	src/grating.cu	/^char4* g_pc4Data_d = NULL;              \/* raw data starting address *\/$/;"	v
+g_pc4InBuf	src/grating.cu	/^char4* g_pc4InBuf = NULL;$/;"	v
+g_pc4InBufRead	src/grating.cu	/^char4* g_pc4InBufRead = NULL;$/;"	v
+g_pf4FFTIn	src/grating.cu	/^float4* g_pf4FFTIn = NULL;$/;"	v
+g_pf4FFTIn_d	src/grating.cu	/^float4* g_pf4FFTIn_d = NULL;$/;"	v
+g_pf4FFTOut	src/grating.cu	/^float4* g_pf4FFTOut = NULL;$/;"	v
+g_pf4FFTOut_d	src/grating.cu	/^float4* g_pf4FFTOut_d = NULL;$/;"	v
+g_pf4SumStokes	src/grating.cu	/^float4* g_pf4SumStokes = NULL;$/;"	v
+g_pf4SumStokes_d	src/grating.cu	/^float4* g_pf4SumStokes_d = NULL;$/;"	v
+g_pfFreq	src/grating.cu	/^float* g_pfFreq = NULL;$/;"	v
+g_pfPFBCoeff	src/grating.cu	/^float *g_pfPFBCoeff = NULL;$/;"	v
+g_pfPFBCoeff_d	src/grating.cu	/^float *g_pfPFBCoeff_d = NULL;$/;"	v
+g_pfSumPowX	src/grating.cu	/^float* g_pfSumPowX = NULL;$/;"	v
+g_pfSumPowY	src/grating.cu	/^float* g_pfSumPowY = NULL;$/;"	v
+g_pfSumStokesIm	src/grating.cu	/^float* g_pfSumStokesIm = NULL;$/;"	v
+g_pfSumStokesRe	src/grating.cu	/^float* g_pfSumStokesRe = NULL;$/;"	v
+g_stPlan	src/grating.cu	/^cufftHandle g_stPlan = {0};$/;"	v
+main	src/grating.cu	/^int main(int argc, char *argv[])$/;"	f

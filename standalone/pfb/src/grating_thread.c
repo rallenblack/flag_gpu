@@ -75,7 +75,7 @@ static void *run(hashpipe_thread_args_t * args) {
         }
         mcnt = db_in->block[curblock_in].header.mcnt_start;
 
-        
+        // Grating code goes here 
         
         db_out->block[curblock_out].header.mcnt = mcnt;
 
