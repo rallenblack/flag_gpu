@@ -1,0 +1,38 @@
+omp_xengine.o : omp_xengine.c \
+    /usr/include/math.h \
+    /usr/include/features.h \
+    /usr/include/sys/cdefs.h \
+    /usr/include/bits/wordsize.h \
+    /usr/include/gnu/stubs.h \
+    /usr/include/gnu/stubs-64.h \
+    /usr/include/bits/huge_val.h \
+    /usr/include/bits/huge_valf.h \
+    /usr/include/bits/huge_vall.h \
+    /usr/include/bits/inf.h \
+    /usr/include/bits/nan.h \
+    /usr/include/bits/mathdef.h \
+    /usr/include/bits/mathcalls.h \
+    /usr/include/bits/mathinline.h \
+    /usr/lib/gcc/x86_64-redhat-linux/4.4.7/include/omp.h \
+    xgpu.h \
+    /usr/lib/gcc/x86_64-redhat-linux/4.4.7/include/stddef.h \
+    xgpu_info.h
+omp_xengine.c :
+    /usr/include/math.h :
+    /usr/include/features.h :
+    /usr/include/sys/cdefs.h :
+    /usr/include/bits/wordsize.h :
+    /usr/include/gnu/stubs.h :
+    /usr/include/gnu/stubs-64.h :
+    /usr/include/bits/huge_val.h :
+    /usr/include/bits/huge_valf.h :
+    /usr/include/bits/huge_vall.h :
+    /usr/include/bits/inf.h :
+    /usr/include/bits/nan.h :
+    /usr/include/bits/mathdef.h :
+    /usr/include/bits/mathcalls.h :
+    /usr/include/bits/mathinline.h :
+    /usr/lib/gcc/x86_64-redhat-linux/4.4.7/include/omp.h :
+    xgpu.h :
+    /usr/lib/gcc/x86_64-redhat-linux/4.4.7/include/stddef.h :
+    xgpu_info.h :
