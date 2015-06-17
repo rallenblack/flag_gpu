@@ -50,8 +50,12 @@ static void * run(hashpipe_thread_args_t * args) {
         }
 
         fprintf(stderr, "CHECK: Got a new block!\n");
+        uint64_t start_mcnt = db_in->block[curblock_in].header.mcnt;
         Complex * p = (Complex *)db_in->block[curblock_in].data;
-        FILE * filePtr = fopen("floatArray.out", "w");
+        char filename[128];
+        sprintf(filename, "cor_mcnt_%lld.out", (long long)start_mcnt);
+        fprintf(stderr, "Saving to %s\n", filename);
+        FILE * filePtr = fopen(filename, "w");
 
         int j;
         for (j = 0; j < N_COR_MATRIX; j++) {

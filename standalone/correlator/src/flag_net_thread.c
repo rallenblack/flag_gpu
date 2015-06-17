@@ -80,7 +80,6 @@ static inline void initialize_block_info(block_info_t * binfo) {
     hashpipe_status_lock_safe(st_p);
     hgeti4(st_p->buf, "XID", &binfo->self_xid);
     hashpipe_status_unlock_safe(st_p);
-    fprintf(stderr, "XID in initialize_block_info: %d\n", (int) *(&binfo->self_xid));
 
     // Initialize packet counters
     int i;
@@ -159,8 +158,6 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
     static int last_filled = -1; // The last block that was filled
 
     uint32_t block_idx = get_block_idx(binfo->mcnt_start);
-    fprintf(stdout, "Marking block %d as filled\n", block_idx);
-    fprintf(stdout, "Number of packets in block = %d (expected %d)\n", binfo->packet_count[block_idx], N_PACKETS_PER_BLOCK);
     
     // Validate that we're filling blocks in the proper sequence
     last_filled = (last_filled + 1)% N_INPUT_BLOCKS;
@@ -182,7 +179,6 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
         db->block[block_idx].header.good_data = 1;
     }
 
-    fprintf(stdout, "Filled block good? %ld", db->block[block_idx].header.good_data);
     // Mark block as filled so next thread can process it
     flag_input_databuf_set_filled(db, block_idx);
 
@@ -247,18 +243,6 @@ static inline uint64_t process_packet(flag_input_databuf_t * db, struct hashpipe
     uint64_t * dest_p  = db->block[dest_block_idx].data + flag_input_databuf_idx(binfo.m, binfo.f, 0, 0);
     const uint64_t * payload_p = (uint64_t *)(p->data+8); // Ignore header
 
-
-    if (pkt_header.fid == 0) {
-        int8_t * mydata = (int8_t *) payload_p;
-        FILE * filePtr = fopen("int8_net_rx.out", "w");
-        int j;
-        for (j = 0; j < N_BYTES_PER_PACKET-8; j++) {
-            fprintf(filePtr, "%u\n", mydata[j]);
-        }
-        fclose(filePtr);
-    }
-
-    
     // Copy data into buffer
     memcpy(dest_p, payload_p, N_BYTES_PER_PACKET-8); // Ignore header
 
@@ -279,17 +263,6 @@ static inline uint64_t process_packet(flag_input_databuf_t * db, struct hashpipe
 // (4) Terminate thread cleanly
 static void *run(hashpipe_thread_args_t * args) {
 
-    fprintf(stdout, "N_INPUTS = %d\n", N_INPUTS);
-    fprintf(stdout, "N_CHAN = %d\n", N_CHAN);
-    fprintf(stdout, "N_CHAN_PER_X = %d\n", N_CHAN_PER_X);
-    fprintf(stdout, "N_CHAN_PER_PACKET = %d\n", N_CHAN_PER_PACKET);
-    fprintf(stdout, "N_TIME_PER_PACKET = %d\n", N_TIME_PER_PACKET);
-    fprintf(stdout, "N_TIME_PER_BLOCK = %d\n", N_TIME_PER_BLOCK);
-    fprintf(stdout, "N_BYTES_PER_BLOCK = %d\n", N_BYTES_PER_BLOCK);
-    fprintf(stdout, "N_BYTES_PER_PACKET = %d\n", N_BYTES_PER_PACKET);
-    fprintf(stdout, "N_PACKETS_PER_BLOCK = %d\n", N_PACKETS_PER_BLOCK);
-    fprintf(stdout, "N_COR_MATRIX = %d\n", N_COR_MATRIX);
-
     // Local aliases to shorten access to args fields
     // Our output buffer happens to be a paper_input_databuf
     flag_input_databuf_t *db = (flag_input_databuf_t *)args->obuf;
@@ -302,11 +275,9 @@ static void *run(hashpipe_thread_args_t * args) {
     hashpipe_status_lock_safe(&st);
     hgeti4(st.buf, "XID", &tmp);
     hashpipe_status_unlock_safe(&st);
-    fprintf(stderr, "XID = %d\n", tmp);
 
 
     /* Read network params */
-    fprintf(stdout, "Setting up network parameters\n");
     struct hashpipe_udp_params up = {
 	.bindhost = "0.0.0.0",
 	.bindport = 8511,
@@ -392,7 +363,7 @@ static void *run(hashpipe_thread_args_t * args) {
     /* Main loop */
     uint64_t packet_count = 0;
 
-    fprintf(stdout, "Net: Starting Thread!\n");
+    fprintf(stdout, "NET: Starting Thread!\n");
     
     while (run_threads()) {
         // Get packet

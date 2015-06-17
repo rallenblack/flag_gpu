@@ -356,53 +356,8 @@ configure:11777: $? = 0
 configure:11786: result: yes
 configure:11797: checking for crc32 in -lz
 configure:11822: gcc -o conftest -g -O2   conftest.c -lz  -lrt -lpthread  >&5
-/usr/bin/ld: cannot find -lz
-collect2: ld returned 1 exit status
-configure:11822: $? = 1
-configure: failed program was:
-| /* confdefs.h */
-| #define PACKAGE_NAME "FULL-PACKAGE-NAME"
-| #define PACKAGE_TARNAME "full-package-name"
-| #define PACKAGE_VERSION "VERSION"
-| #define PACKAGE_STRING "FULL-PACKAGE-NAME VERSION"
-| #define PACKAGE_BUGREPORT "BUG-REPORT-ADDRESS"
-| #define PACKAGE_URL ""
-| #define PACKAGE "full-package-name"
-| #define VERSION "VERSION"
-| #define STDC_HEADERS 1
-| #define HAVE_SYS_TYPES_H 1
-| #define HAVE_SYS_STAT_H 1
-| #define HAVE_STDLIB_H 1
-| #define HAVE_STRING_H 1
-| #define HAVE_MEMORY_H 1
-| #define HAVE_STRINGS_H 1
-| #define HAVE_INTTYPES_H 1
-| #define HAVE_STDINT_H 1
-| #define HAVE_UNISTD_H 1
-| #define HAVE_DLFCN_H 1
-| #define LT_OBJDIR ".libs/"
-| #define XGPU_NSTATION 32
-| #define XGPU_NFREQUENCY 50
-| #define XGPU_NTIME 100
-| #define HAVE_LIBPTHREAD 1
-| #define HAVE_LIBRT 1
-| /* end confdefs.h.  */
-| 
-| /* Override any GCC internal prototype to avoid an error.
-|    Use char because int might match the return type of a GCC
-|    builtin and then its argument prototype would still apply.  */
-| #ifdef __cplusplus
-| extern "C"
-| #endif
-| char crc32 ();
-| int
-| main ()
-| {
-| return crc32 ();
-|   ;
-|   return 0;
-| }
-configure:11831: result: no
+configure:11822: $? = 0
+configure:11831: result: yes
 configure:11847: checking netdb.h usability
 configure:11847: gcc -c -g -O2  conftest.c >&5
 configure:11847: $? = 0
@@ -443,121 +398,14 @@ configure:11847: checking for unistd.h
 configure:11847: result: yes
 configure:11847: checking zlib.h usability
 configure:11847: gcc -c -g -O2  conftest.c >&5
-conftest.c:68:18: error: zlib.h: No such file or directory
-configure:11847: $? = 1
-configure: failed program was:
-| /* confdefs.h */
-| #define PACKAGE_NAME "FULL-PACKAGE-NAME"
-| #define PACKAGE_TARNAME "full-package-name"
-| #define PACKAGE_VERSION "VERSION"
-| #define PACKAGE_STRING "FULL-PACKAGE-NAME VERSION"
-| #define PACKAGE_BUGREPORT "BUG-REPORT-ADDRESS"
-| #define PACKAGE_URL ""
-| #define PACKAGE "full-package-name"
-| #define VERSION "VERSION"
-| #define STDC_HEADERS 1
-| #define HAVE_SYS_TYPES_H 1
-| #define HAVE_SYS_STAT_H 1
-| #define HAVE_STDLIB_H 1
-| #define HAVE_STRING_H 1
-| #define HAVE_MEMORY_H 1
-| #define HAVE_STRINGS_H 1
-| #define HAVE_INTTYPES_H 1
-| #define HAVE_STDINT_H 1
-| #define HAVE_UNISTD_H 1
-| #define HAVE_DLFCN_H 1
-| #define LT_OBJDIR ".libs/"
-| #define XGPU_NSTATION 32
-| #define XGPU_NFREQUENCY 50
-| #define XGPU_NTIME 100
-| #define HAVE_LIBPTHREAD 1
-| #define HAVE_LIBRT 1
-| #define HAVE_NETDB_H 1
-| #define HAVE_STDINT_H 1
-| #define HAVE_STDLIB_H 1
-| #define HAVE_STRING_H 1
-| #define HAVE_SYS_SOCKET_H 1
-| #define HAVE_SYS_TIME_H 1
-| #define HAVE_UNISTD_H 1
-| /* end confdefs.h.  */
-| #include <stdio.h>
-| #ifdef HAVE_SYS_TYPES_H
-| # include <sys/types.h>
-| #endif
-| #ifdef HAVE_SYS_STAT_H
-| # include <sys/stat.h>
-| #endif
-| #ifdef STDC_HEADERS
-| # include <stdlib.h>
-| # include <stddef.h>
-| #else
-| # ifdef HAVE_STDLIB_H
-| #  include <stdlib.h>
-| # endif
-| #endif
-| #ifdef HAVE_STRING_H
-| # if !defined STDC_HEADERS && defined HAVE_MEMORY_H
-| #  include <memory.h>
-| # endif
-| # include <string.h>
-| #endif
-| #ifdef HAVE_STRINGS_H
-| # include <strings.h>
-| #endif
-| #ifdef HAVE_INTTYPES_H
-| # include <inttypes.h>
-| #endif
-| #ifdef HAVE_STDINT_H
-| # include <stdint.h>
-| #endif
-| #ifdef HAVE_UNISTD_H
-| # include <unistd.h>
-| #endif
-| #include <zlib.h>
-configure:11847: result: no
+configure:11847: $? = 0
+configure:11847: result: yes
 configure:11847: checking zlib.h presence
 configure:11847: gcc -E  conftest.c
-conftest.c:35:18: error: zlib.h: No such file or directory
-configure:11847: $? = 1
-configure: failed program was:
-| /* confdefs.h */
-| #define PACKAGE_NAME "FULL-PACKAGE-NAME"
-| #define PACKAGE_TARNAME "full-package-name"
-| #define PACKAGE_VERSION "VERSION"
-| #define PACKAGE_STRING "FULL-PACKAGE-NAME VERSION"
-| #define PACKAGE_BUGREPORT "BUG-REPORT-ADDRESS"
-| #define PACKAGE_URL ""
-| #define PACKAGE "full-package-name"
-| #define VERSION "VERSION"
-| #define STDC_HEADERS 1
-| #define HAVE_SYS_TYPES_H 1
-| #define HAVE_SYS_STAT_H 1
-| #define HAVE_STDLIB_H 1
-| #define HAVE_STRING_H 1
-| #define HAVE_MEMORY_H 1
-| #define HAVE_STRINGS_H 1
-| #define HAVE_INTTYPES_H 1
-| #define HAVE_STDINT_H 1
-| #define HAVE_UNISTD_H 1
-| #define HAVE_DLFCN_H 1
-| #define LT_OBJDIR ".libs/"
-| #define XGPU_NSTATION 32
-| #define XGPU_NFREQUENCY 50
-| #define XGPU_NTIME 100
-| #define HAVE_LIBPTHREAD 1
-| #define HAVE_LIBRT 1
-| #define HAVE_NETDB_H 1
-| #define HAVE_STDINT_H 1
-| #define HAVE_STDLIB_H 1
-| #define HAVE_STRING_H 1
-| #define HAVE_SYS_SOCKET_H 1
-| #define HAVE_SYS_TIME_H 1
-| #define HAVE_UNISTD_H 1
-| /* end confdefs.h.  */
-| #include <zlib.h>
-configure:11847: result: no
+configure:11847: $? = 0
+configure:11847: result: yes
 configure:11847: checking for zlib.h
-configure:11847: result: no
+configure:11847: result: yes
 configure:11859: checking for inline
 configure:11875: gcc -c -g -O2  conftest.c >&5
 configure:11875: $? = 0
@@ -567,8 +415,8 @@ configure:11901: gcc -c -g -O2  conftest.c >&5
 configure:11901: $? = 0
 configure:11901: gcc -c -g -O2  conftest.c >&5
 conftest.c: In function 'main':
-conftest.c:73: warning: integer overflow in expression
-conftest.c:73: error: size of array 'test_array' is negative
+conftest.c:75: warning: integer overflow in expression
+conftest.c:75: error: size of array 'test_array' is negative
 configure:11901: $? = 1
 configure: failed program was:
 | /* confdefs.h */
@@ -597,6 +445,7 @@ configure: failed program was:
 | #define XGPU_NTIME 100
 | #define HAVE_LIBPTHREAD 1
 | #define HAVE_LIBRT 1
+| #define HAVE_LIBZ 1
 | #define HAVE_NETDB_H 1
 | #define HAVE_STDINT_H 1
 | #define HAVE_STDLIB_H 1
@@ -604,6 +453,7 @@ configure: failed program was:
 | #define HAVE_SYS_SOCKET_H 1
 | #define HAVE_SYS_TIME_H 1
 | #define HAVE_UNISTD_H 1
+| #define HAVE_ZLIB_H 1
 | /* end confdefs.h.  */
 | #include <stdio.h>
 | #ifdef HAVE_SYS_TYPES_H
@@ -656,8 +506,8 @@ configure:11912: gcc -c -g -O2  conftest.c >&5
 configure:11912: $? = 0
 configure:11912: gcc -c -g -O2  conftest.c >&5
 conftest.c: In function 'main':
-conftest.c:73: warning: integer overflow in expression
-conftest.c:73: error: size of array 'test_array' is negative
+conftest.c:75: warning: integer overflow in expression
+conftest.c:75: error: size of array 'test_array' is negative
 configure:11912: $? = 1
 configure: failed program was:
 | /* confdefs.h */
@@ -686,6 +536,7 @@ configure: failed program was:
 | #define XGPU_NTIME 100
 | #define HAVE_LIBPTHREAD 1
 | #define HAVE_LIBRT 1
+| #define HAVE_LIBZ 1
 | #define HAVE_NETDB_H 1
 | #define HAVE_STDINT_H 1
 | #define HAVE_STDLIB_H 1
@@ -693,6 +544,7 @@ configure: failed program was:
 | #define HAVE_SYS_SOCKET_H 1
 | #define HAVE_SYS_TIME_H 1
 | #define HAVE_UNISTD_H 1
+| #define HAVE_ZLIB_H 1
 | /* end confdefs.h.  */
 | #include <stdio.h>
 | #ifdef HAVE_SYS_TYPES_H
@@ -745,7 +597,7 @@ configure:11923: gcc -c -g -O2  conftest.c >&5
 configure:11923: $? = 0
 configure:11923: gcc -c -g -O2  conftest.c >&5
 conftest.c: In function 'main':
-conftest.c:71: error: expected expression before ')' token
+conftest.c:73: error: expected expression before ')' token
 configure:11923: $? = 1
 configure: failed program was:
 | /* confdefs.h */
@@ -774,6 +626,7 @@ configure: failed program was:
 | #define XGPU_NTIME 100
 | #define HAVE_LIBPTHREAD 1
 | #define HAVE_LIBRT 1
+| #define HAVE_LIBZ 1
 | #define HAVE_NETDB_H 1
 | #define HAVE_STDINT_H 1
 | #define HAVE_STDLIB_H 1
@@ -781,6 +634,7 @@ configure: failed program was:
 | #define HAVE_SYS_SOCKET_H 1
 | #define HAVE_SYS_TIME_H 1
 | #define HAVE_UNISTD_H 1
+| #define HAVE_ZLIB_H 1
 | /* end confdefs.h.  */
 | #include <stdio.h>
 | #ifdef HAVE_SYS_TYPES_H
@@ -829,7 +683,7 @@ configure:11934: gcc -c -g -O2  conftest.c >&5
 configure:11934: $? = 0
 configure:11934: gcc -c -g -O2  conftest.c >&5
 conftest.c: In function 'main':
-conftest.c:71: error: expected expression before ')' token
+conftest.c:73: error: expected expression before ')' token
 configure:11934: $? = 1
 configure: failed program was:
 | /* confdefs.h */
@@ -858,6 +712,7 @@ configure: failed program was:
 | #define XGPU_NTIME 100
 | #define HAVE_LIBPTHREAD 1
 | #define HAVE_LIBRT 1
+| #define HAVE_LIBZ 1
 | #define HAVE_NETDB_H 1
 | #define HAVE_STDINT_H 1
 | #define HAVE_STDLIB_H 1
@@ -865,6 +720,7 @@ configure: failed program was:
 | #define HAVE_SYS_SOCKET_H 1
 | #define HAVE_SYS_TIME_H 1
 | #define HAVE_UNISTD_H 1
+| #define HAVE_ZLIB_H 1
 | /* end confdefs.h.  */
 | #include <stdio.h>
 | #ifdef HAVE_SYS_TYPES_H
@@ -923,109 +779,28 @@ configure:11973: result: yes
 configure:11991: checking for stdlib.h
 configure:11991: result: yes
 configure:12001: checking for GNU libc compatible malloc
-configure:12025: gcc -o conftest -g -O2   conftest.c -lrt -lpthread  >&5
+configure:12025: gcc -o conftest -g -O2   conftest.c -lz -lrt -lpthread  >&5
 configure:12025: $? = 0
 configure:12025: ./conftest
 configure:12025: $? = 0
 configure:12035: result: yes
 configure:12059: checking for clock_gettime
-configure:12059: gcc -o conftest -g -O2   conftest.c -lrt -lpthread  >&5
+configure:12059: gcc -o conftest -g -O2   conftest.c -lz -lrt -lpthread  >&5
 configure:12059: $? = 0
 configure:12059: result: yes
 configure:12059: checking for memset
-configure:12059: gcc -o conftest -g -O2   conftest.c -lrt -lpthread  >&5
-conftest.c:61: warning: conflicting types for built-in function 'memset'
+configure:12059: gcc -o conftest -g -O2   conftest.c -lz -lrt -lpthread  >&5
+conftest.c:63: warning: conflicting types for built-in function 'memset'
 configure:12059: $? = 0
 configure:12059: result: yes
 configure:12059: checking for socket
-configure:12059: gcc -o conftest -g -O2   conftest.c -lrt -lpthread  >&5
+configure:12059: gcc -o conftest -g -O2   conftest.c -lz -lrt -lpthread  >&5
 configure:12059: $? = 0
 configure:12059: result: yes
 configure:12059: checking for crc32
-configure:12059: gcc -o conftest -g -O2   conftest.c -lrt -lpthread  >&5
-/tmp/ccjcLFsh.o: In function `main':
-/home/rablack/FLAG/hash_hello/src/conftest.c:74: undefined reference to `crc32'
-collect2: ld returned 1 exit status
-configure:12059: $? = 1
-configure: failed program was:
-| /* confdefs.h */
-| #define PACKAGE_NAME "FULL-PACKAGE-NAME"
-| #define PACKAGE_TARNAME "full-package-name"
-| #define PACKAGE_VERSION "VERSION"
-| #define PACKAGE_STRING "FULL-PACKAGE-NAME VERSION"
-| #define PACKAGE_BUGREPORT "BUG-REPORT-ADDRESS"
-| #define PACKAGE_URL ""
-| #define PACKAGE "full-package-name"
-| #define VERSION "VERSION"
-| #define STDC_HEADERS 1
-| #define HAVE_SYS_TYPES_H 1
-| #define HAVE_SYS_STAT_H 1
-| #define HAVE_STDLIB_H 1
-| #define HAVE_STRING_H 1
-| #define HAVE_MEMORY_H 1
-| #define HAVE_STRINGS_H 1
-| #define HAVE_INTTYPES_H 1
-| #define HAVE_STDINT_H 1
-| #define HAVE_UNISTD_H 1
-| #define HAVE_DLFCN_H 1
-| #define LT_OBJDIR ".libs/"
-| #define XGPU_NSTATION 32
-| #define XGPU_NFREQUENCY 50
-| #define XGPU_NTIME 100
-| #define HAVE_LIBPTHREAD 1
-| #define HAVE_LIBRT 1
-| #define HAVE_NETDB_H 1
-| #define HAVE_STDINT_H 1
-| #define HAVE_STDLIB_H 1
-| #define HAVE_STRING_H 1
-| #define HAVE_SYS_SOCKET_H 1
-| #define HAVE_SYS_TIME_H 1
-| #define HAVE_UNISTD_H 1
-| #define HAVE_STDLIB_H 1
-| #define HAVE_MALLOC 1
-| #define HAVE_CLOCK_GETTIME 1
-| #define HAVE_MEMSET 1
-| #define HAVE_SOCKET 1
-| /* end confdefs.h.  */
-| /* Define crc32 to an innocuous variant, in case <limits.h> declares crc32.
-|    For example, HP-UX 11i <limits.h> declares gettimeofday.  */
-| #define crc32 innocuous_crc32
-| 
-| /* System header to define __stub macros and hopefully few prototypes,
-|     which can conflict with char crc32 (); below.
-|     Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
-|     <limits.h> exists even on freestanding compilers.  */
-| 
-| #ifdef __STDC__
-| # include <limits.h>
-| #else
-| # include <assert.h>
-| #endif
-| 
-| #undef crc32
-| 
-| /* Override any GCC internal prototype to avoid an error.
-|    Use char because int might match the return type of a GCC
-|    builtin and then its argument prototype would still apply.  */
-| #ifdef __cplusplus
-| extern "C"
-| #endif
-| char crc32 ();
-| /* The GNU C library defines this for functions which it implements
-|     to always fail with ENOSYS.  Some functions are actually named
-|     something starting with __ and the normal name is an alias.  */
-| #if defined __stub_crc32 || defined __stub___crc32
-| choke me
-| #endif
-| 
-| int
-| main ()
-| {
-| return crc32 ();
-|   ;
-|   return 0;
-| }
-configure:12059: result: no
+configure:12059: gcc -o conftest -g -O2   conftest.c -lz -lrt -lpthread  >&5
+configure:12059: $? = 0
+configure:12059: result: yes
 configure:12205: creating ./config.status
 
 ## ---------------------- ##
@@ -1043,11 +818,10 @@ generated by GNU Autoconf 2.69.  Invocation command line was
 
 on flag4
 
-config.status:1083: creating Makefile
-config.status:1083: creating config.h
-config.status:1264: config.h is unchanged
-config.status:1312: executing depfiles commands
-config.status:1312: executing libtool commands
+config.status:1086: creating Makefile
+config.status:1086: creating config.h
+config.status:1315: executing depfiles commands
+config.status:1315: executing libtool commands
 
 ## ---------------- ##
 ## Cache variables. ##
@@ -1083,7 +857,7 @@ ac_cv_file__usr_local_bin_xgpuinfo=yes
 ac_cv_file__usr_local_include_hashpipe_h=yes
 ac_cv_file__usr_local_include_xgpu_h=yes
 ac_cv_func_clock_gettime=yes
-ac_cv_func_crc32=no
+ac_cv_func_crc32=yes
 ac_cv_func_malloc_0_nonnull=yes
 ac_cv_func_memset=yes
 ac_cv_func_socket=yes
@@ -1101,13 +875,13 @@ ac_cv_header_sys_stat_h=yes
 ac_cv_header_sys_time_h=yes
 ac_cv_header_sys_types_h=yes
 ac_cv_header_unistd_h=yes
-ac_cv_header_zlib_h=no
+ac_cv_header_zlib_h=yes
 ac_cv_host=x86_64-unknown-linux-gnu
 ac_cv_lib_hashpipe_hashpipe_databuf_create=yes
 ac_cv_lib_pthread_pthread_create=yes
 ac_cv_lib_rt_clock_gettime=yes
 ac_cv_lib_xgpu_xgpuInit=yes
-ac_cv_lib_z_crc32=no
+ac_cv_lib_z_crc32=yes
 ac_cv_objext=o
 ac_cv_path_EGREP='/bin/grep -E'
 ac_cv_path_FGREP='/bin/grep -F'
@@ -1151,17 +925,17 @@ lt_cv_sys_max_cmd_len=1966080
 ## Output variables. ##
 ## ----------------- ##
 
-ACLOCAL='${SHELL} /home/rablack/FLAG/hash_hello/src/missing --run aclocal-1.11'
+ACLOCAL='${SHELL} /home/rablack/FLAG/flag_gpu/standalone/correlator/src/missing --run aclocal-1.11'
 AMDEPBACKSLASH='\'
 AMDEP_FALSE='#'
 AMDEP_TRUE=''
-AMTAR='${SHELL} /home/rablack/FLAG/hash_hello/src/missing --run tar'
+AMTAR='${SHELL} /home/rablack/FLAG/flag_gpu/standalone/correlator/src/missing --run tar'
 AM_BACKSLASH='\'
 AM_DEFAULT_VERBOSITY='0'
 AR='ar'
-AUTOCONF='${SHELL} /home/rablack/FLAG/hash_hello/src/missing --run autoconf'
-AUTOHEADER='${SHELL} /home/rablack/FLAG/hash_hello/src/missing --run autoheader'
-AUTOMAKE='${SHELL} /home/rablack/FLAG/hash_hello/src/missing --run automake-1.11'
+AUTOCONF='${SHELL} /home/rablack/FLAG/flag_gpu/standalone/correlator/src/missing --run autoconf'
+AUTOHEADER='${SHELL} /home/rablack/FLAG/flag_gpu/standalone/correlator/src/missing --run autoheader'
+AUTOMAKE='${SHELL} /home/rablack/FLAG/flag_gpu/standalone/correlator/src/missing --run automake-1.11'
 AWK='gawk'
 CC='gcc'
 CCDEPMODE='depmode=gcc3'
@@ -1189,12 +963,12 @@ INSTALL_STRIP_PROGRAM='$(install_sh) -c -s'
 LD='/usr/bin/ld -m elf_x86_64'
 LDFLAGS=''
 LIBOBJS=''
-LIBS='-lrt -lpthread '
+LIBS='-lz -lrt -lpthread '
 LIBTOOL='$(SHELL) $(top_builddir)/libtool'
 LIPO=''
 LN_S='ln -s'
 LTLIBOBJS=''
-MAKEINFO='${SHELL} /home/rablack/FLAG/hash_hello/src/missing --run makeinfo'
+MAKEINFO='${SHELL} /home/rablack/FLAG/flag_gpu/standalone/correlator/src/missing --run makeinfo'
 MKDIR_P='/bin/mkdir -p'
 NM='/usr/bin/nm -B'
 NMEDIT=''
@@ -1250,7 +1024,7 @@ host_vendor='unknown'
 htmldir='${docdir}'
 includedir='${prefix}/include'
 infodir='${datarootdir}/info'
-install_sh='${SHELL} /home/rablack/FLAG/hash_hello/src/install-sh'
+install_sh='${SHELL} /home/rablack/FLAG/flag_gpu/standalone/correlator/src/install-sh'
 libdir='${exec_prefix}/lib'
 libexecdir='${exec_prefix}/libexec'
 localedir='${datarootdir}/locale'
@@ -1298,6 +1072,7 @@ target_alias=''
 #define XGPU_NTIME 100
 #define HAVE_LIBPTHREAD 1
 #define HAVE_LIBRT 1
+#define HAVE_LIBZ 1
 #define HAVE_NETDB_H 1
 #define HAVE_STDINT_H 1
 #define HAVE_STDLIB_H 1
@@ -1305,10 +1080,30 @@ target_alias=''
 #define HAVE_SYS_SOCKET_H 1
 #define HAVE_SYS_TIME_H 1
 #define HAVE_UNISTD_H 1
+#define HAVE_ZLIB_H 1
 #define HAVE_STDLIB_H 1
 #define HAVE_MALLOC 1
 #define HAVE_CLOCK_GETTIME 1
 #define HAVE_MEMSET 1
 #define HAVE_SOCKET 1
+#define HAVE_CRC32 1
 
 configure: exit 0
+
+## ---------------------- ##
+## Running config.status. ##
+## ---------------------- ##
+
+This file was extended by FULL-PACKAGE-NAME config.status VERSION, which was
+generated by GNU Autoconf 2.69.  Invocation command line was
+
+  CONFIG_FILES    = 
+  CONFIG_HEADERS  = 
+  CONFIG_LINKS    = 
+  CONFIG_COMMANDS = 
+  $ ./config.status config.h
+
+on flag4
+
+config.status:1086: creating config.h
+config.status:1267: config.h is unchanged

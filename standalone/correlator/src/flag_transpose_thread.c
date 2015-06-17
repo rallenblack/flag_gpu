@@ -74,20 +74,10 @@ static void * run(hashpipe_thread_args_t * args) {
         // Print out the header information for this block 
         flag_input_header_t tmp_header;
         memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_input_header_t));
-        fprintf(stderr, "TRA: mcnt_start=%012lx\n", tmp_header.mcnt_start);
         mcnt = tmp_header.mcnt_start;
 
-        FILE * filePtr = fopen("int8_tra_in.out", "w");
-        int j;
-        int8_t * mydata = (int8_t *)db_in->block[curblock_in].data;
-        for (j = 0; j < N_BYTES_PER_BLOCK; j++) {
-            fprintf(filePtr, "%u\n", mydata[j]);
-        }
-        fclose(filePtr);
-       
         // Perform transpose
 
-        fprintf(stderr, "TRA: Applying transpose...\n");
         int m; int f;
         int t; int c;
         uint64_t * in_p;
@@ -106,7 +96,6 @@ static void * run(hashpipe_thread_args_t * args) {
                 }
             }
         }
-        fprintf(stderr, "TRA: Finished with transpose!\n");
         db_out->block[curblock_out].header.mcnt = mcnt;
 
         flag_gpu_input_databuf_set_filled(db_out, curblock_out);

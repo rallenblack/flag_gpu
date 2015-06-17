@@ -5,7 +5,7 @@
 #define HAVE_CLOCK_GETTIME 1
 
 /* Define to 1 if you have the `crc32' function. */
-/* #undef HAVE_CRC32 */
+#define HAVE_CRC32 1
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #define HAVE_DLFCN_H 1
@@ -20,7 +20,7 @@
 #define HAVE_LIBRT 1
 
 /* Define to 1 if you have the `z' library (-lz). */
-/* #undef HAVE_LIBZ */
+#define HAVE_LIBZ 1
 
 /* Define to 1 if your system has a GNU libc compatible `malloc' function, and
    to 0 otherwise. */
@@ -66,7 +66,7 @@
 #define HAVE_UNISTD_H 1
 
 /* Define to 1 if you have the <zlib.h> header file. */
-/* #undef HAVE_ZLIB_H */
+#define HAVE_ZLIB_H 1
 
 /* Define to the sub-directory in which libtool stores uninstalled libraries.
    */

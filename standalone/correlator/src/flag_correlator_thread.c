@@ -24,9 +24,6 @@ static hashpipe_status_t * st_p;
 //         (2a) Wait for input buffer block to be filled
 //         (2b) Print out some data in the block
 static void * run(hashpipe_thread_args_t * args) {
-    fprintf(stderr, "SYNCOP_DUMP = %d\n", SYNCOP_DUMP);
-    fprintf(stderr, "SYNCOP_SYNC_TRANSFER = %d\n", SYNCOP_SYNC_TRANSFER);
-
     // Local aliases to shorten access to args fields
     flag_gpu_input_databuf_t * db_in = (flag_gpu_input_databuf_t *)args->ibuf;
     flag_correlator_output_databuf_t * db_out = (flag_correlator_output_databuf_t *)args->obuf;
@@ -102,22 +99,7 @@ static void * run(hashpipe_thread_args_t * args) {
         // Print out the header information for this block 
         flag_gpu_input_header_t tmp_header;
         memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_gpu_input_header_t));
-        fprintf(stderr, "COR: mcnt_start=%012lx\n", tmp_header.mcnt);
 
-        // Print out the first 64 bits of the block data
-        fprintf(stderr, "COR: data=%016lX\n", db_in->block[curblock_in].data[0]); 
-        fprintf(stderr, "COR: data=%016lX\n", db_in->block[curblock_in].data[1]);
-        fprintf(stderr, "COR: data=%016lX\n", db_in->block[curblock_in].data[2]);
-        fprintf(stderr, "COR: data=%016lX\n", db_in->block[curblock_in].data[3]);
-        
-        FILE * filePtr = fopen("int8_GPUin.out", "w");
-        int j;
-        int8_t * mydata = (int8_t *)db_in->block[curblock_in].data;
-        for (j = 0; j < N_BYTES_PER_BLOCK; j++) {
-            fprintf(filePtr, "%u\n", mydata[j]);
-        }
-        fclose(filePtr);
-       
         // If the correlator integrator status is "off,"
         // Free the input block and continue
         if (strcmp(integ_status, "off") == 0) {
@@ -131,7 +113,6 @@ static void * run(hashpipe_thread_args_t * args) {
         // Get the correlator started
         // The INTSTAT string is set to "start" by the net thread once it's up and running
         if (strcmp(integ_status, "start") == 0) {
-            fprintf(stderr, "COR: Correlator is trying to start...\n");
             // Check to see if block's starting mcnt matches INTSYNC
             if (db_in->block[curblock_in].header.mcnt < start_mcnt) {
                 fprintf(stderr, "COR: Unable to start yet...\n");
@@ -150,9 +131,7 @@ static void * run(hashpipe_thread_args_t * args) {
                 hashpipe_status_unlock_safe(&st);
 
                 // Compute last mcount
-                last_mcnt = start_mcnt + (int_count-1)*Nm;
-                fprintf(stderr, "COR: start_mcnt = %ld, last_mcnt = %ld\n", start_mcnt, last_mcnt);
-                fprintf(stderr, "COR: int_count = %d\n", int_count);
+                last_mcnt = start_mcnt + int_count*Nm - 1;
             } else {
                 fprintf(stderr, "COR: We missed the start of the integration!\n");
                 // we apparently missed the start of the integation... ouch...
@@ -165,8 +144,7 @@ static void * run(hashpipe_thread_args_t * args) {
         context.output_offset = curblock_out * sizeof(flag_correlator_output_block_t) / sizeof(Complex);
         
         int doDump = 0;
-        if (db_in->block[curblock_in].header.mcnt >= last_mcnt) {
-            fprintf(stderr, "COR: Correlator will dump\n");
+        if ((db_in->block[curblock_in].header.mcnt + int_count*Nm - 1) >= last_mcnt) {
             doDump = 1;
 
             // Wait for new output block to be free
@@ -182,19 +160,18 @@ static void * run(hashpipe_thread_args_t * args) {
             }
         }
        
-        fprintf(stderr, "COR: Running CUDA correlator\n");
         xgpuCudaXengine(&context, doDump ? SYNCOP_DUMP : SYNCOP_SYNC_TRANSFER);
-        fprintf(stderr, "COR: Finished CUDA code\n");
         
         if (doDump) {
-            fprintf(stderr, "COR: Dumping...\n");
             xgpuClearDeviceIntegrationBuffer(&context);
             //xgpuReorderMatrix((Complex *)db_out->block[curblock_out].data);
-            db_out->block[curblock_out].header.mcnt = last_mcnt;
+            db_out->block[curblock_out].header.mcnt = start_mcnt;
             
             // Mark output block as full and advance
             flag_correlator_output_databuf_set_filled(db_out, curblock_out);
             curblock_out = (curblock_out + 1) % db_out->header.n_block;
+            start_mcnt = last_mcnt + 1;
+            last_mcnt = start_mcnt + int_count*Nm -1;
         }
 
         flag_gpu_input_databuf_set_free(db_in, curblock_in);
