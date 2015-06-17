@@ -736,6 +736,7 @@ uninstall-am: uninstall-libLTLIBRARIES
 	mostlyclean-libtool pdf pdf-am ps ps-am tags uninstall \
 	uninstall-am uninstall-libLTLIBRARIES
 
+                  grating_thread.cu
 
 # Installed scripts
 # dist_bin_SCRIPTS = paper_init.sh \

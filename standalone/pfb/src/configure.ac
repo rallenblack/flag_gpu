@@ -18,7 +18,7 @@ AC_CONFIG_MACRO_DIR([m4])
 AS_VAR_SET_IF(CFLAGS,[],[CFLAGS=])
 
 # Checks for programs.
-AC_PROG_CC
+AC_PROG_CC([nvcc])
 
 # Check for HASHPIPE and xGPU
 AX_CHECK_HASHPIPE

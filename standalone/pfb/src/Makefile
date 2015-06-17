@@ -128,13 +128,13 @@ DIST_ARCHIVES = $(distdir).tar.gz
 GZIP_ENV = --best
 distuninstallcheck_listfiles = find . -type f -print
 distcleancheck_listfiles = find . -type f -print
-ACLOCAL = ${SHELL} /home/rablack/FLAG/hash_grating/src/missing --run aclocal-1.11
-AMTAR = ${SHELL} /home/rablack/FLAG/hash_grating/src/missing --run tar
+ACLOCAL = ${SHELL} /home/rablack/FLAG/flag_gpu/standalone/pfb/src/missing --run aclocal-1.11
+AMTAR = ${SHELL} /home/rablack/FLAG/flag_gpu/standalone/pfb/src/missing --run tar
 AM_DEFAULT_VERBOSITY = 0
 AR = ar
-AUTOCONF = ${SHELL} /home/rablack/FLAG/hash_grating/src/missing --run autoconf
-AUTOHEADER = ${SHELL} /home/rablack/FLAG/hash_grating/src/missing --run autoheader
-AUTOMAKE = ${SHELL} /home/rablack/FLAG/hash_grating/src/missing --run automake-1.11
+AUTOCONF = ${SHELL} /home/rablack/FLAG/flag_gpu/standalone/pfb/src/missing --run autoconf
+AUTOHEADER = ${SHELL} /home/rablack/FLAG/flag_gpu/standalone/pfb/src/missing --run autoheader
+AUTOMAKE = ${SHELL} /home/rablack/FLAG/flag_gpu/standalone/pfb/src/missing --run automake-1.11
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
@@ -168,7 +168,7 @@ LIBTOOL = $(SHELL) $(top_builddir)/libtool
 LIPO = 
 LN_S = ln -s
 LTLIBOBJS = 
-MAKEINFO = ${SHELL} /home/rablack/FLAG/hash_grating/src/missing --run makeinfo
+MAKEINFO = ${SHELL} /home/rablack/FLAG/flag_gpu/standalone/pfb/src/missing --run makeinfo
 MKDIR_P = /bin/mkdir -p
 NM = /usr/bin/nm -B
 NMEDIT = 
@@ -190,10 +190,10 @@ SET_MAKE =
 SHELL = /bin/sh
 STRIP = strip
 VERSION = VERSION
-abs_builddir = /home/rablack/FLAG/hash_grating/src
-abs_srcdir = /home/rablack/FLAG/hash_grating/src
-abs_top_builddir = /home/rablack/FLAG/hash_grating/src
-abs_top_srcdir = /home/rablack/FLAG/hash_grating/src
+abs_builddir = /home/rablack/FLAG/flag_gpu/standalone/pfb/src
+abs_srcdir = /home/rablack/FLAG/flag_gpu/standalone/pfb/src
+abs_top_builddir = /home/rablack/FLAG/flag_gpu/standalone/pfb/src
+abs_top_srcdir = /home/rablack/FLAG/flag_gpu/standalone/pfb/src
 ac_ct_CC = gcc
 ac_ct_DUMPBIN = 
 am__include = include
@@ -221,7 +221,7 @@ host_vendor = unknown
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /home/rablack/FLAG/hash_grating/src/install-sh
+install_sh = ${SHELL} /home/rablack/FLAG/flag_gpu/standalone/pfb/src/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -736,6 +736,7 @@ uninstall-am: uninstall-libLTLIBRARIES
 	mostlyclean-libtool pdf pdf-am ps ps-am tags uninstall \
 	uninstall-am uninstall-libLTLIBRARIES
 
+                  grating_thread.cu
 
 # Installed scripts
 # dist_bin_SCRIPTS = paper_init.sh \

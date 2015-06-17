@@ -300,116 +300,114 @@ configure:10557: checking whether to build shared libraries
 configure:10578: result: yes
 configure:10581: checking whether to build static libraries
 configure:10585: result: yes
-configure:10697: checking for gcc
-configure:10724: result: gcc
-configure:10953: checking for C compiler version
-configure:10962: gcc --version >&5
+configure:10761: checking for C compiler version
+configure:10770: gcc --version >&5
 gcc (GCC) 4.4.7 20120313 (Red Hat 4.4.7-11)
 Copyright (C) 2010 Free Software Foundation, Inc.
 This is free software; see the source for copying conditions.  There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-configure:10973: $? = 0
-configure:10962: gcc -v >&5
+configure:10781: $? = 0
+configure:10770: gcc -v >&5
 Using built-in specs.
 Target: x86_64-redhat-linux
 Configured with: ../configure --prefix=/usr --mandir=/usr/share/man --infodir=/usr/share/info --with-bugurl=http://bugzilla.redhat.com/bugzilla --enable-bootstrap --enable-shared --enable-threads=posix --enable-checking=release --with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions --enable-gnu-unique-object --enable-languages=c,c++,objc,obj-c++,java,fortran,ada --enable-java-awt=gtk --disable-dssi --with-java-home=/usr/lib/jvm/java-1.5.0-gcj-1.5.0.0/jre --enable-libgcj-multifile --enable-java-maintainer-mode --with-ecj-jar=/usr/share/java/eclipse-ecj.jar --disable-libjava-multilib --with-ppl --with-cloog --with-tune=generic --with-arch_32=i686 --build=x86_64-redhat-linux
 Thread model: posix
 gcc version 4.4.7 20120313 (Red Hat 4.4.7-11) (GCC) 
-configure:10973: $? = 0
-configure:10962: gcc -V >&5
+configure:10781: $? = 0
+configure:10770: gcc -V >&5
 gcc: '-V' option must have argument
-configure:10973: $? = 1
-configure:10962: gcc -qversion >&5
+configure:10781: $? = 1
+configure:10770: gcc -qversion >&5
 gcc: unrecognized option '-qversion'
 gcc: no input files
-configure:10973: $? = 1
-configure:10977: checking whether we are using the GNU C compiler
-configure:11005: result: yes
-configure:11014: checking whether gcc accepts -g
-configure:11075: result: yes
-configure:11092: checking for gcc option to accept ISO C89
-configure:11168: result: none needed
-configure:11190: checking dependency style of gcc
-configure:11300: result: gcc3
-configure:11328: checking for hashpipe_databuf_create in -lhashpipe
-configure:11353: gcc -o conftest -g -O2   -L/usr/local/lib conftest.c -lhashpipe   >&5
-configure:11353: $? = 0
-configure:11362: result: yes
-configure:11422: checking for /usr/local/include/hashpipe.h
-configure:11436: result: yes
-configure:11477: checking for pthread_create in -lpthread
-configure:11502: gcc -o conftest -g -O2   conftest.c -lpthread   >&5
-configure:11502: $? = 0
-configure:11511: result: yes
-configure:11522: checking for clock_gettime in -lrt
-configure:11547: gcc -o conftest -g -O2   conftest.c -lrt  -lpthread  >&5
-configure:11547: $? = 0
-configure:11556: result: yes
-configure:11567: checking for crc32 in -lz
-configure:11592: gcc -o conftest -g -O2   conftest.c -lz  -lrt -lpthread  >&5
-configure:11592: $? = 0
-configure:11601: result: yes
-configure:11617: checking netdb.h usability
-configure:11617: gcc -c -g -O2  conftest.c >&5
-configure:11617: $? = 0
-configure:11617: result: yes
-configure:11617: checking netdb.h presence
-configure:11617: gcc -E  conftest.c
-configure:11617: $? = 0
-configure:11617: result: yes
-configure:11617: checking for netdb.h
-configure:11617: result: yes
-configure:11617: checking for stdint.h
-configure:11617: result: yes
-configure:11617: checking for stdlib.h
-configure:11617: result: yes
-configure:11617: checking for string.h
-configure:11617: result: yes
-configure:11617: checking sys/socket.h usability
-configure:11617: gcc -c -g -O2  conftest.c >&5
-configure:11617: $? = 0
-configure:11617: result: yes
-configure:11617: checking sys/socket.h presence
-configure:11617: gcc -E  conftest.c
-configure:11617: $? = 0
-configure:11617: result: yes
-configure:11617: checking for sys/socket.h
-configure:11617: result: yes
-configure:11617: checking sys/time.h usability
-configure:11617: gcc -c -g -O2  conftest.c >&5
-configure:11617: $? = 0
-configure:11617: result: yes
-configure:11617: checking sys/time.h presence
-configure:11617: gcc -E  conftest.c
-configure:11617: $? = 0
-configure:11617: result: yes
-configure:11617: checking for sys/time.h
-configure:11617: result: yes
-configure:11617: checking for unistd.h
-configure:11617: result: yes
-configure:11617: checking zlib.h usability
-configure:11617: gcc -c -g -O2  conftest.c >&5
-configure:11617: $? = 0
-configure:11617: result: yes
-configure:11617: checking zlib.h presence
-configure:11617: gcc -E  conftest.c
-configure:11617: $? = 0
-configure:11617: result: yes
-configure:11617: checking for zlib.h
-configure:11617: result: yes
-configure:11629: checking for inline
-configure:11645: gcc -c -g -O2  conftest.c >&5
-configure:11645: $? = 0
-configure:11653: result: inline
-configure:11671: checking for int32_t
-configure:11671: gcc -c -g -O2  conftest.c >&5
-configure:11671: $? = 0
-configure:11671: gcc -c -g -O2  conftest.c >&5
+configure:10781: $? = 1
+configure:10785: checking whether we are using the GNU C compiler
+configure:10813: result: yes
+configure:10822: checking whether gcc accepts -g
+configure:10883: result: yes
+configure:10900: checking for gcc option to accept ISO C89
+configure:10976: result: none needed
+configure:10998: checking dependency style of gcc
+configure:11108: result: gcc3
+configure:11136: checking for hashpipe_databuf_create in -lhashpipe
+configure:11161: gcc -o conftest -g -O2   -L/usr/local/lib conftest.c -lhashpipe   >&5
+configure:11161: $? = 0
+configure:11170: result: yes
+configure:11230: checking for /usr/local/include/hashpipe.h
+configure:11244: result: yes
+configure:11285: checking for pthread_create in -lpthread
+configure:11310: gcc -o conftest -g -O2   conftest.c -lpthread   >&5
+configure:11310: $? = 0
+configure:11319: result: yes
+configure:11330: checking for clock_gettime in -lrt
+configure:11355: gcc -o conftest -g -O2   conftest.c -lrt  -lpthread  >&5
+configure:11355: $? = 0
+configure:11364: result: yes
+configure:11375: checking for crc32 in -lz
+configure:11400: gcc -o conftest -g -O2   conftest.c -lz  -lrt -lpthread  >&5
+configure:11400: $? = 0
+configure:11409: result: yes
+configure:11425: checking netdb.h usability
+configure:11425: gcc -c -g -O2  conftest.c >&5
+configure:11425: $? = 0
+configure:11425: result: yes
+configure:11425: checking netdb.h presence
+configure:11425: gcc -E  conftest.c
+configure:11425: $? = 0
+configure:11425: result: yes
+configure:11425: checking for netdb.h
+configure:11425: result: yes
+configure:11425: checking for stdint.h
+configure:11425: result: yes
+configure:11425: checking for stdlib.h
+configure:11425: result: yes
+configure:11425: checking for string.h
+configure:11425: result: yes
+configure:11425: checking sys/socket.h usability
+configure:11425: gcc -c -g -O2  conftest.c >&5
+configure:11425: $? = 0
+configure:11425: result: yes
+configure:11425: checking sys/socket.h presence
+configure:11425: gcc -E  conftest.c
+configure:11425: $? = 0
+configure:11425: result: yes
+configure:11425: checking for sys/socket.h
+configure:11425: result: yes
+configure:11425: checking sys/time.h usability
+configure:11425: gcc -c -g -O2  conftest.c >&5
+configure:11425: $? = 0
+configure:11425: result: yes
+configure:11425: checking sys/time.h presence
+configure:11425: gcc -E  conftest.c
+configure:11425: $? = 0
+configure:11425: result: yes
+configure:11425: checking for sys/time.h
+configure:11425: result: yes
+configure:11425: checking for unistd.h
+configure:11425: result: yes
+configure:11425: checking zlib.h usability
+configure:11425: gcc -c -g -O2  conftest.c >&5
+configure:11425: $? = 0
+configure:11425: result: yes
+configure:11425: checking zlib.h presence
+configure:11425: gcc -E  conftest.c
+configure:11425: $? = 0
+configure:11425: result: yes
+configure:11425: checking for zlib.h
+configure:11425: result: yes
+configure:11437: checking for inline
+configure:11453: gcc -c -g -O2  conftest.c >&5
+configure:11453: $? = 0
+configure:11461: result: inline
+configure:11479: checking for int32_t
+configure:11479: gcc -c -g -O2  conftest.c >&5
+configure:11479: $? = 0
+configure:11479: gcc -c -g -O2  conftest.c >&5
 conftest.c: In function 'main':
 conftest.c:72: warning: integer overflow in expression
 conftest.c:72: error: size of array 'test_array' is negative
-configure:11671: $? = 1
+configure:11479: $? = 1
 configure: failed program was:
 | /* confdefs.h */
 | #define PACKAGE_NAME "FULL-PACKAGE-NAME"
@@ -489,15 +487,15 @@ configure: failed program was:
 |   ;
 |   return 0;
 | }
-configure:11671: result: yes
-configure:11682: checking for int64_t
-configure:11682: gcc -c -g -O2  conftest.c >&5
-configure:11682: $? = 0
-configure:11682: gcc -c -g -O2  conftest.c >&5
+configure:11479: result: yes
+configure:11490: checking for int64_t
+configure:11490: gcc -c -g -O2  conftest.c >&5
+configure:11490: $? = 0
+configure:11490: gcc -c -g -O2  conftest.c >&5
 conftest.c: In function 'main':
 conftest.c:72: warning: integer overflow in expression
 conftest.c:72: error: size of array 'test_array' is negative
-configure:11682: $? = 1
+configure:11490: $? = 1
 configure: failed program was:
 | /* confdefs.h */
 | #define PACKAGE_NAME "FULL-PACKAGE-NAME"
@@ -577,14 +575,14 @@ configure: failed program was:
 |   ;
 |   return 0;
 | }
-configure:11682: result: yes
-configure:11693: checking for off_t
-configure:11693: gcc -c -g -O2  conftest.c >&5
-configure:11693: $? = 0
-configure:11693: gcc -c -g -O2  conftest.c >&5
+configure:11490: result: yes
+configure:11501: checking for off_t
+configure:11501: gcc -c -g -O2  conftest.c >&5
+configure:11501: $? = 0
+configure:11501: gcc -c -g -O2  conftest.c >&5
 conftest.c: In function 'main':
 conftest.c:70: error: expected expression before ')' token
-configure:11693: $? = 1
+configure:11501: $? = 1
 configure: failed program was:
 | /* confdefs.h */
 | #define PACKAGE_NAME "FULL-PACKAGE-NAME"
@@ -660,14 +658,14 @@ configure: failed program was:
 |   ;
 |   return 0;
 | }
-configure:11693: result: yes
-configure:11704: checking for size_t
-configure:11704: gcc -c -g -O2  conftest.c >&5
-configure:11704: $? = 0
-configure:11704: gcc -c -g -O2  conftest.c >&5
+configure:11501: result: yes
+configure:11512: checking for size_t
+configure:11512: gcc -c -g -O2  conftest.c >&5
+configure:11512: $? = 0
+configure:11512: gcc -c -g -O2  conftest.c >&5
 conftest.c: In function 'main':
 conftest.c:70: error: expected expression before ')' token
-configure:11704: $? = 1
+configure:11512: $? = 1
 configure: failed program was:
 | /* confdefs.h */
 | #define PACKAGE_NAME "FULL-PACKAGE-NAME"
@@ -743,45 +741,45 @@ configure: failed program was:
 |   ;
 |   return 0;
 | }
-configure:11704: result: yes
-configure:11715: checking for uint32_t
-configure:11715: gcc -c -g -O2  conftest.c >&5
-configure:11715: $? = 0
-configure:11715: result: yes
-configure:11729: checking for uint64_t
-configure:11729: gcc -c -g -O2  conftest.c >&5
-configure:11729: $? = 0
-configure:11729: result: yes
-configure:11743: checking for uint8_t
-configure:11743: gcc -c -g -O2  conftest.c >&5
-configure:11743: $? = 0
-configure:11743: result: yes
-configure:11761: checking for stdlib.h
-configure:11761: result: yes
-configure:11771: checking for GNU libc compatible malloc
-configure:11795: gcc -o conftest -g -O2   conftest.c -lz -lrt -lpthread  >&5
-configure:11795: $? = 0
-configure:11795: ./conftest
-configure:11795: $? = 0
-configure:11805: result: yes
-configure:11829: checking for clock_gettime
-configure:11829: gcc -o conftest -g -O2   conftest.c -lz -lrt -lpthread  >&5
-configure:11829: $? = 0
-configure:11829: result: yes
-configure:11829: checking for memset
-configure:11829: gcc -o conftest -g -O2   conftest.c -lz -lrt -lpthread  >&5
+configure:11512: result: yes
+configure:11523: checking for uint32_t
+configure:11523: gcc -c -g -O2  conftest.c >&5
+configure:11523: $? = 0
+configure:11523: result: yes
+configure:11537: checking for uint64_t
+configure:11537: gcc -c -g -O2  conftest.c >&5
+configure:11537: $? = 0
+configure:11537: result: yes
+configure:11551: checking for uint8_t
+configure:11551: gcc -c -g -O2  conftest.c >&5
+configure:11551: $? = 0
+configure:11551: result: yes
+configure:11569: checking for stdlib.h
+configure:11569: result: yes
+configure:11579: checking for GNU libc compatible malloc
+configure:11603: gcc -o conftest -g -O2   conftest.c -lz -lrt -lpthread  >&5
+configure:11603: $? = 0
+configure:11603: ./conftest
+configure:11603: $? = 0
+configure:11613: result: yes
+configure:11637: checking for clock_gettime
+configure:11637: gcc -o conftest -g -O2   conftest.c -lz -lrt -lpthread  >&5
+configure:11637: $? = 0
+configure:11637: result: yes
+configure:11637: checking for memset
+configure:11637: gcc -o conftest -g -O2   conftest.c -lz -lrt -lpthread  >&5
 conftest.c:60: warning: conflicting types for built-in function 'memset'
-configure:11829: $? = 0
-configure:11829: result: yes
-configure:11829: checking for socket
-configure:11829: gcc -o conftest -g -O2   conftest.c -lz -lrt -lpthread  >&5
-configure:11829: $? = 0
-configure:11829: result: yes
-configure:11829: checking for crc32
-configure:11829: gcc -o conftest -g -O2   conftest.c -lz -lrt -lpthread  >&5
-configure:11829: $? = 0
-configure:11829: result: yes
-configure:11975: creating ./config.status
+configure:11637: $? = 0
+configure:11637: result: yes
+configure:11637: checking for socket
+configure:11637: gcc -o conftest -g -O2   conftest.c -lz -lrt -lpthread  >&5
+configure:11637: $? = 0
+configure:11637: result: yes
+configure:11637: checking for crc32
+configure:11637: gcc -o conftest -g -O2   conftest.c -lz -lrt -lpthread  >&5
+configure:11637: $? = 0
+configure:11637: result: yes
+configure:11783: creating ./config.status
 
 ## ---------------------- ##
 ## Running config.status. ##
@@ -903,17 +901,17 @@ lt_cv_sys_max_cmd_len=1966080
 ## Output variables. ##
 ## ----------------- ##
 
-ACLOCAL='${SHELL} /home/rablack/FLAG/hash_grating/src/missing --run aclocal-1.11'
+ACLOCAL='${SHELL} /home/rablack/FLAG/flag_gpu/standalone/pfb/src/missing --run aclocal-1.11'
 AMDEPBACKSLASH='\'
 AMDEP_FALSE='#'
 AMDEP_TRUE=''
-AMTAR='${SHELL} /home/rablack/FLAG/hash_grating/src/missing --run tar'
+AMTAR='${SHELL} /home/rablack/FLAG/flag_gpu/standalone/pfb/src/missing --run tar'
 AM_BACKSLASH='\'
 AM_DEFAULT_VERBOSITY='0'
 AR='ar'
-AUTOCONF='${SHELL} /home/rablack/FLAG/hash_grating/src/missing --run autoconf'
-AUTOHEADER='${SHELL} /home/rablack/FLAG/hash_grating/src/missing --run autoheader'
-AUTOMAKE='${SHELL} /home/rablack/FLAG/hash_grating/src/missing --run automake-1.11'
+AUTOCONF='${SHELL} /home/rablack/FLAG/flag_gpu/standalone/pfb/src/missing --run autoconf'
+AUTOHEADER='${SHELL} /home/rablack/FLAG/flag_gpu/standalone/pfb/src/missing --run autoheader'
+AUTOMAKE='${SHELL} /home/rablack/FLAG/flag_gpu/standalone/pfb/src/missing --run automake-1.11'
 AWK='gawk'
 CC='gcc'
 CCDEPMODE='depmode=gcc3'
@@ -946,7 +944,7 @@ LIBTOOL='$(SHELL) $(top_builddir)/libtool'
 LIPO=''
 LN_S='ln -s'
 LTLIBOBJS=''
-MAKEINFO='${SHELL} /home/rablack/FLAG/hash_grating/src/missing --run makeinfo'
+MAKEINFO='${SHELL} /home/rablack/FLAG/flag_gpu/standalone/pfb/src/missing --run makeinfo'
 MKDIR_P='/bin/mkdir -p'
 NM='/usr/bin/nm -B'
 NMEDIT=''
@@ -999,7 +997,7 @@ host_vendor='unknown'
 htmldir='${docdir}'
 includedir='${prefix}/include'
 infodir='${datarootdir}/info'
-install_sh='${SHELL} /home/rablack/FLAG/hash_grating/src/install-sh'
+install_sh='${SHELL} /home/rablack/FLAG/flag_gpu/standalone/pfb/src/install-sh'
 libdir='${exec_prefix}/lib'
 libexecdir='${exec_prefix}/libexec'
 localedir='${datarootdir}/locale'

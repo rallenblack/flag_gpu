@@ -28,6 +28,7 @@ grating_databuf = grating_databuf.h \
 
 grating_threads = grating_net_thread.c \
                   grating_transpose_thread.c
+                  grating_thread.cu
 
 # This is the grating_gpu plugin itself
 lib_LTLIBRARIES = grating_gpu.la
