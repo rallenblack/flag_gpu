@@ -32,25 +32,36 @@ sigma2 = kb*Tsys*BW;    % Noise power per channel
 % 1 -> White noise
 % 2 -> Unit-Energy Sinusoid in Single Element
 % 3 -> Send all ones
+% 4 -> Send chirp
 % else -> Send all zeros
-data_flag = 3;
+data_flag = 4;
 
 % Sinusoid parameters (only used if data_flag = 2)
 % It should be noted that the phase of the sinusoid will not change between
 % time samples-- this is just for convenience. A more sophisticated packet
 % generator would incorporate the phase shifts across time.
-s_bin = 1; % Sinusoid's absolute bin number (1-500)
-s_ele = 1; % Sinusoid's absolute element number (1-40)
-s_phi = pi/2; % Sinusoid's phase (magnitude is set to 1)
-s_xid = floor((s_bin - 1)/100) + 1; % X-engine ID for desired bin
-s_fid = floor((s_ele - 1)/8) + 1;   % F-engine ID for desired input
+s_bin   = 1; % Sinusoid's absolute bin number (1-500)
+s_ele   = 1; % Sinusoid's absolute element number (1-40)
+s_phi   = pi/2; % Sinusoid's phase (magnitude is set to 1)
+s_xid   = floor((s_bin - 1)/100) + 1; % X-engine ID for desired bin
+s_fid   = floor((s_ele - 1)/8) + 1;   % F-engine ID for desired input
 s_bin_r = mod(s_bin - 1, 100) + 1; % Relative bin number (internal fengine index)
-s_ele_r = mod(s_bin - 1, 8) + 1; % Relative element number
+s_ele_r = mod(s_ele - 1, 8) + 1; % Relative element number
 
+% Chirp parameters (only used if data_flag = 4)
+c_bin_start = 300;  % Absolute bin index in which the chirp will begin (1-500)
+c_bin_end   = 350;  % Absolute bin index in which the chirp will end (1-500)
+c_ele       = 1;    % Absolute element index (1-40)
+c_phi       = 0;    % Phase of chirp (could be more sophisticated...)
+c_ntime     = 500;  % Number of coarse channel time samples in one chirp
+c_fid       = floor((c_ele - 1)/8) + 1; % F-engine ID for desired input
+c_ele_r     = mod(c_ele - 1, 8) + 1; % Relative element number
+c_num_bins  = c_bin_end - c_bin_start + 1;
+c_time_per_bin = c_ntime/c_num_bins;
 
 % Create UDP sockets - 1 IP address per Xengine (xid)
 for xid = 1:Nxengines
-    remoteHost = ['10.10.', num2str(xid), '.233'];
+    remoteHost = ['10.40.', num2str(xid), '.1'];
     sock(xid) = udp(remoteHost, 'RemotePort', 8511, 'LocalPort', 8511);
     set(sock(xid), 'OutputBufferSize', 9000);
     set(sock(xid), 'OutputDatagramPacketSize', 9000);
@@ -62,7 +73,7 @@ mcnt = 0; % Each mcnt represents 10 packets across all F-engines in the
           % same time frame
 while mcnt <= 1000
     disp(['Sending mcnt = ', num2str(mcnt)]);
-    for xid = 1:1 % Set to a single X-engine for single HPC testing (Richard B.)
+    for xid = 4:4 % Set to a single X-engine for single HPC testing (Richard B.)
         for fid = 1:Nfengines
             w_idx = 1;
             
@@ -112,10 +123,28 @@ while mcnt <= 1000
                         s_real = real(exp(1j*s_phi));
                         s_imag = imag(exp(1j*s_phi));
                         data(s_ele_r, 1, s_bin_r, :) = s_real;
-                        data(s_ele_r, 2, s_bin_r, :) = s_real;
+                        data(s_ele_r, 2, s_bin_r, :) = s_imag;
                     end
                 case 3 % Send all ones
                     data = ones(Nin_per_f, 2, Nbin_per_x, Ntime_per_packet);
+                case 4 % Send chirp
+                    time_start = mcnt*Ntime_per_packet;
+                    if fid == c_fid
+                        for t = 0:Ntime_per_packet-1
+                            abs_time = time_start + t;
+                            c_bin_abs = round(abs_time/c_time_per_bin) + c_bin_start - 1;
+                            c_bin = mod(c_bin_abs, c_num_bins) + c_bin_start - 1;
+                            
+                            c_xid = floor((c_bin - 1)/100) + 1;
+                            if xid == c_xid
+                                c_bin_r = mod(c_bin - 1, 100) + 1;
+                                c_real = real(exp(1j*c_phi));
+                                c_imag = imag(exp(1j*c_phi));
+                                data(c_ele_r, 1, c_bin_r, t+1) = c_real;
+                                data(c_ele_r, 2, c_bin_r, t+1) = c_imag;
+                            end
+                        end
+                    end
                 otherwise % Send all zeros
             end
             data = uint8(data);

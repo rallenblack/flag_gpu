@@ -49,7 +49,6 @@ static void * run(hashpipe_thread_args_t * args) {
             }
         }
 
-        fprintf(stderr, "CHECK: Got a new block!\n");
         uint64_t start_mcnt = db_in->block[curblock_in].header.mcnt;
         Complex * p = (Complex *)db_in->block[curblock_in].data;
         char filename[128];

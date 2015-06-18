@@ -2,7 +2,7 @@
 clearvars;
 close all;
 
-FILE = fopen('cor_mcnt_40.out', 'r');
+FILE = fopen('cor_mcnt_170.out', 'r');
 [R, count] = fscanf(FILE, '%g\n');
 fclose(FILE);
 
