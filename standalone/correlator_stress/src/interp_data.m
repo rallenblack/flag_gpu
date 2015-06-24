@@ -2,7 +2,7 @@
 clearvars;
 close all;
 
-FILE = fopen('cor_mcnt_130.out', 'r');
+FILE = fopen('floatArray.out', 'r');
 [R, count] = fscanf(FILE, '%g\n');
 fclose(FILE);
 
@@ -52,9 +52,4 @@ for Nb = 1:Nbin
     subplot(5,10,Nb);
     imagesc(abs(Rb(1:Nele, 1:Nele)));
     title(['Bin ', num2str(Nb)]);
-    
-    pow1(Nb) = Rb(1,1);
 end
-
-figure(small);
-plot(pow1);
