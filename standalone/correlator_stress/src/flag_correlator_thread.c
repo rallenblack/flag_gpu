@@ -9,9 +9,17 @@
 #include <pthread.h>
 #include <string.h>
 
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <sys/types.h>
+
 #include <xgpu.h>
 #include "hashpipe.h"
 #include "flag_databuf.h"
+
+#define ELAPSED_NS(start, stop) \
+  (((int64_t)stop.tv_sec-start.tv_sec)*1000*1000*1000+(stop.tv_nsec-start.tv_nsec))
+
 
 // Create thread status buffer
 static hashpipe_status_t * st_p;
@@ -39,7 +47,7 @@ static void * run(hashpipe_thread_args_t * args) {
     hashpipe_status_lock_safe(&st);
     hputs(st.buf, "INTSTAT", "off");
     hputi8(st.buf, "INTSYNC", 0);
-    hputi4(st.buf, "INTCOUNT", 1);
+    hputi4(st.buf, "INTCOUNT", 40);
     hgeti4(st.buf, "GPUDEV", &gpu_dev);
     hputi4(st.buf, "GPUDEV", gpu_dev);
     hashpipe_status_unlock_safe(&st);
@@ -75,6 +83,11 @@ static void * run(hashpipe_thread_args_t * args) {
     uint64_t start_mcnt = 0;
     uint64_t last_mcnt = 0;
     int int_count; // Number of blocks to integrate per dump
+    struct timespec start, stop;
+    uint64_t elapsed_ns = 0;
+    int num_blocks = 0;
+    
+    clock_gettime(CLOCK_MONOTONIC, &start);
     while (run_threads()) {
         
         // Wait for input buffer block to be filled
@@ -90,13 +103,13 @@ static void * run(hashpipe_thread_args_t * args) {
                 break;
             }
         }
-       
+      
         // Retrieve correlator integrator status
         hashpipe_status_lock_safe(&st);
         hgets(st.buf, "INTSTAT", 16, integ_status);
         hashpipe_status_unlock_safe(&st);
 
-        // Print out the header information for this block 
+        // Get header information for this block 
         flag_gpu_input_header_t tmp_header;
         memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_gpu_input_header_t));
 
@@ -142,6 +155,8 @@ static void * run(hashpipe_thread_args_t * args) {
         }
 
         // If we get here, then integ_status == "on" or "stop"
+        num_blocks++;
+
         // Setup for current chunk
         context.input_offset  = curblock_in  * sizeof(flag_gpu_input_block_t) / sizeof(ComplexInput);
         context.output_offset = curblock_out * sizeof(flag_correlator_output_block_t) / sizeof(Complex);
@@ -161,8 +176,9 @@ static void * run(hashpipe_thread_args_t * args) {
                     break;
                 }
             }
+
         }
-       
+
         xgpuCudaXengine(&context, doDump ? SYNCOP_DUMP : SYNCOP_SYNC_TRANSFER);
         
         if (doDump) {
@@ -179,7 +195,15 @@ static void * run(hashpipe_thread_args_t * args) {
 
         flag_gpu_input_databuf_set_free(db_in, curblock_in);
         curblock_in = (curblock_in + 1) % db_in->header.n_block;
+
+        clock_gettime(CLOCK_MONOTONIC, &stop);
+        elapsed_ns = ELAPSED_NS(start, stop);
+        if (num_blocks % 500 == 0) {
+            fprintf(stderr, "COR: Elapsed time (ns): %lld\n", (long long int)(elapsed_ns/num_blocks));
+            fprintf(stderr, "COR: Theoretical data rate (Gbps): %f\n", (N_BYTES_PER_BLOCK*8.0)/(elapsed_ns/num_blocks));
+        }
         pthread_testcancel();
+        
     }
 
     // Thread terminates after loop

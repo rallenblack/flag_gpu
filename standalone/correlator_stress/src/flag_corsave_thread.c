@@ -53,7 +53,7 @@ static void * run(hashpipe_thread_args_t * args) {
         Complex * p = (Complex *)db_in->block[curblock_in].data;
         char filename[128];
         sprintf(filename, "cor_mcnt_%lld.out", (long long)start_mcnt);
-        fprintf(stderr, "Saving to %s\n", filename);
+        // fprintf(stderr, "Saving to %s\n", filename);
         FILE * filePtr = fopen(filename, "w");
 
         int j;

@@ -1,6 +1,6 @@
 /* flag_net_thread.c
  *
- * Routine to read packets from network and load them into the buffer.
+ * Routine to simulate data rates coming into the HPC.
  */
 
 #include <stdio.h>
@@ -19,6 +19,9 @@
 
 #include "hashpipe.h"
 #include "flag_databuf.h"
+
+#define DATA_RATE_GBPS 20480
+#define WAIT_NS (N_BYTES_PER_BLOCK * 8 / DATA_RATE_GBPS)
 
 #ifndef MIN
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
@@ -300,29 +303,10 @@ static void *run(hashpipe_thread_args_t * args) {
     hgeti4(st.buf, "XID", &tmp);
     hashpipe_status_unlock_safe(&st);
 
-
-    /* Read network params */
-    struct hashpipe_udp_params up = {
-	.bindhost = "0.0.0.0",
-	.bindport = 8511,
-	.packet_size = N_BYTES_PER_PACKET
-    };
-
     hashpipe_status_lock_safe(&st);
-    	// Get info from status buffer if present (no change if not present)
-    	hgets(st.buf, "BINDHOST", 80, up.bindhost);
-    	hgeti4(st.buf, "BINDPORT", &up.bindport);
-    
-    	// Store bind host/port info etc in status buffer
-    	hputs(st.buf, "BINDHOST", up.bindhost);
-    	hputi4(st.buf, "BINDPORT", up.bindport);
-    	hputu4(st.buf, "MISSEDFE", 0);
-    	hputu4(st.buf, "MISSEDPK", 0);
-    	hputs(st.buf, status_key, "running");
+    hputs(st.buf, status_key, "running");
     hashpipe_status_unlock_safe(&st);
-
-    struct hashpipe_udp_packet p;
-
+    
     /* Give all the threads a chance to start before opening network socket */
     int netready = 0;
     int corready = 0;
@@ -348,84 +332,74 @@ static void *run(hashpipe_thread_args_t * args) {
         netready = 1;
     }
     sleep(1);
-
-    /* Set up UDP socket */
-    fprintf(stderr, "NET: BINDHOST = %s\n", up.bindhost);
-    fprintf(stderr, "NET: BINDPORT = %d\n", up.bindport);
-    int rv = hashpipe_udp_init(&up);
     
-    if (rv!=HASHPIPE_OK) {
-        hashpipe_error("paper_net_thread",
-                "Error opening UDP socket.");
-        pthread_exit(NULL);
-    }
-    pthread_cleanup_push((void *)hashpipe_udp_close, &up);
 
-
-    // Initialize first few blocks in the buffer
+    // Initialize all blocks in the buffer
+    
     int i;
-    for (i = 0; i < 2; i++) {
+    for (i = 0; i < N_INPUT_BLOCKS; i++) {
         // Wait until block semaphore is free
         if (flag_input_databuf_wait_free(db, i) != HASHPIPE_OK) {
             if (errno == EINTR) { // Interrupt occurred
                 hashpipe_error(__FUNCTION__, "waiting for free block interrupted\n");
                 pthread_exit(NULL);
             } else {
-                hashpipe_error(__FUNCTION__, "error waiting for free block\n");
+               hashpipe_error(__FUNCTION__, "error waiting for free block\n");
                 pthread_exit(NULL);
             }
         }
         initialize_block(db, i*Nm);
     }
+    
 
 
     // Set correlator to "start" state
+    
     hashpipe_status_lock_safe(&st);
     hputs(st.buf, "INTSTAT", "start");
     hashpipe_status_unlock_safe(&st);
 
-    /* Main loop */
-    uint64_t packet_count = 0;
-
     fprintf(stdout, "NET: Starting Thread!\n");
     
+    static block_info_t binfo;
+    initialize_block_info(&binfo);
+    struct timespec start, stop;
+    uint64_t elapsed_ns;
+    uint64_t num_iter = 0;
+    clock_gettime(CLOCK_MONOTONIC, &start);
+
+    int count = 0;
     while (run_threads()) {
-        // Get packet
-	do {
-	    p.packet_size = recv(up.sock, p.data, HASHPIPE_MAX_PACKET_SIZE, 0);
-	} while (p.packet_size == -1 && (errno == EAGAIN || errno == EWOULDBLOCK) && run_threads());
-	if(!run_threads()) break;
-       
-        // Check packet size and report errors 
-        if (up.packet_size != p.packet_size) {
-	    // If an error was returned instead of a valid packet size
-            if (p.packet_size == -1) {
-                fprintf(stderr, "uh oh!\n");
-		// Log error and exit
-                hashpipe_error("paper_net_thread",
-                        "hashpipe_udp_recv returned error");
-                perror("hashpipe_udp_recv");
-                pthread_exit(NULL);
-            } else {
-		// Log warning and ignore wrongly sized packet
-                hashpipe_warn("paper_net_thread", "Incorrect pkt size (%d)", p.packet_size);
-                continue;
+        
+        
+        clock_gettime(CLOCK_MONOTONIC, &stop);
+        elapsed_ns = ELAPSED_NS(start, stop);
+        if (elapsed_ns > WAIT_NS) {
+            set_block_filled(db, &binfo);
+            binfo.mcnt_start += Nm;
+            binfo.block_i = (binfo.block_i + 1) % N_INPUT_BLOCKS;
+            
+            // Initialize next block
+            flag_input_databuf_wait_free(db, binfo.block_i);
+            initialize_block(db, binfo.mcnt_start);
+            num_iter++;
+            // clock_gettime(CLOCK_MONOTONIC, &start);
+            if (++count % 100 == 0) {
+                fprintf(stderr, "Elapsed time %lld ns\n", (long long int)(elapsed_ns/num_iter));
+                fprintf(stderr, "Bitrate: %f Gbps\n", N_BYTES_PER_BLOCK * 8.0/(elapsed_ns/num_iter));
             }
-	}
+        
+        }
 
-        // Process packet
-	packet_count++;
-        process_packet(db, &p);
 
-        /* Will exit if thread has been cancelled */
+        // Will exit if thread has been cancelled
         pthread_testcancel();
-    }
-
-    pthread_cleanup_pop(1); /* Closes push(hashpipe_udp_close) */
+    } 
 
     hashpipe_status_lock_busywait_safe(&st);
     hputs(st.buf, status_key, "terminated");
-    hashpipe_status_unlock_safe(&st);
+    hashpipe_status_unlock_safe(&st); 
+    
     return NULL;
 }
 

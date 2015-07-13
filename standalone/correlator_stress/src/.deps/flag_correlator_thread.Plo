@@ -18,8 +18,9 @@ flag_correlator_thread.lo: flag_correlator_thread.c /usr/include/stdio.h \
  /usr/include/bits/sched.h /usr/include/xlocale.h \
  /usr/include/bits/setjmp.h /usr/include/string.h \
  /usr/include/bits/string.h /usr/include/bits/string2.h \
- /usr/local/include/xgpu.h /usr/local/include/hashpipe.h \
- /usr/local/include/hashpipe_error.h \
+ /usr/include/sys/time.h /usr/include/sys/resource.h \
+ /usr/include/bits/resource.h /usr/local/include/xgpu.h \
+ /usr/local/include/hashpipe.h /usr/local/include/hashpipe_error.h \
  /usr/local/include/hashpipe_databuf.h /usr/include/stdint.h \
  /usr/include/bits/wchar.h /usr/include/sys/ipc.h \
  /usr/include/bits/ipctypes.h /usr/include/bits/ipc.h \
@@ -114,6 +115,12 @@ flag_correlator_thread.lo: flag_correlator_thread.c /usr/include/stdio.h \
 /usr/include/bits/string.h:
 
 /usr/include/bits/string2.h:
+
+/usr/include/sys/time.h:
+
+/usr/include/sys/resource.h:
+
+/usr/include/bits/resource.h:
 
 /usr/local/include/xgpu.h:
 

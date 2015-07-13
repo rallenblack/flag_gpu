@@ -100,10 +100,10 @@
 #define VERSION "VERSION"
 
 /* Number of frequency channels per xGPU instance */
-#define XGPU_NFREQUENCY 50
+#define XGPU_NFREQUENCY 160
 
 /* Number of stations == Ninputs/2 */
-#define XGPU_NSTATION 32
+#define XGPU_NSTATION 96
 
 /* Number of time samples (i.e. spectra) per xGPU integration */
 #define XGPU_NTIME 100
