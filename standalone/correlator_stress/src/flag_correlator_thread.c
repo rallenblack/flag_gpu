@@ -47,7 +47,7 @@ static void * run(hashpipe_thread_args_t * args) {
     hashpipe_status_lock_safe(&st);
     hputs(st.buf, "INTSTAT", "off");
     hputi8(st.buf, "INTSYNC", 0);
-    hputi4(st.buf, "INTCOUNT", 40);
+    hputi4(st.buf, "INTCOUNT", 1);
     hgeti4(st.buf, "GPUDEV", &gpu_dev);
     hputi4(st.buf, "GPUDEV", gpu_dev);
     hashpipe_status_unlock_safe(&st);

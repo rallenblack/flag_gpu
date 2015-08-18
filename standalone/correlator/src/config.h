@@ -5,7 +5,7 @@
 #define HAVE_CLOCK_GETTIME 1
 
 /* Define to 1 if you have the `crc32' function. */
-#define HAVE_CRC32 1
+/* #undef HAVE_CRC32 */
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #define HAVE_DLFCN_H 1
@@ -20,7 +20,7 @@
 #define HAVE_LIBRT 1
 
 /* Define to 1 if you have the `z' library (-lz). */
-#define HAVE_LIBZ 1
+/* #undef HAVE_LIBZ */
 
 /* Define to 1 if your system has a GNU libc compatible `malloc' function, and
    to 0 otherwise. */
@@ -66,7 +66,7 @@
 #define HAVE_UNISTD_H 1
 
 /* Define to 1 if you have the <zlib.h> header file. */
-#define HAVE_ZLIB_H 1
+/* #undef HAVE_ZLIB_H */
 
 /* Define to the sub-directory in which libtool stores uninstalled libraries.
    */
@@ -106,7 +106,7 @@
 #define XGPU_NSTATION 32
 
 /* Number of time samples (i.e. spectra) per xGPU integration */
-#define XGPU_NTIME 100
+#define XGPU_NTIME 40
 
 /* Define for Solaris 2.5.1 so the uint32_t typedef from <sys/synch.h>,
    <pthread.h>, or <semaphore.h> is not used. If the typedef were allowed, the
