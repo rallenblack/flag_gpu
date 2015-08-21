@@ -90,6 +90,11 @@ hashpipe_databuf_t *hashpipe_databuf_create(int instance_id,
     /* Try to lock in memory */
     rv = shmctl(shmid, SHM_LOCK, NULL);
     if (rv==-1) {
+        if (errno == EACCES) fprintf(stderr, "EACCES\n");
+        if (errno == EFAULT) fprintf(stderr, "EFAULT\n");
+        if (errno == EINVAL) fprintf(stderr, "EINVAL\n");
+        if (errno == ENOMEM) fprintf(stderr, "ENOMEM\n");
+        if (errno == EPERM)  fprintf(stderr, "EPERM\n");
         perror("shmctl");
         hashpipe_error(__FUNCTION__, "Error locking shared memory.");
         return NULL;
