@@ -271,7 +271,7 @@ static inline uint64_t process_packet(flag_input_databuf_t * db, struct hashpipe
     // Copy data into buffer
     memcpy(dest_p, payload_p, N_BYTES_PER_PACKET-8); // Ignore header
 
-    print_pkt_header(&pkt_header);
+    //print_pkt_header(&pkt_header);
 
     return pkt_mcnt;
 }
