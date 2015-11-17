@@ -160,9 +160,9 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
     uint32_t block_idx = get_block_idx(binfo->mcnt_start);
     
     // Validate that we're filling blocks in the proper sequence
-    last_filled = (last_filled + 1)% N_INPUT_BLOCKS;
-    if (last_filled != block_idx) {
-        hashpipe_warn(__FUNCTION__, "block %d being marked filled, but expected block %d!", block_idx, last_filled);
+    int next_filled = (last_filled + 1)% N_INPUT_BLOCKS;
+    if (next_filled != block_idx) {
+        hashpipe_warn(__FUNCTION__, "block %d being marked filled, but expected block %d!", block_idx, next_filled);
     }
     
     // Validate that block_idx matches binfo->block_i
@@ -180,6 +180,7 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
     }
 
     // Mark block as filled so next thread can process it
+    last_filled = block_idx;
     flag_input_databuf_set_filled(db, block_idx);
 
     binfo->self_xid = -1;
@@ -233,10 +234,10 @@ static inline uint64_t process_packet(flag_input_databuf_t * db, struct hashpipe
         // The x-engine is lagging behind the f-engine, or the x-engine
         // has just started. Reinitialize the current block
         // to have the next multiple of Nm. Then initialize the next block appropriately
-        uint64_t adv_mcnt = pkt_mcnt + N_INPUT_BLOCKS*Nm;
-        uint64_t new_mcnt = adv_mcnt - (adv_mcnt % N_INPUT_BLOCKS*Nm) + Nm*binfo.block_i;
+        uint64_t new_mcnt = pkt_mcnt - (pkt_mcnt % (Nm*N_INPUT_BLOCKS)) + Nm*N_INPUT_BLOCKS;
+	// binfo.block_i = get_block_idx(new_mcnt);
 
-        fprintf(stderr, "Packet mcnt %lld is very late... resettting current block mcnt to %lld\n", (long long int)pkt_mcnt, (long long int)new_mcnt);
+        fprintf(stderr, "Packet mcnt %lld is very late... resettting current block mcnt to %lld (%012lx)\n", (long long int)pkt_mcnt, (long long int)new_mcnt, new_mcnt);
         fprintf(stderr, "pkt_mcnt_dist = %lld\n", (long long int)pkt_mcnt_dist);
 
         initialize_block(db, new_mcnt);
@@ -270,7 +271,7 @@ static inline uint64_t process_packet(flag_input_databuf_t * db, struct hashpipe
     // Copy data into buffer
     memcpy(dest_p, payload_p, N_BYTES_PER_PACKET-8); // Ignore header
 
-    // print_pkt_header(&pkt_header);
+    print_pkt_header(&pkt_header);
 
     return pkt_mcnt;
 }
@@ -378,6 +379,10 @@ static void *run(hashpipe_thread_args_t * args) {
         initialize_block(db, i*Nm);
     }
 
+    // Set correlator's starting mcnt to 0
+    hashpipe_status_lock_safe(&st);
+    hputi4(st.buf, "NETMCNT", 0);
+    hashpipe_status_unlock_safe(&st);
 
     // Set correlator to "start" state
     hashpipe_status_lock_safe(&st);

@@ -118,7 +118,7 @@ static void * run(hashpipe_thread_args_t * args) {
            hashpipe_status_unlock_safe(&st); 
             // Check to see if block's starting mcnt matches INTSYNC
             if (db_in->block[curblock_in].header.mcnt < start_mcnt) {
-                fprintf(stderr, "COR: Unable to start yet...\n");
+                fprintf(stderr, "COR: Unable to start yet... waiting for mcnt = %lld\n", (long long int)start_mcnt);
                 // starting mcnt not yet reached
                 // free block and continue
                 flag_gpu_input_databuf_set_free(db_in, curblock_in);
