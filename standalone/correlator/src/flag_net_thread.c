@@ -391,6 +391,7 @@ static void *run(hashpipe_thread_args_t * args) {
 
     /* Main loop */
     uint64_t packet_count = 0;
+    char integ_status[17];
 
     fprintf(stdout, "NET: Starting Thread!\n");
     
@@ -418,9 +419,17 @@ static void *run(hashpipe_thread_args_t * args) {
             }
 	}
 
-        // Process packet
-	packet_count++;
-        process_packet(db, &p);
+	// Check to see if a stop command has been issued
+	hashpipe_status_lock_safe(&st);
+	hgets(st.buf, "INTSTAT", 16, integ_status);
+	hashpipe_status_unlock_safe(&st);
+
+	// Process packets only if we are not in a stop state
+	if (strcmp(integ_status, "stop") != 0) {
+            // Process packet
+    	    packet_count++;
+            process_packet(db, &p);    
+	}
 
         /* Will exit if thread has been cancelled */
         pthread_testcancel();

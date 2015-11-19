@@ -113,12 +113,19 @@ static void * run(hashpipe_thread_args_t * args) {
         // Get the correlator started
         // The INTSTAT string is set to "start" by the net thread once it's up and running
         if (strcmp(integ_status, "start") == 0) {
+
+	   // Get the starting mcnt for integration (should be zero)
            hashpipe_status_lock_safe(&st);
            hgeti4(st.buf, "NETMCNT", (int *)(&start_mcnt));
            hashpipe_status_unlock_safe(&st); 
+
             // Check to see if block's starting mcnt matches INTSYNC
             if (db_in->block[curblock_in].header.mcnt < start_mcnt) {
+
+		// If we get here, then there is a bug since the net thread shouldn't
+		// mark blocks as filled that are before the starting mcnt
                 fprintf(stderr, "COR: Unable to start yet... waiting for mcnt = %lld\n", (long long int)start_mcnt);
+
                 // starting mcnt not yet reached
                 // free block and continue
                 flag_gpu_input_databuf_set_free(db_in, curblock_in);
@@ -141,7 +148,12 @@ static void * run(hashpipe_thread_args_t * args) {
             }
         }
 
-        // If we get here, then integ_status == "on" or "stop"
+	// Check to see if a stop is issued
+	if (strcmp(integ_status, "stop") == 0) {
+	    continue;
+	}
+
+        // If we get here, then integ_status == "on"
         // Setup for current chunk
         context.input_offset  = curblock_in  * sizeof(flag_gpu_input_block_t) / sizeof(ComplexInput);
         context.output_offset = curblock_out * sizeof(flag_correlator_output_block_t) / sizeof(Complex);
