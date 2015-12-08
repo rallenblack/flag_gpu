@@ -181,6 +181,7 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
 
     // Mark block as filled so next thread can process it
     last_filled = block_idx;
+    printf("Filling block %d, starting mcnt = %lld\n", block_idx, (long long int)binfo->mcnt_start);
     flag_input_databuf_set_filled(db, block_idx);
 
     binfo->self_xid = -1;
@@ -198,6 +199,21 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
 static inline uint64_t process_packet(flag_input_databuf_t * db, struct hashpipe_udp_packet *p) {
     static block_info_t binfo;
     packet_header_t     pkt_header;
+
+    // Check to see if we are in the stop state
+    char integ_status[17];
+    hashpipe_status_lock_safe(st_p);
+    hgets(st_p->buf, "INTSTAT", 16, integ_status);
+    hashpipe_status_unlock_safe(st_p);
+    if (strcmp(integ_status, "stop") == 0) {
+	binfo.initialized = 0;
+        initialize_block_info(&binfo);
+	hashpipe_status_lock_safe(st_p);
+	hputi4(st_p->buf, "NETMCNT", 0);
+	hashpipe_status_unlock_safe(st_p);
+	initialize_block(db, 0);
+        return -1;
+    }
 
     // Initialize block information data types
     if (!binfo.initialized) {
@@ -391,7 +407,6 @@ static void *run(hashpipe_thread_args_t * args) {
 
     /* Main loop */
     uint64_t packet_count = 0;
-    char integ_status[17];
 
     fprintf(stdout, "NET: Starting Thread!\n");
     
@@ -419,17 +434,9 @@ static void *run(hashpipe_thread_args_t * args) {
             }
 	}
 
-	// Check to see if a stop command has been issued
-	hashpipe_status_lock_safe(&st);
-	hgets(st.buf, "INTSTAT", 16, integ_status);
-	hashpipe_status_unlock_safe(&st);
-
-	// Process packets only if we are not in a stop state
-	if (strcmp(integ_status, "stop") != 0) {
-            // Process packet
-    	    packet_count++;
-            process_packet(db, &p);    
-	}
+        // Process packet
+    	packet_count++;
+        process_packet(db, &p);    
 
         /* Will exit if thread has been cancelled */
         pthread_testcancel();

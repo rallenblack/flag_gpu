@@ -77,12 +77,12 @@ static void * run(hashpipe_thread_args_t * args) {
     int int_count; // Number of blocks to integrate per dump
     while (run_threads()) {
         
-        // Wait for input buffer block to be filled
+	// Wait for input buffer block to be filled
         while ((rv=flag_gpu_input_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
             if (rv==HASHPIPE_TIMEOUT) {
                 hashpipe_status_lock_safe(&st);
                 hputs(st.buf, status_key, "waiting for free block");
-                hashpipe_status_unlock_safe(&st);
+                hashpipe_status_unlock_safe(&st);	
             }
             else {
                 hashpipe_error(__FUNCTION__, "error waiting for filled databuf block");
@@ -90,17 +90,18 @@ static void * run(hashpipe_thread_args_t * args) {
                 break;
             }
         }
-       
-        // Retrieve correlator integrator status
-        hashpipe_status_lock_safe(&st);
-        hgets(st.buf, "INTSTAT", 16, integ_status);
-        hashpipe_status_unlock_safe(&st);
 
         // Print out the header information for this block 
         flag_gpu_input_header_t tmp_header;
         memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_gpu_input_header_t));
+	printf("COR: Received block %d, starting mcnt = %lld\n", curblock_in, (long long int)tmp_header.mcnt);
 
-        // If the correlator integrator status is "off,"
+        // Retrieve correlator integrator status
+        hashpipe_status_lock_safe(&st);
+        hgets(st.buf, "INTSTAT", 16, integ_status);
+        hashpipe_status_unlock_safe(&st);
+        
+	// If the correlator integrator status is "off,"
         // Free the input block and continue
         if (strcmp(integ_status, "off") == 0) {
             fprintf(stderr, "COR: Correlator is off...\n");
@@ -143,7 +144,8 @@ static void * run(hashpipe_thread_args_t * args) {
                 // Compute last mcount
                 last_mcnt = start_mcnt + int_count*Nm - 1;
             } else {
-                fprintf(stderr, "COR: We missed the start of the integration!\n");
+                fprintf(stdout, "COR: We missed the start of the integration\n");
+		fprintf(stdout, "COR: expected start_mcnt = %lld, got %lld\n", (long long int)start_mcnt, (long long int)db_in->block[curblock_in].header.mcnt);
                 // we apparently missed the start of the integation... ouch...
             }
         }
@@ -191,6 +193,7 @@ static void * run(hashpipe_thread_args_t * args) {
 
         flag_gpu_input_databuf_set_free(db_in, curblock_in);
         curblock_in = (curblock_in + 1) % db_in->header.n_block;
+	printf("COR: Next block should be %d\n", curblock_in);
         pthread_testcancel();
     }
 

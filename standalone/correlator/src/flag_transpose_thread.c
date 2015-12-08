@@ -41,6 +41,7 @@ static void * run(hashpipe_thread_args_t * args) {
     int curblock_in = 0;
     int curblock_out = 0;
     int mcnt;
+    char integ_status[17];
     while (run_threads()) {
         
         // Wait for input buffer block to be filled
@@ -55,6 +56,12 @@ static void * run(hashpipe_thread_args_t * args) {
                 pthread_exit(NULL);
                 break;
             }
+            hashpipe_status_lock(&st);
+	    hgets(st.buf, "INTSTAT", 16, integ_status);
+	    hashpipe_status_unlock(&st);
+	    if (strcmp(integ_status, "stop") == 0) {
+		curblock_in = 0;
+	    }
         }
 
         // Wait for output buffer block to be freed
@@ -75,6 +82,7 @@ static void * run(hashpipe_thread_args_t * args) {
         flag_input_header_t tmp_header;
         memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_input_header_t));
         mcnt = tmp_header.mcnt_start;
+	printf("TRA: Receiving mcnt = %lld\n", (long long int)mcnt);
 
         // Perform transpose
 
