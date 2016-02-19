@@ -12,6 +12,7 @@
 #include "hashpipe.h"
 #include "flag_databuf.h"
 #include <xgpu.h>
+#include "total_power.h"
 
 // Create thread status buffer
 static hashpipe_status_t * st_p;
@@ -50,18 +51,18 @@ static void * run(hashpipe_thread_args_t * args) {
         }
 
         uint64_t start_mcnt = db_in->block[curblock_in].header.mcnt;
-        Complex * p = (Complex *)db_in->block[curblock_in].data;
+        float * p = (float *)db_in->block[curblock_in].data;
         char filename[128];
-        sprintf(filename, "cor_mcnt_%lld.out", (long long)start_mcnt);
+        sprintf(filename, "power_mcnt_%lld.out", (long long)start_mcnt);
         fprintf(stderr, "Saving to %s\n", filename);
         FILE * filePtr = fopen(filename, "w");
 
         int j;
-        for (j = 0; j < N_COR_MATRIX; j++) {
-            float p_re = p[j].real;
-            float p_im = p[j].imag;
-            fprintf(filePtr, "%g\n", p_re);
-            fprintf(filePtr, "%g\n", p_im);
+        for (j = 0; j < NA; j++) {
+            // float p_re = p[j].real;
+            // float p_im = p[j].imag;
+            fprintf(filePtr, "%g\n", p[j]);
+            // fprintf(filePtr, "%g\n", p_im);
         }
         fclose(filePtr);
 

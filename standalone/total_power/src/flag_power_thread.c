@@ -36,7 +36,11 @@ static void * run(hashpipe_thread_args_t * args) {
     int curblock_in = 0;
     int curblock_out = 0;
     uint64_t start_mcnt = 0;
-    uint64_t last_mcnt = 0;
+    uint64_t last_mcnt = Nm - 1;
+
+    hashpipe_status_lock_safe(&st);
+    hputi4(st.buf, "CORREADY", 1);
+    hashpipe_status_unlock_safe(&st);
     while (run_threads()) {
         
 	// Wait for input buffer block to be filled
@@ -67,7 +71,9 @@ static void * run(hashpipe_thread_args_t * args) {
                 pthread_exit(NULL);
                 break;
             }
-       }
+        }
+
+        printf("TOT: Output block %d free\n", curblock_out);
         
        
         //xgpuCudaXengine(&context, doDump ? SYNCOP_DUMP : SYNCOP_SYNC_TRANSFER);

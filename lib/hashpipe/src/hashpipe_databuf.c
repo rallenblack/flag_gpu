@@ -74,6 +74,7 @@ hashpipe_databuf_t *hashpipe_databuf_create(int instance_id,
         if(d->header_size != header_size
         || d->block_size != block_size
         || d->n_block != n_block) {
+            printf("key = %x\n", key + databuf_id - 1);
             char msg[256];
             sprintf(msg, "existing databuf size mismatch "
                 "(%lu + %lu x %d) != (%lu + %ld x %d)",

@@ -76,6 +76,7 @@
 // Number of entries in output correlation matrix
 // #define N_COR_MATRIX (N_INPUTS*(N_INPUTS + 1)/2*N_CHAN_PER_X)
 #define N_COR_MATRIX (N_INPUTS/2*(N_INPUTS/2 + 1)/2*N_CHAN_PER_X*4)
+#define N_OUT_SAMPS N_INPUT
 
 
 // Macros to maintain cache alignment
