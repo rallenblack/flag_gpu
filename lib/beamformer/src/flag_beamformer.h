@@ -1,7 +1,7 @@
-#ifndef BEAMFORMER_GPU_H
-#define BEAMFORMER_GPU_H
+#ifndef FLAG_BEAMFORMER_H
+#define FLAG_BEAMFORMER_H
 
-// beamformer_gpu.h
+// flag_beamformer.h
 
 #include <cuda.h>
 #include <cuda_runtime.h>

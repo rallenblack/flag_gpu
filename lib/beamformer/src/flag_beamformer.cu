@@ -1,4 +1,4 @@
-#include "beamformer_gpu.h"
+#include "flag_beamformer.h"
 
 /*
 __global__
