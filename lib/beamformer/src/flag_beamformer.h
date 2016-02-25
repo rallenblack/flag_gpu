@@ -3,13 +3,10 @@
 
 // flag_beamformer.h
 
-#include <cuda.h>
-#include <cuda_runtime.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <complex.h>
 #include <math.h>
-#include <cuComplex.h>
 
 #define N_ELE	   38	// Number of elements/antennas in the array
 #define N_BIN	   50	// Number of frequency bins
@@ -55,6 +52,7 @@ void beamform(const cuDoubleComplex * data_in,
 	      float * data_out);
 */
 
+/*
 __global__
 void beamform(const cuFloatComplex * data_in,
               const cuFloatComplex * weights,
@@ -63,8 +61,14 @@ void beamform(const cuFloatComplex * data_in,
 __global__
 void sti_reduction(const cuFloatComplex * beamformed,
 	               float * data_out);
+*/
 
-
-// void run_beamformer(double *data, double *weights, float *out);
+#ifdef __cplusplus
+extern "C" {
+#endif
+void run_beamformer(unsigned char * data, float * weights, float * out);
+#ifdef __cplusplus
+}
+#endif
 
 #endif

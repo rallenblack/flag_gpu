@@ -1,4 +1,4 @@
-#include "beamformer_gpu.h"
+#include "flag_beamformer.h"
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
@@ -7,6 +7,8 @@ void printUsage();
 
 int main(int argc, char * argv[]) {
 	// Parse input
+	// TODO: Modify this to work with updated cuda kernel codes
+	/*
 	if (argc != 4) {
 		printUsage();
 		return -1;
@@ -151,7 +153,7 @@ int main(int argc, char * argv[]) {
 	free(data_dc);
 	free(weights_dc);
 	free(output_f);
-
+	*/
 	return 0;
 }
 
