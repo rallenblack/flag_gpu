@@ -10,20 +10,21 @@
 
 #define N_ELE	   38	// Number of elements/antennas in the array
 #define N_BIN	   50	// Number of frequency bins
-#define N_TIME	   1000	// Number of decimated time samples
+#define N_TIME	   40	// Number of decimated time samples
 #define N_BEAM     7    // Number of beams we are forming
 #define N_TIME_STI 40	// Number of decimated time samples per integrated beamformer output
 #define N_STI	   (N_TIME/N_TIME_STI) // Number of short time integrations
 #define N_STI_BLOC 64
 #define N_ELE_BLOC 64
 #define N_SAMP     (N_ELE*N_BIN*N_TIME) // Number of complex samples to process
+#define N_SAMP2    (N_ELE_BLOC*N_BIN*N_TIME)
 #define N_WEIGHTS  (N_ELE*N_BIN*N_BEAM) // Number of complex beamformer weights
 #define N_OUTPUTS  (N_BEAM*N_STI*N_BIN) // Number of complex samples in output structure
 //
 #define N_TBF     (N_BEAM*N_BIN*N_TIME)
 //
 
-#define input_idx(t,f,e)     (e + f*N_ELE + (t)*N_ELE*N_BIN)
+#define input_idx(t,f,e)     (e + f*N_ELE_BLOC + (t)*N_ELE_BLOC*N_BIN)
 #define weight_idx(b,f,e)    (e + f*N_ELE + b*N_ELE*N_BIN)
 #define sample_idx(t,b,f)    (f + b*N_BIN + (t)*N_BEAM*N_BIN)
 #define output_idx(b,s,f)    (f + s*N_BIN + b*N_BIN*N_STI)
@@ -66,7 +67,9 @@ void sti_reduction(const cuFloatComplex * beamformed,
 #ifdef __cplusplus
 extern "C" {
 #endif
-void run_beamformer(unsigned char * data, float * weights, float * out);
+void run_beamformer(unsigned char * data, float * out);
+void init_beamformer();
+void update_weights(char * filename);
 #ifdef __cplusplus
 }
 #endif

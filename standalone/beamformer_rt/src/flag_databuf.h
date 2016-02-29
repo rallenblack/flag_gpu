@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include "hashpipe_databuf.h"
 #include "config.h"
+#include "flag_beamformer.h"
 
 
 // Total number of antennas (nominally 40)
@@ -77,7 +78,7 @@
 // #define N_COR_MATRIX (N_INPUTS*(N_INPUTS + 1)/2*N_CHAN_PER_X)
 #define N_COR_MATRIX (N_INPUTS/2*(N_INPUTS/2 + 1)/2*N_CHAN_PER_X*4)
 #define N_OUT_SAMPS N_INPUT
-
+#define N_BEAM_SAMPS N_OUTPUTS
 
 // Macros to maintain cache alignment
 #define CACHE_ALIGNMENT (128)
@@ -168,7 +169,7 @@ typedef uint8_t flag_gpu_output_header_cache_alignment[
 typedef struct flag_gpu_output_block {
     flag_gpu_output_header_t header;
     flag_gpu_output_header_cache_alignment padding;
-    float data[2*N_COR_MATRIX];
+    float data[N_BEAM_SAMPS];
 } flag_gpu_output_block_t;
 
 // A typedef for the data buffer structure

@@ -52,22 +52,25 @@ static void * run(hashpipe_thread_args_t * args) {
 
         uint64_t start_mcnt = db_in->block[curblock_in].header.mcnt;
         float * p = (float *)db_in->block[curblock_in].data;
+
+	// Derive output filename
         char filename[128];
         sprintf(filename, "power_mcnt_%lld.out", (long long)start_mcnt);
-        fprintf(stderr, "Saving to %s\n", filename);
-        FILE * filePtr = fopen(filename, "w");
+        fprintf(stderr, "SAV: Saving to %s\n", filename);
 
-        int j;
-        for (j = 0; j < NA; j++) {
-            // float p_re = p[j].real;
-            // float p_im = p[j].imag;
+	// Open file and begin writing
+        FILE * filePtr = fopen(filename, "w");
+	int j;
+        for (j = 0; j < N_OUTPUTS; j++) {
             fprintf(filePtr, "%g\n", p[j]);
-            // fprintf(filePtr, "%g\n", p_im);
         }
         fclose(filePtr);
 
+	// Mark input block as free and wait for next block
         flag_gpu_output_databuf_set_free(db_in, curblock_in);
         curblock_in = (curblock_in + 1) % db_in->header.n_block;
+
+	// Check if program killed
         pthread_testcancel();
     }
 
@@ -77,8 +80,8 @@ static void * run(hashpipe_thread_args_t * args) {
 
 // Thread description
 static hashpipe_thread_desc_t xsave_thread = {
-    name: "flag_powersave_thread",
-    skey: "CORSAVE",
+    name: "flag_beamsave_thread",
+    skey: "BEAMSAVE",
     init: NULL,
     run:  run,
     ibuf_desc: {flag_gpu_output_databuf_create},

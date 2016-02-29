@@ -38,13 +38,22 @@ static void * run(hashpipe_thread_args_t * args) {
     uint64_t start_mcnt = 0;
     uint64_t last_mcnt = Nm - 1;
 
-    // Initialize beamformer weights
-    float * weights = (float *)malloc(2*N_WEIGHTS*sizeof(float));
-    memset(weights, 0, 2*N_WEIGHTS*sizeof(float));
+    // Initialize beamformer
+    printf("RTB: Initializing the beamformer...\n");
+    init_beamformer();
 
+    // Update weights
+    // TODO: allow update of weights during runtime
+    printf("RTB: Initializing beamformer weights...\n");
+    update_weights("./weights.in");
+    
+
+    // Indicate in shared memory buffer that this thread is ready to start
     hashpipe_status_lock_safe(&st);
     hputi4(st.buf, "CORREADY", 1);
     hashpipe_status_unlock_safe(&st);
+
+    // Main loop for thread
     while (run_threads()) {
         
 	// Wait for input buffer block to be filled
@@ -64,8 +73,8 @@ static void * run(hashpipe_thread_args_t * args) {
         // Print out the header information for this block 
         flag_gpu_input_header_t tmp_header;
         memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_gpu_input_header_t));
-	printf("RTB: Received block %d, starting mcnt = %lld\n", curblock_in, (long long int)tmp_header.mcnt);
 
+        // Wait for output block to become free
         while ((rv=flag_gpu_output_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
             if (rv==HASHPIPE_TIMEOUT) {
                 continue;
@@ -76,14 +85,11 @@ static void * run(hashpipe_thread_args_t * args) {
                 break;
             }
         }
-
-        printf("RTB: Output block %d free\n", curblock_out);
-        
        
-        //xgpuCudaXengine(&context, doDump ? SYNCOP_DUMP : SYNCOP_SYNC_TRANSFER);
-        run_beamformer((unsigned char *)&db_in->block[curblock_in].data, (float *)weights, (float *)&db_out->block[curblock_out].data);
-        //getTotalPower((unsigned char *)&db_in->block[curblock_in].data, (float *)&db_out->block[curblock_out].data);
+        // Run the beamformer
+        run_beamformer((unsigned char *)&db_in->block[curblock_in].data, (float *)&db_out->block[curblock_out].data);
         
+	// Get block's starting mcnt for output block
         db_out->block[curblock_out].header.mcnt = start_mcnt;
             
         // Mark output block as full and advance
@@ -106,8 +112,8 @@ static void * run(hashpipe_thread_args_t * args) {
 
 // Thread description
 static hashpipe_thread_desc_t x_thread = {
-    name: "flag_power_thread",
-    skey: "TOTSTAT",
+    name: "flag_beamform_thread",
+    skey: "BEAMSTAT",
     init: NULL,
     run:  run,
     ibuf_desc: {flag_gpu_input_databuf_create},
