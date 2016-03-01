@@ -1,6 +1,6 @@
 # serial 1 hashpipe.m4
 AC_DEFUN([AX_CHECK_HASHPIPE],
-[AC_PREREQ([2.65])dnl
+[AC_PREREQ([2.63])dnl
 AC_ARG_WITH([hashpipe],
             AC_HELP_STRING([--with-hashpipe=DIR],
                            [Location of HASHPIPE files (/usr/local)]),
