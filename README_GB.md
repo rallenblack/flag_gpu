@@ -73,6 +73,7 @@ We need to tell `xGPU` where to place its binaries, but without a `configure` sc
 
 Remember that you need to be on `west` (or, later on, another HPC) for this!
 
-`$HASH_DIR/bin` must be in your PATH prior to running hashpipe. Then:
+`$HASH_DIR/bin` must be in your PATH prior to running hashpipe.
+`$HASH_DIR/lib` must be in your LD_LIBRARY_PATH as well. Then:
 
 	$ hashpipe -p flag_beamformer -o XID=0 -o INSTANCE=0 -o BINDHOST=px1-2.gb.nrao.edu -c 0 flag_net_thread -c 1 flag_transpose_thread -c 2 flag_beamform_thread -c 3 flag_beamsave_thread
