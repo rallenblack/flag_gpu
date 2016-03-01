@@ -1,6 +1,6 @@
 # serial 1 xgpu.m4
 AC_DEFUN([AX_CHECK_XGPU],
-[AC_PREREQ([2.65])dnl
+[AC_PREREQ([2.63])dnl
 AC_ARG_WITH([xgpu],
             AC_HELP_STRING([--with-xgpu=DIR],
                            [Location of xGPU headers/libs (/usr/local)]),
@@ -42,7 +42,7 @@ dnl   XGPU_NTIME      - Number of time samples per freqency channel per xGPU
 dnl                     instance
 dnl
 AC_DEFUN([AX_CHECK_XGPUINFO],
-[AC_PREREQ([2.65])dnl
+[AC_PREREQ([2.63])dnl
 AX_CHECK_XGPU
 AC_CHECK_FILE([${XGPUDIR}/bin/xgpuinfo],
               # Found

@@ -29,15 +29,17 @@ flag_net_thread.lo: flag_net_thread.c /usr/include/stdio.h \
  /usr/include/errno.h /usr/include/bits/errno.h \
  /usr/include/linux/errno.h /usr/include/asm/errno.h \
  /usr/include/asm-generic/errno.h /usr/include/asm-generic/errno-base.h \
- /usr/local/include/xgpu.h /usr/local/include/hashpipe.h \
- /usr/local/include/hashpipe_error.h \
- /usr/local/include/hashpipe_databuf.h /usr/include/sys/ipc.h \
- /usr/include/bits/ipctypes.h /usr/include/bits/ipc.h \
- /usr/include/sys/sem.h /usr/include/bits/sem.h \
- /usr/local/include/hashpipe_status.h /usr/include/semaphore.h \
- /usr/include/bits/semaphore.h /usr/local/include/fitshead.h \
- /usr/local/include/hashpipe_udp.h /usr/include/netdb.h \
- /usr/include/netinet/in.h /usr/include/sys/socket.h \
+ /home/sandboxes/tchamber/flag_gpu_test/hash/include/xgpu.h \
+ /home/sandboxes/tchamber/flag_gpu_test/hash/include/hashpipe.h \
+ /home/sandboxes/tchamber/flag_gpu_test/hash/include/hashpipe_error.h \
+ /home/sandboxes/tchamber/flag_gpu_test/hash/include/hashpipe_databuf.h \
+ /usr/include/sys/ipc.h /usr/include/bits/ipctypes.h \
+ /usr/include/bits/ipc.h /usr/include/sys/sem.h /usr/include/bits/sem.h \
+ /home/sandboxes/tchamber/flag_gpu_test/hash/include/hashpipe_status.h \
+ /usr/include/semaphore.h /usr/include/bits/semaphore.h \
+ /home/sandboxes/tchamber/flag_gpu_test/hash/include/fitshead.h \
+ /home/sandboxes/tchamber/flag_gpu_test/hash/include/hashpipe_udp.h \
+ /usr/include/netdb.h /usr/include/netinet/in.h /usr/include/sys/socket.h \
  /usr/include/sys/uio.h /usr/include/bits/uio.h \
  /usr/include/bits/socket.h /usr/include/bits/sockaddr.h \
  /usr/include/asm/socket.h /usr/include/asm-generic/socket.h \
@@ -45,7 +47,10 @@ flag_net_thread.lo: flag_net_thread.c /usr/include/stdio.h \
  /usr/include/bits/in.h /usr/include/rpc/netdb.h \
  /usr/include/bits/netdb.h /usr/include/poll.h /usr/include/sys/poll.h \
  /usr/include/bits/poll.h flag_databuf.h \
- /usr/local/include/hashpipe_databuf.h config.h
+ /home/sandboxes/tchamber/flag_gpu_test/hash/include/hashpipe_databuf.h \
+ config.h \
+ /home/sandboxes/tchamber/flag_gpu_test/hash/include/flag_beamformer.h \
+ /usr/include/complex.h /usr/include/bits/cmathcalls.h
 
 /usr/include/stdio.h:
 
@@ -175,13 +180,13 @@ flag_net_thread.lo: flag_net_thread.c /usr/include/stdio.h \
 
 /usr/include/asm-generic/errno-base.h:
 
-/usr/local/include/xgpu.h:
+/home/sandboxes/tchamber/flag_gpu_test/hash/include/xgpu.h:
 
-/usr/local/include/hashpipe.h:
+/home/sandboxes/tchamber/flag_gpu_test/hash/include/hashpipe.h:
 
-/usr/local/include/hashpipe_error.h:
+/home/sandboxes/tchamber/flag_gpu_test/hash/include/hashpipe_error.h:
 
-/usr/local/include/hashpipe_databuf.h:
+/home/sandboxes/tchamber/flag_gpu_test/hash/include/hashpipe_databuf.h:
 
 /usr/include/sys/ipc.h:
 
@@ -193,15 +198,15 @@ flag_net_thread.lo: flag_net_thread.c /usr/include/stdio.h \
 
 /usr/include/bits/sem.h:
 
-/usr/local/include/hashpipe_status.h:
+/home/sandboxes/tchamber/flag_gpu_test/hash/include/hashpipe_status.h:
 
 /usr/include/semaphore.h:
 
 /usr/include/bits/semaphore.h:
 
-/usr/local/include/fitshead.h:
+/home/sandboxes/tchamber/flag_gpu_test/hash/include/fitshead.h:
 
-/usr/local/include/hashpipe_udp.h:
+/home/sandboxes/tchamber/flag_gpu_test/hash/include/hashpipe_udp.h:
 
 /usr/include/netdb.h:
 
@@ -239,6 +244,12 @@ flag_net_thread.lo: flag_net_thread.c /usr/include/stdio.h \
 
 flag_databuf.h:
 
-/usr/local/include/hashpipe_databuf.h:
+/home/sandboxes/tchamber/flag_gpu_test/hash/include/hashpipe_databuf.h:
 
 config.h:
+
+/home/sandboxes/tchamber/flag_gpu_test/hash/include/flag_beamformer.h:
+
+/usr/include/complex.h:
+
+/usr/include/bits/cmathcalls.h:

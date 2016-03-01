@@ -1,14 +1,14 @@
 #serial 1 flagbeamform.m4
 AC_DEFUN([AX_CHECK_FLAGBEAMFORM],
-[AC_PREREQ([2.65])dnl
-AC_ARG_WITH([flagpower],
+[AC_PREREQ([2.63])dnl
+AC_ARG_WITH([flagbeamformer],
             AC_HELP_STRING([--with-flagbeamformer=DIR],
                            [Location of flagbeamformer headers/libs (/usr/local)]),
             [FLAGBEAMDIR="$withval"],
             [FLAGBEAMDIR=/usr/local])
 
 orig_LDFLAGS="${LDFLAGS}"
-LDFLAGS="${orig_LDFLAGS} -L${FLAGBBEAMDIR}/lib"
+LDFLAGS="${orig_LDFLAGS} -L${FLAGBEAMDIR}/lib"
 AC_SEARCH_LIBS([run_beamformer], [flagbeamformer],
 dnl              # Found
              AC_SUBST(FLAGBEAM_LIBDIR,${FLAGBEAMDIR}/lib),

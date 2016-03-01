@@ -12,7 +12,7 @@
 #include "hashpipe.h"
 #include "flag_databuf.h"
 #include <xgpu.h>
-#include "total_power.h"
+// #include "total_power.h"
 
 // Create thread status buffer
 static hashpipe_status_t * st_p;

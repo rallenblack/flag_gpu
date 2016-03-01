@@ -76,18 +76,19 @@ am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
 am__installdirs = "$(DESTDIR)$(libdir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
-flag_power_la_DEPENDENCIES =
+flag_beamformer_la_DEPENDENCIES =
 am__objects_1 = flag_databuf.lo
 am__objects_2 = flag_net_thread.lo flag_transpose_thread.lo \
 	flag_beamform_thread.lo flag_beamsave_thread.lo
-am_flag_power_la_OBJECTS = $(am__objects_1) $(am__objects_2)
-flag_power_la_OBJECTS = $(am_flag_power_la_OBJECTS)
+am_flag_beamformer_la_OBJECTS = $(am__objects_1) $(am__objects_2)
+flag_beamformer_la_OBJECTS = $(am_flag_beamformer_la_OBJECTS)
 AM_V_lt = $(am__v_lt_$(V))
 am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
 am__v_lt_0 = --silent
-flag_power_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(flag_power_la_LDFLAGS) $(LDFLAGS) -o $@
+flag_beamformer_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(flag_beamformer_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -114,8 +115,8 @@ am__v_CCLD_0 = @echo "  CCLD  " $@;
 AM_V_GEN = $(am__v_GEN_$(V))
 am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
 am__v_GEN_0 = @echo "  GEN   " $@;
-SOURCES = $(flag_power_la_SOURCES)
-DIST_SOURCES = $(flag_power_la_SOURCES)
+SOURCES = $(flag_beamformer_la_SOURCES)
+DIST_SOURCES = $(flag_beamformer_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -129,13 +130,13 @@ DIST_ARCHIVES = $(distdir).tar.gz
 GZIP_ENV = --best
 distuninstallcheck_listfiles = find . -type f -print
 distcleancheck_listfiles = find . -type f -print
-ACLOCAL = ${SHELL} /home/rablack/FLAG/flag_gpu/standalone/beamformer_rt/src/missing --run aclocal-1.11
-AMTAR = ${SHELL} /home/rablack/FLAG/flag_gpu/standalone/beamformer_rt/src/missing --run tar
+ACLOCAL = ${SHELL} /home/sandboxes/tchamber/flag_gpu_test/repos/flag_gpu/standalone/beamformer_rt/src/missing --run aclocal-1.11
+AMTAR = ${SHELL} /home/sandboxes/tchamber/flag_gpu_test/repos/flag_gpu/standalone/beamformer_rt/src/missing --run tar
 AM_DEFAULT_VERBOSITY = 0
 AR = ar
-AUTOCONF = ${SHELL} /home/rablack/FLAG/flag_gpu/standalone/beamformer_rt/src/missing --run autoconf
-AUTOHEADER = ${SHELL} /home/rablack/FLAG/flag_gpu/standalone/beamformer_rt/src/missing --run autoheader
-AUTOMAKE = ${SHELL} /home/rablack/FLAG/flag_gpu/standalone/beamformer_rt/src/missing --run automake-1.11
+AUTOCONF = ${SHELL} /home/sandboxes/tchamber/flag_gpu_test/repos/flag_gpu/standalone/beamformer_rt/src/missing --run autoconf
+AUTOHEADER = ${SHELL} /home/sandboxes/tchamber/flag_gpu_test/repos/flag_gpu/standalone/beamformer_rt/src/missing --run autoheader
+AUTOMAKE = ${SHELL} /home/sandboxes/tchamber/flag_gpu_test/repos/flag_gpu/standalone/beamformer_rt/src/missing --run automake-1.11
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
@@ -154,11 +155,11 @@ EGREP = /bin/grep -E
 EXEEXT = 
 FGREP = /bin/grep -F
 FLAGBEAM_INCDIR = 
-FLAGBEAM_LIBDIR = /usr/local/lib
-FLAGPOW_INCDIR = /usr/local/include
+FLAGBEAM_LIBDIR = /home/sandboxes/tchamber/flag_gpu_test/hash/lib
+FLAGPOW_INCDIR = /home/sandboxes/tchamber/flag_gpu_test/hash/include
 GREP = /bin/grep
-HASHPIPE_INCDIR = /usr/local/include
-HASHPIPE_LIBDIR = /usr/local/lib
+HASHPIPE_INCDIR = /home/sandboxes/tchamber/flag_gpu_test/hash/include
+HASHPIPE_LIBDIR = /home/sandboxes/tchamber/flag_gpu_test/hash/lib
 INSTALL = /usr/bin/install -c
 INSTALL_DATA = ${INSTALL} -m 644
 INSTALL_PROGRAM = ${INSTALL}
@@ -167,12 +168,12 @@ INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
 LD = /usr/bin/ld -m elf_x86_64
 LDFLAGS = 
 LIBOBJS =  ${LIBOBJDIR}malloc$U.o
-LIBS = -lrt -lpthread -lflagbeamformer 
+LIBS = -lflagbeamformer 
 LIBTOOL = $(SHELL) $(top_builddir)/libtool
 LIPO = 
 LN_S = ln -s
 LTLIBOBJS =  ${LIBOBJDIR}malloc$U.lo
-MAKEINFO = ${SHELL} /home/rablack/FLAG/flag_gpu/standalone/beamformer_rt/src/missing --run makeinfo
+MAKEINFO = ${SHELL} /home/sandboxes/tchamber/flag_gpu_test/repos/flag_gpu/standalone/beamformer_rt/src/missing --run makeinfo
 MKDIR_P = /bin/mkdir -p
 NM = /usr/bin/nm -B
 NMEDIT = 
@@ -185,7 +186,6 @@ PACKAGE_BUGREPORT = BUG-REPORT-ADDRESS
 PACKAGE_NAME = FULL-PACKAGE-NAME
 PACKAGE_STRING = FULL-PACKAGE-NAME VERSION
 PACKAGE_TARNAME = full-package-name
-PACKAGE_URL = 
 PACKAGE_VERSION = VERSION
 PATH_SEPARATOR = :
 RANLIB = ranlib
@@ -194,13 +194,13 @@ SET_MAKE =
 SHELL = /bin/sh
 STRIP = strip
 VERSION = VERSION
-XGPU_BINDIR = /usr/local/bin
-XGPU_INCDIR = /usr/local/include
-XGPU_LIBDIR = /usr/local/lib
-abs_builddir = /home/rablack/FLAG/flag_gpu/standalone/beamformer_rt/src
-abs_srcdir = /home/rablack/FLAG/flag_gpu/standalone/beamformer_rt/src
-abs_top_builddir = /home/rablack/FLAG/flag_gpu/standalone/beamformer_rt/src
-abs_top_srcdir = /home/rablack/FLAG/flag_gpu/standalone/beamformer_rt/src
+XGPU_BINDIR = /home/sandboxes/tchamber/flag_gpu_test/hash/bin
+XGPU_INCDIR = /home/sandboxes/tchamber/flag_gpu_test/hash/include
+XGPU_LIBDIR = /home/sandboxes/tchamber/flag_gpu_test/hash/lib
+abs_builddir = /home/sandboxes/tchamber/flag_gpu_test/repos/flag_gpu/standalone/beamformer_rt/src
+abs_srcdir = /home/sandboxes/tchamber/flag_gpu_test/repos/flag_gpu/standalone/beamformer_rt/src
+abs_top_builddir = /home/sandboxes/tchamber/flag_gpu_test/repos/flag_gpu/standalone/beamformer_rt/src
+abs_top_srcdir = /home/sandboxes/tchamber/flag_gpu_test/repos/flag_gpu/standalone/beamformer_rt/src
 ac_ct_CC = gcc
 ac_ct_DUMPBIN = 
 am__include = include
@@ -228,7 +228,7 @@ host_vendor = unknown
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /home/rablack/FLAG/flag_gpu/standalone/beamformer_rt/src/install-sh
+install_sh = ${SHELL} /home/sandboxes/tchamber/flag_gpu_test/repos/flag_gpu/standalone/beamformer_rt/src/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -238,7 +238,7 @@ mandir = ${datarootdir}/man
 mkdir_p = /bin/mkdir -p
 oldincludedir = /usr/include
 pdfdir = ${docdir}
-prefix = /usr/local
+prefix = /home/sandboxes/tchamber/flag_gpu_test/hash
 program_transform_name = s,x,x,
 psdir = ${docdir}
 sbindir = ${exec_prefix}/sbin
@@ -250,7 +250,7 @@ top_build_prefix =
 top_builddir = .
 top_srcdir = .
 ACLOCAL_AMFLAGS = -I m4
-AM_CPPFLAGS = -I"/usr/local/include" -I"/usr/local/include" \
+AM_CPPFLAGS = -I"/home/sandboxes/tchamber/flag_gpu_test/hash/include" -I"/home/sandboxes/tchamber/flag_gpu_test/hash/include" \
 	-I""
 
 # AM_CFLAGS is used for all C compiles
@@ -281,13 +281,14 @@ flag_threads = flag_net_thread.c \
 
 
 # This is the flag_gpu plugin itself
-lib_LTLIBRARIES = flag_power.la
-flag_power_la_SOURCES = $(flag_databuf) $(flag_threads)
-flag_power_la_LIBADD = -lrt -lxgpu -lflagbeamformer
-flag_power_la_LDFLAGS = -avoid-version -module -shared -export-dynamic \
-	--enable-shared -L"/usr/local/lib" -Wl,-rpath,"/usr/local/lib" \
-	-L"/usr/local/lib" -Wl,-rpath,"/usr/local/lib" \
-	-L"/usr/local/lib" -Wl, -rpath, "/usr/local/lib"
+lib_LTLIBRARIES = flag_beamformer.la
+flag_beamformer_la_SOURCES = $(flag_databuf) $(flag_threads)
+flag_beamformer_la_LIBADD = -lrt -lxgpu -lflagbeamformer
+flag_beamformer_la_LDFLAGS = -avoid-version -module -shared \
+	-export-dynamic --enable-shared -L"/home/sandboxes/tchamber/flag_gpu_test/hash/lib" \
+	-Wl,-rpath,"/home/sandboxes/tchamber/flag_gpu_test/hash/lib" -L"/home/sandboxes/tchamber/flag_gpu_test/hash/lib" \
+	-Wl,-rpath,"/home/sandboxes/tchamber/flag_gpu_test/hash/lib" -L"/home/sandboxes/tchamber/flag_gpu_test/hash/lib" -Wl, \
+	-rpath, "/home/sandboxes/tchamber/flag_gpu_test/hash/lib"
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -375,8 +376,8 @@ clean-libLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-flag_power.la: $(flag_power_la_OBJECTS) $(flag_power_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(flag_power_la_LINK) -rpath $(libdir) $(flag_power_la_OBJECTS) $(flag_power_la_LIBADD) $(LIBS)
+flag_beamformer.la: $(flag_beamformer_la_OBJECTS) $(flag_beamformer_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(flag_beamformer_la_LINK) -rpath $(libdir) $(flag_beamformer_la_OBJECTS) $(flag_beamformer_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)

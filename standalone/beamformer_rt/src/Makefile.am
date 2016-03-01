@@ -33,13 +33,13 @@ flag_threads = flag_net_thread.c \
                flag_beamsave_thread.c
 
 # This is the flag_gpu plugin itself
-lib_LTLIBRARIES = flag_power.la
-flag_power_la_SOURCES  = $(flag_databuf) $(flag_threads)
-flag_power_la_LIBADD   = -lrt -lxgpu -lflagbeamformer
-flag_power_la_LDFLAGS  = -avoid-version -module -shared -export-dynamic --enable-shared
-flag_power_la_LDFLAGS += -L"@XGPU_LIBDIR@" -Wl,-rpath,"@XGPU_LIBDIR@"
-flag_power_la_LDFLAGS += -L"@HASHPIPE_LIBDIR@" -Wl,-rpath,"@HASHPIPE_LIBDIR@"
-flag_power_la_LDFLAGS += -L"@FLAGBEAM_LIBDIR@" -Wl, -rpath, "@FLAGBEAM_LIBDIR@"
+lib_LTLIBRARIES = flag_beamformer.la
+flag_beamformer_la_SOURCES  = $(flag_databuf) $(flag_threads)
+flag_beamformer_la_LIBADD   = -lrt -lxgpu -lflagbeamformer
+flag_beamformer_la_LDFLAGS  = -avoid-version -module -shared -export-dynamic --enable-shared
+flag_beamformer_la_LDFLAGS += -L"@XGPU_LIBDIR@" -Wl,-rpath,"@XGPU_LIBDIR@"
+flag_beamformer_la_LDFLAGS += -L"@HASHPIPE_LIBDIR@" -Wl,-rpath,"@HASHPIPE_LIBDIR@"
+flag_beamformer_la_LDFLAGS += -L"@FLAGBEAM_LIBDIR@" -Wl, -rpath, "@FLAGBEAM_LIBDIR@"
 
 # Installed scripts
 # dist_bin_SCRIPTS = paper_init.sh \

@@ -76,18 +76,19 @@ am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
 am__installdirs = "$(DESTDIR)$(libdir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
-flag_power_la_DEPENDENCIES =
+flag_beamformer_la_DEPENDENCIES =
 am__objects_1 = flag_databuf.lo
 am__objects_2 = flag_net_thread.lo flag_transpose_thread.lo \
 	flag_beamform_thread.lo flag_beamsave_thread.lo
-am_flag_power_la_OBJECTS = $(am__objects_1) $(am__objects_2)
-flag_power_la_OBJECTS = $(am_flag_power_la_OBJECTS)
+am_flag_beamformer_la_OBJECTS = $(am__objects_1) $(am__objects_2)
+flag_beamformer_la_OBJECTS = $(am_flag_beamformer_la_OBJECTS)
 AM_V_lt = $(am__v_lt_$(V))
 am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
 am__v_lt_0 = --silent
-flag_power_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(flag_power_la_LDFLAGS) $(LDFLAGS) -o $@
+flag_beamformer_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(flag_beamformer_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -114,8 +115,8 @@ am__v_CCLD_0 = @echo "  CCLD  " $@;
 AM_V_GEN = $(am__v_GEN_$(V))
 am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
 am__v_GEN_0 = @echo "  GEN   " $@;
-SOURCES = $(flag_power_la_SOURCES)
-DIST_SOURCES = $(flag_power_la_SOURCES)
+SOURCES = $(flag_beamformer_la_SOURCES)
+DIST_SOURCES = $(flag_beamformer_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -185,7 +186,6 @@ PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
 PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
-PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 RANLIB = @RANLIB@
@@ -281,13 +281,14 @@ flag_threads = flag_net_thread.c \
 
 
 # This is the flag_gpu plugin itself
-lib_LTLIBRARIES = flag_power.la
-flag_power_la_SOURCES = $(flag_databuf) $(flag_threads)
-flag_power_la_LIBADD = -lrt -lxgpu -lflagbeamformer
-flag_power_la_LDFLAGS = -avoid-version -module -shared -export-dynamic \
-	--enable-shared -L"@XGPU_LIBDIR@" -Wl,-rpath,"@XGPU_LIBDIR@" \
-	-L"@HASHPIPE_LIBDIR@" -Wl,-rpath,"@HASHPIPE_LIBDIR@" \
-	-L"@FLAGBEAM_LIBDIR@" -Wl, -rpath, "@FLAGBEAM_LIBDIR@"
+lib_LTLIBRARIES = flag_beamformer.la
+flag_beamformer_la_SOURCES = $(flag_databuf) $(flag_threads)
+flag_beamformer_la_LIBADD = -lrt -lxgpu -lflagbeamformer
+flag_beamformer_la_LDFLAGS = -avoid-version -module -shared \
+	-export-dynamic --enable-shared -L"@XGPU_LIBDIR@" \
+	-Wl,-rpath,"@XGPU_LIBDIR@" -L"@HASHPIPE_LIBDIR@" \
+	-Wl,-rpath,"@HASHPIPE_LIBDIR@" -L"@FLAGBEAM_LIBDIR@" -Wl, \
+	-rpath, "@FLAGBEAM_LIBDIR@"
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -375,8 +376,8 @@ clean-libLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-flag_power.la: $(flag_power_la_OBJECTS) $(flag_power_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(flag_power_la_LINK) -rpath $(libdir) $(flag_power_la_OBJECTS) $(flag_power_la_LIBADD) $(LIBS)
+flag_beamformer.la: $(flag_beamformer_la_OBJECTS) $(flag_beamformer_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(flag_beamformer_la_LINK) -rpath $(libdir) $(flag_beamformer_la_OBJECTS) $(flag_beamformer_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
