@@ -1,0 +1,13 @@
+*.o
+*.d
+*.a
+*.la
+*.lo
+*.local
+*.dll
+*.so
+lib/xGPU/src/xgpuinfo
+lib/beamformer/src/test_beamformer
+autom4te.cache
+.libs/
+*.log
