@@ -16,8 +16,11 @@ In order to mirror the directory structure we have here in Green Bank, I will be
 
 For example, my `FLAG_DIR` is `/home/sandboxes/tchamber/flag_gpu_test`
 
-Now let's set two more variable to make things easier later on:
+So, let's set up the directory structure:
+	$ cd $FLAG_DIR
+	$ mkdir hash repos
 
+Now let's set two more variable to make things easier later on:
 	$ export HASH_DIR=$FLAG_DIR/hash
 	$ export FLAG_GPU=$FLAG_DIR/repos/flag_gpu
 
@@ -34,25 +37,27 @@ Hashpipe needs to know where it should be installed
 ### xGPU
 To build xGPU you will need to tell it where `xGPU` is installed. You can do this by creating a local `Makefile` that will do this for you:
 
-	$ cd $FLAG_DIR/lib/xGPU/src
+	$ cd $FLAG_GPU/lib/xGPU/src
 	$ echo "CUDA_DIR ?= /opt/local/cuda" > Makefile.local
-
+	$ make
 We need to tell `xGPU` where to place its binaries, but without a `configure` script we will need to do this via a `make install` flag:
-
 	$ make install prefix=$HASH_DIR
 
 ### Beamformer Shared Libarary
-	$ cd $FLAG_DIR/lib/beamformer/src
+	$ cd $FLAG_GPU/lib/beamformer/src
 	$ echo "CUDA_DIR ?= /opt/local/cuda" > Makefile.local
+	$ make
 	$ make install prefix=$HASH_DIR
 
 ### Beamformer Hashpipe Plugin
+	$ cd $FLAG_GPU/standalone/beamformer_rt/src
+	$ autoreconf -is
 	$ ./configure --prefix=$HASH_DIR --with-hashpipe=$HASH_DIR --with-xgpu=$HASH_DIR --with-flagbeamformer=$HASH_DIR
+	$ make
+	$ make install
 
 ## Execution
-First, we need to get onto `west`:
-
-	$ ssh west
+Remember that you need to be on `west` (or, later on, another HPC) for this!
 
 `$HASH_DIR/bin` must be in your PATH prior to running hashpipe. Then:
 

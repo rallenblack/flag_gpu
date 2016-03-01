@@ -17,13 +17,13 @@ all: libflagbeamformer.so test_beamformer.o
 	gcc -L $(CUDA_LIBDIR) -lstdc++ -lcudart -o test_beamformer libflagbeamformer.so test_beamformer.o
 
 flag_beamformer.o: flag_beamformer.cu flag_beamformer.h
-	NVCC -c -o flag_beamformer.o -Xcompiler -fPIC -Xcompiler -D_REENTRANT -O3 flag_beamformer.cu
+	$(NVCC) -c -o flag_beamformer.o -Xcompiler -fPIC -Xcompiler -D_REENTRANT -O3 flag_beamformer.cu
 
 libflagbeamformer.so: flag_beamformer.o
-	NVCC -Xcompiler -fPIC -Xcompiler -D_REENTRANT -O3 flag_beamformer.o -o libflagbeamformer.so -L$(CUDA_LIBDIR) --shared
+	$(NVCC) -Xcompiler -fPIC -Xcompiler -D_REENTRANT -O3 flag_beamformer.o -o libflagbeamformer.so -L$(CUDA_LIBDIR) --shared
 
 test_beamformer.o: test_beamformer.cu flag_beamformer.h
-	NVCC -I $(CUDA_DIR)/include -c -o test_beamformer.o test_beamformer.cu
+	$(NVCC) -I $(CUDA_DIR)/include -c -o test_beamformer.o test_beamformer.cu
 
 clean:
 	rm -f *.o
