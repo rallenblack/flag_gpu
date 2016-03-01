@@ -3,12 +3,26 @@
 ## Installation
 ### Environment
 
-`FLAG_GPU`: the root of your FLAG_GPU installation. For example: `/home/sandboxes/tchamber/flag_gpu_test`
+In order to mirror the directory structure we have here in Green Bank, I will be assuming the following directory structure:
 
-`HASH_DIR`: the root of your hashpipe installation. For example: `$FLAG_GPU/hash`
+	$FLAG_DIR
+	|-- hash
+	|   |-- bin
+	|   |-- include
+	|   |-- lib
+	|   `-- share
+	`-- repos
+		`-- flag_gpu
+
+For example, my `FLAG_DIR` is `/home/sandboxes/tchamber/flag_gpu_test`
+
+Now let's set two more variable to make things easier later on:
+
+	$ export HASH_DIR=$FLAG_DIR/hash
+	$ export FLAG_GPU=$FLAG_DIR/repos/flag_gpu
 
 ### Hashpipe
-	cd lib/hashpipe/src
+	cd $FLAG_GPU/lib/hashpipe/src
 	$ autoreconf -is
 
 Hashpipe needs to know where it should be installed
@@ -20,7 +34,7 @@ Hashpipe needs to know where it should be installed
 ### xGPU
 To build xGPU you will need to tell it where `xGPU` is installed. You can do this by creating a local `Makefile` that will do this for you:
 
-	$ cd $FLAG_GPU/lib/xGPU/src
+	$ cd $FLAG_DIR/lib/xGPU/src
 	$ echo "CUDA_DIR ?= /opt/local/cuda" > Makefile.local
 
 We need to tell `xGPU` where to place its binaries, but without a `configure` script we will need to do this via a `make install` flag:
@@ -28,7 +42,7 @@ We need to tell `xGPU` where to place its binaries, but without a `configure` sc
 	$ make install prefix=$HASH_DIR
 
 ### Beamformer Shared Libarary
-	$ cd $FLAG_GPU/lib/beamformer/src
+	$ cd $FLAG_DIR/lib/beamformer/src
 	$ echo "CUDA_DIR ?= /opt/local/cuda" > Makefile.local
 	$ make install prefix=$HASH_DIR
 
