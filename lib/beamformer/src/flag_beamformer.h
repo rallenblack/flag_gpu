@@ -11,7 +11,7 @@
 #define N_ELE	   38	// Number of elements/antennas in the array
 #define N_BIN	   50	// Number of frequency bins
 #define N_TIME	   40	// Number of decimated time samples
-#define N_BEAM     7    // Number of beams we are forming
+#define N_BEAM     14   // Number of beams we are forming
 #define N_TIME_STI 40	// Number of decimated time samples per integrated beamformer output
 #define N_STI	   (N_TIME/N_TIME_STI) // Number of short time integrations
 #define N_STI_BLOC 64
