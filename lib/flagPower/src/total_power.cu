@@ -93,6 +93,7 @@ void getTotalPower(unsigned char * input, float * output) {
     float * d_output1;
     float * d_output2;
 
+    printf("8*NF*NC*NT*NM*sizeof(unsigned char)*2 = %d\n", 8*NF*NC*NT*NM*sizeof(unsigned char)*2);
     cudaMalloc((void **) &d_input, 8*NF*NC*NT*NM*sizeof(unsigned char)*2);
     cudaMalloc((void **) &d_output1, 8*NF*NC*sizeof(float));
     cudaMalloc((void **) &d_output2, 8*NF*sizeof(float));

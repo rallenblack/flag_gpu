@@ -6,7 +6,7 @@ AC_INIT([FULL-PACKAGE-NAME], [VERSION], [BUG-REPORT-ADDRESS])
 AM_INIT_AUTOMAKE([foreign])
 LT_INIT
 AM_SILENT_RULES([yes])
-AC_CONFIG_SRCDIR([hashpipe_status.h])
+#AC_CONFIG_SRCDIR([paper_databuf.h])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -20,23 +20,32 @@ AS_VAR_SET_IF(CFLAGS,[],[CFLAGS=])
 # Checks for programs.
 AC_PROG_CC
 
+# Check for HASHPIPE and xGPU and total_power
+AX_CHECK_HASHPIPE
+AX_CHECK_XGPUINFO
+AX_CHECK_FLAGBEAMFORM
+
 # Checks for libraries.
-AC_CHECK_LIB([dl], [dlopen])
-AC_CHECK_LIB([m], [floor])
 AC_CHECK_LIB([pthread], [pthread_create])
+AC_CHECK_LIB([rt], [clock_gettime])
+AC_CHECK_LIB([z], [crc32])
 
 # Checks for header files.
-AC_CHECK_HEADERS([arpa/inet.h fcntl.h limits.h netdb.h netinet/in.h stdint.h stdlib.h string.h sys/socket.h sys/time.h unistd.h])
+AC_CHECK_HEADERS([netdb.h stdint.h stdlib.h string.h sys/socket.h sys/time.h unistd.h zlib.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
-AC_TYPE_MODE_T
+AC_TYPE_INT32_T
+AC_TYPE_INT64_T
+AC_TYPE_OFF_T
 AC_TYPE_SIZE_T
+AC_TYPE_UINT32_T
 AC_TYPE_UINT64_T
+AC_TYPE_UINT8_T
 
 # Checks for library functions.
 AC_FUNC_MALLOC
-AC_CHECK_FUNCS([floor gettimeofday memset socket strchr strerror strrchr strtol strtoul strtoull])
+AC_CHECK_FUNCS([clock_gettime memset socket crc32])
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

@@ -86,9 +86,6 @@
 /* Define to the one symbol short name of this package. */
 #undef PACKAGE_TARNAME
 
-/* Define to the home page for this package. */
-#undef PACKAGE_URL
-
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
 
@@ -97,6 +94,15 @@
 
 /* Version number of package */
 #undef VERSION
+
+/* Number of frequency channels per xGPU instance */
+#undef XGPU_NFREQUENCY
+
+/* Number of stations == Ninputs/2 */
+#undef XGPU_NSTATION
+
+/* Number of time samples (i.e. spectra) per xGPU integration */
+#undef XGPU_NTIME
 
 /* Define for Solaris 2.5.1 so the uint32_t typedef from <sys/synch.h>,
    <pthread.h>, or <semaphore.h> is not used. If the typedef were allowed, the

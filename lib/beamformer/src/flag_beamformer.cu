@@ -1,4 +1,5 @@
 #include "flag_beamformer.h"
+#include <cuComplex.h>
 
 /*
 __global__
@@ -70,7 +71,7 @@ void beamform(const cuDoubleComplex * data_in,
 
 
 __global__
-void beamform(const cuFloatComplex * data_in,
+void beamform(const unsigned char * data_in,
 		const cuFloatComplex * weights,
 		cuFloatComplex * beamformed) {
 
@@ -102,8 +103,8 @@ void beamform(const cuFloatComplex * data_in,
 	//New code///////////////////////////////////////////////
 
 	if(e<N_ELE) {
-		reduced_mul[e].x = data_in[i].x * weights[w].x + data_in[i].y * weights[w].y;
-		reduced_mul[e].y = data_in[i].y * weights[w].x - data_in[i].x * weights[w].y;
+		reduced_mul[e].x = data_in[2*i]   * weights[w].x + data_in[2*i+1] * weights[w].y;
+		reduced_mul[e].y = data_in[2*i+1] * weights[w].x - data_in[2*i]   * weights[w].y;
 	}
 	else {
 		reduced_mul[e].x = 0;
@@ -111,10 +112,9 @@ void beamform(const cuFloatComplex * data_in,
 	}
 	__syncthreads();
 
-	atomicAdd(&(beamformed[sample_idx(t,b,f)].x),reduced_mul[e].x);
-	atomicAdd(&(beamformed[sample_idx(t,b,f)].y),reduced_mul[e].y);
+	//atomicAdd(&(beamformed[sample_idx(t,b,f)].x),reduced_mul[e].x);
+	//atomicAdd(&(beamformed[sample_idx(t,b,f)].y),reduced_mul[e].y);
 
-/*
 	for(int k = blockDim.x/2; k>0; k>>=1){
 		if(e<k){
 			//reduced_mul[e] = cuCaddf(reduced_mul[e], reduced_mul[e+k]);
@@ -127,7 +127,7 @@ void beamform(const cuFloatComplex * data_in,
 		beamformed[sample_idx(t,b,f)] = reduced_mul[0];
 	}
 
-*/
+
 	/////////////////////////////////////////////////////////
 }
 
@@ -179,37 +179,87 @@ void sti_reduction(const cuFloatComplex * beamformed,
 	/////////////////////////////////////////////////////////
 }
 
+static float * weights = NULL;
+void init_beamformer() {
+	weights = (float *)calloc(2*N_WEIGHTS, sizeof(float));
+}
 
-extern "C"
-void run_beamformer(double *data, double *weights, float *out){
-	// Specify grid and block dimensions
-	dim3 dimBlock(N_BIN, 1, 1);
-	dim3 dimGrid(N_TIME, N_BEAM, 1);
+void update_weights(char * filename) {
+	char weight_filename[128];
+	strcpy(weight_filename, filename);
+	FILE * weights_file;
+	weights_file = fopen(weight_filename, "r");
+	fread(weights, sizeof(float), 2*N_WEIGHTS, weights_file);
+	fclose(weights_file);
+}
 
-	cuDoubleComplex * d_data;
-	cuDoubleComplex * d_weights;
+void run_beamformer(unsigned char * data, float * out) {
+	// Specify grid and block dimensions for both kernels
+	dim3 dimBlock(N_STI_BLOC, 1, 1);
+	dim3 dimGrid(N_BIN, N_BEAM, N_STI);
+
+	dim3 dimBlock2(N_ELE_BLOC, 1, 1);
+	dim3 dimGrid2(N_TIME, N_BIN, N_BEAM);
+	
+	// Device data pointers
+	unsigned char * d_data;
+	cuFloatComplex * d_weights;
+	cuFloatComplex * d_beamformed;
 	float * d_outputs;
 
-	cudaMalloc((void **)&d_data, N_SAMP*sizeof(cuDoubleComplex));
-	cudaMalloc((void **)&d_weights, N_WEIGHTS*sizeof(cuDoubleComplex));
+	// Allocate memory on device
+	cudaMalloc((void **)&d_data, 2*N_SAMP2*sizeof(unsigned char));
+	cudaMalloc((void **)&d_weights, N_WEIGHTS*sizeof(cuFloatComplex));
+	cudaMalloc((void **)&d_beamformed, N_TBF*sizeof(cuFloatComplex));
 	cudaMalloc((void **)&d_outputs, N_OUTPUTS*sizeof(float));
-	cudaMemset(d_outputs, 0.0, N_OUTPUTS*sizeof(float));
 
-	cudaMemcpyAsync(d_data, data, N_SAMP*sizeof(cuDoubleComplex), cudaMemcpyHostToDevice);
-	cudaMemcpy(d_weights, weights, N_WEIGHTS*sizeof(cuDoubleComplex), cudaMemcpyHostToDevice);
+	// Optional sanity check
+	// int e = 0;
+	// int f = 0;
+	// int t = 0;
+	// for (t = 0; t < 40; t++) {
+	//	printf("data[t,f,e = %d,%d,%d] = %d + j%d\n", t, f, e, data[2*input_idx(t,f,e)], data[2*input_idx(t,f,e)+1]);
+	// }
 
-	// Run the beamformer
-	//beamform<<<dimGrid, dimBlock>>>(d_data, d_weights, d_outputs);
-	cudaError_t err_code = cudaGetLastError();
+	// Copy data to device
+	cudaError_t err_code;
+	err_code = cudaMemcpy(d_data, data, 2*N_SAMP2*sizeof(unsigned char), cudaMemcpyHostToDevice);
 	if (err_code != cudaSuccess) {
-		printf("CUDA Error: %s\n", cudaGetErrorString(err_code));
+		printf("CUDA ERROR (cudaMemcpy1): %s\n", cudaGetErrorString(err_code));
 	}
 
+	// Copy weights to device
+	err_code = cudaMemcpy(d_weights, weights, N_WEIGHTS*sizeof(cuFloatComplex), cudaMemcpyHostToDevice);
+	if (err_code != cudaSuccess) {
+		printf("CUDA ERROR (cudaMemcpy2): %s\n", cudaGetErrorString(err_code));
+	}
+
+	// Run the beamformer kernel
+	beamform<<<dimGrid2, dimBlock2>>>(d_data, d_weights, d_beamformed);
+
+	// Error checking
+	err_code = cudaGetLastError();
+	if (err_code != cudaSuccess) {
+		printf("CUDA Error (beamform): %s\n", cudaGetErrorString(err_code));
+	}
+
+	// Run the accumulation kernel
+	sti_reduction<<<dimGrid, dimBlock>>>(d_beamformed, d_outputs);
+
+	// Error checking
+	err_code = cudaGetLastError();
+	if (err_code != cudaSuccess) {
+		printf("CUDA Error (sti_reduction): %s\n", cudaGetErrorString(err_code));
+	}
+
+	// Copy data products to host from device
 	cudaMemcpy(out, d_outputs, N_OUTPUTS*sizeof(float),
 			cudaMemcpyDeviceToHost);
+
+	// Free memory on device
 	cudaFree(d_data);
 	cudaFree(d_weights);
 	cudaFree(d_outputs);
-
+	cudaFree(d_beamformed);
 
 }
