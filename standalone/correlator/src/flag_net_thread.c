@@ -171,17 +171,22 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
     }
 
     // Mark block as good if all packets are there
-    if (binfo->packet_count[block_idx] == N_PACKETS_PER_BLOCK) {
+    // printf("NET: Number of packets in block: %d\n", binfo->packet_count[block_idx]);
+    // printf("NET: Expected packets in block: %d\n", N_REAL_PACKETS_PER_BLOCK);
+    if (binfo->packet_count[block_idx] == N_REAL_PACKETS_PER_BLOCK) {
         // RACE CONDITION !!!!!!!!!
         // We need to lock the buffer first before modifing it.
         // Arguably, this data will not be accessed by the next thread until the
         // block is marked as filled...
         db->block[block_idx].header.good_data = 1;
     }
+    else {
+        printf("NET: Bad block - mcnt = %ld\n", binfo->mcnt_start);
+    }
 
     // Mark block as filled so next thread can process it
     last_filled = block_idx;
-    printf("Filling block %d, starting mcnt = %lld\n", block_idx, (long long int)binfo->mcnt_start);
+    // printf("Filling block %d, starting mcnt = %lld\n", block_idx, (long long int)binfo->mcnt_start);
     flag_input_databuf_set_filled(db, block_idx);
 
     binfo->self_xid = -1;
@@ -214,6 +219,7 @@ static inline uint64_t process_packet(flag_input_databuf_t * db, struct hashpipe
 	initialize_block(db, 0);
         return -1;
     }
+    
 
     // Initialize block information data types
     if (!binfo.initialized) {
@@ -231,7 +237,7 @@ static inline uint64_t process_packet(flag_input_databuf_t * db, struct hashpipe
    
     // If packet is for the current block + 2, then mark current block as full
     // and increment current block
-    if (pkt_mcnt_dist >= 2*Nm && pkt_mcnt_dist < 3*Nm) { // 2nd next block (Current block + 2)
+    if (pkt_mcnt_dist >= (N_INPUT_BLOCKS-2)*Nm && pkt_mcnt_dist < (N_INPUT_BLOCKS-1)*Nm) { // 2nd next block (Current block + 2)
         set_block_filled(db, &binfo);
 
         // Advance mcnt_start to next block
@@ -246,7 +252,7 @@ static inline uint64_t process_packet(flag_input_databuf_t * db, struct hashpipe
         // Reset packet counter for this block
         binfo.packet_count[dest_block_idx] = 0;
     }
-    else if (pkt_mcnt_dist >= 3*Nm) { // > current block + 2
+    else if (pkt_mcnt_dist >= (N_INPUT_BLOCKS-1)*Nm) { // > current block + 2
         // The x-engine is lagging behind the f-engine, or the x-engine
         // has just started. Reinitialize the current block
         // to have the next multiple of Nm. Then initialize the next block appropriately
@@ -278,9 +284,9 @@ static inline uint64_t process_packet(flag_input_databuf_t * db, struct hashpipe
         hashpipe_error(__FUNCTION__, "invalid FID and XID in header");
         return -1;
     }
+    
 
     // Calculate starting points for writing packet payload into buffer
-    // POSSIBLE RACE CONDITION!!!! Need to lock db->block access with semaphore
     uint64_t * dest_p  = db->block[dest_block_idx].data + flag_input_databuf_idx(binfo.m, binfo.f, 0, 0);
     const uint64_t * payload_p = (uint64_t *)(p->data+8); // Ignore header
 
@@ -408,6 +414,7 @@ static void *run(hashpipe_thread_args_t * args) {
     /* Main loop */
     uint64_t packet_count = 0;
 
+    fprintf(stdout, "NET: Nm = %d\n", Nm);
     fprintf(stdout, "NET: Starting Thread!\n");
     
     while (run_threads()) {

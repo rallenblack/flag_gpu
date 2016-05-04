@@ -94,7 +94,7 @@ static void * run(hashpipe_thread_args_t * args) {
         // Print out the header information for this block 
         flag_gpu_input_header_t tmp_header;
         memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_gpu_input_header_t));
-	printf("COR: Received block %d, starting mcnt = %lld\n", curblock_in, (long long int)tmp_header.mcnt);
+	// printf("COR: Received block %d, starting mcnt = %lld\n", curblock_in, (long long int)tmp_header.mcnt);
 
         // Retrieve correlator integrator status
         hashpipe_status_lock_safe(&st);
@@ -193,7 +193,7 @@ static void * run(hashpipe_thread_args_t * args) {
 
         flag_gpu_input_databuf_set_free(db_in, curblock_in);
         curblock_in = (curblock_in + 1) % db_in->header.n_block;
-	printf("COR: Next block should be %d\n", curblock_in);
+	// printf("COR: Next block should be %d\n", curblock_in);
         pthread_testcancel();
     }
 
