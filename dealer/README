@@ -1,0 +1,18 @@
+Prior to using the GUI, make sure that the dibas configuration file is all set up
+and that the environment variables DIBAS_DIR is set properly (try running
+dibas.bash). You'll also need to make sure that the Player correspoding to BANKA
+is running since the dealer uses commands such as list_modes that query an active
+player for the information it wants.
+
+Then, to use GUI simply type:
+
+$ python dealergui.py
+
+The buttons on the left can be used to individually activate/deactivate individual
+players. The text boxes on the top can be used to specify what shared memory keys
+you'd like to query.
+
+To set the mode, select a mode from the drop-down menu and click "Set Mode." Then
+you can start a scan by clicking on "START."
+
+Enjoy!
