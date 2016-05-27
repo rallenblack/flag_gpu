@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <xgpu.h>
 #include "hashpipe.h"
@@ -16,6 +17,11 @@
 // Create thread status buffer
 static hashpipe_status_t * st_p;
 
+// Enumerated types for flag_transpose_thread state machine
+typedef enum {
+    ACQUIRE,
+    CLEANUP
+} state;
 
 // Run method for the thread
 // It is meant to do the following:
@@ -41,77 +47,104 @@ static void * run(hashpipe_thread_args_t * args) {
     int curblock_in = 0;
     int curblock_out = 0;
     int mcnt;
-    char integ_status[17];
+    state cur_state = ACQUIRE;
+    state next_state = ACQUIRE;
+    int traclean = -1;
+    char netstat[17];
     while (run_threads()) {
-        
-        // Wait for input buffer block to be filled
-        while ((rv=flag_input_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
-            if (rv==HASHPIPE_TIMEOUT) {
-                hashpipe_status_lock_safe(&st);
-                hputs(st.buf, status_key, "waiting for filled block");
-                hashpipe_status_unlock_safe(&st);
-            }
-            else {
-                hashpipe_error(__FUNCTION__, "error waiting for filled databuf block");
-                pthread_exit(NULL);
-                break;
-            }
-            hashpipe_status_lock(&st);
-	    hgets(st.buf, "INTSTAT", 16, integ_status);
-	    hashpipe_status_unlock(&st);
-	    if (strcmp(integ_status, "stop") == 0) {
-		curblock_in = 0;
-	    }
-        }
 
-        // Wait for output buffer block to be freed
-        while ((rv=flag_gpu_input_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
-            if (rv == HASHPIPE_TIMEOUT) {
-                hashpipe_status_lock_safe(&st);
-                hputs(st.buf, status_key, "waiting for free block");
-                hashpipe_status_unlock_safe(&st);
+        // Current state processing
+        if (cur_state == ACQUIRE) {
+            next_state = ACQUIRE;
+            // Wait for input buffer block to be filled
+            while ((rv=flag_input_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
+                if (rv==HASHPIPE_TIMEOUT) { // If we are waiting for an input block...
+                    // Check to see if network thread is in cleanup
+                    hashpipe_status_lock_safe(&st);
+                    hgetl(st.buf, "CLEANA", &traclean);
+                    hgets(st.buf, "NETSTAT", 16, netstat);
+                    hashpipe_status_unlock_safe(&st);
+                    if (traclean == 0 && strcmp(netstat, "CLEANUP") == 0) {
+                        next_state = CLEANUP;
+                        break;
+                    }
+                }
+                else {
+                    hashpipe_error(__FUNCTION__, "error waiting for filled databuf block");
+                    pthread_exit(NULL);
+                    break;
+                }
             }
-            else {
-                hashpipe_error(__FUNCTION__, "error waiting for free databuf block");
-                pthread_exit(NULL);
-                break;
+
+            // Wait for output buffer block to be freed
+            while ((rv=flag_gpu_input_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
+                if (rv == HASHPIPE_TIMEOUT) {
+                    //hashpipe_status_lock_safe(&st);
+                    //hputs(st.buf, status_key, "waiting for free block");
+                    //hashpipe_status_unlock_safe(&st);
+                    continue;
+                }
+                else {
+                    hashpipe_error(__FUNCTION__, "error waiting for free databuf block");
+                    pthread_exit(NULL);
+                    break;
+                }
             }
-        }
        
-        // Print out the header information for this block 
-        flag_input_header_t tmp_header;
-        memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_input_header_t));
-        mcnt = tmp_header.mcnt_start;
-	printf("TRA: Receiving mcnt = %lld\n", (long long int)mcnt);
+            // Print out the header information for this block 
+            flag_input_header_t tmp_header;
+            memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_input_header_t));
+            mcnt = tmp_header.mcnt_start;
+            printf("TRA: Receiving block %d with starting mcnt = %lld\n", curblock_in, (long long int)mcnt);
 
-        // Perform transpose
-
-        int m; int f;
-        int t; int c;
-        uint64_t * in_p;
-        uint64_t * out_p;
-        uint64_t * block_in_p  = db_in->block[curblock_in].data;
-        uint64_t * block_out_p = db_out->block[curblock_out].data;
-        for (m = 0; m < Nm; m++) {
-            for (t = 0; t < Nt; t++) {
-                for (f = 0; f < Nf; f++) {
-                    for (c = 0; c < Nc; c++) {
-                        in_p  = block_in_p + flag_input_databuf_idx(m,f,t,c);
-                        out_p = block_out_p + flag_gpu_input_databuf_idx(m,f,t,c);
-                        //fprintf(stderr, "(m,t,f,c) = (%d,%d,%d,%d), in_off = %lu, out_off = %lu\n", m, t, f, c, flag_input_databuf_idx(m,f,t,c), flag_gpu_input_databuf_idx(m,f,t,c));
-                        memcpy(out_p, in_p, 128/8);
+            /**********************************************
+             * Perform transpose
+             **********************************************/
+            int m; int f;
+            int t; int c;
+            uint64_t * in_p;
+            uint64_t * out_p;
+            uint64_t * block_in_p  = db_in->block[curblock_in].data;
+            uint64_t * block_out_p = db_out->block[curblock_out].data;
+            for (m = 0; m < Nm; m++) {
+                for (t = 0; t < Nt; t++) {
+                    for (f = 0; f < Nf; f++) {
+                        for (c = 0; c < Nc; c++) {
+                            in_p  = block_in_p + flag_input_databuf_idx(m,f,t,c);
+                            out_p = block_out_p + flag_gpu_input_databuf_idx(m,f,t,c);
+                            memcpy(out_p, in_p, 128/8);
+                        }
                     }
                 }
             }
+            db_out->block[curblock_out].header.mcnt = mcnt;
+
+            // Set output block to filled
+            flag_gpu_input_databuf_set_filled(db_out, curblock_out);
+            curblock_out = (curblock_out + 1) % db_out->header.n_block;
+
+            // Set input block to free
+            flag_input_databuf_set_free(db_in, curblock_in);
+            curblock_in = (curblock_in + 1) % db_in->header.n_block;
         }
-        db_out->block[curblock_out].header.mcnt = mcnt;
+        else if (cur_state == CLEANUP) {
+            curblock_in = 0;
+            curblock_out = 0;
+            next_state = ACQUIRE;
+            // Indicate that we have finished cleanup
+            hashpipe_status_lock_safe(&st);
+            hputl(st.buf, "CLEANA", 1);
+            hashpipe_status_unlock_safe(&st);
+        }
 
-        flag_gpu_input_databuf_set_filled(db_out, curblock_out);
-        curblock_out = (curblock_out + 1) % db_out->header.n_block;
-
-        flag_input_databuf_set_free(db_in, curblock_in);
-        curblock_in = (curblock_in + 1) % db_in->header.n_block;
-
+        // Next state processing
+        hashpipe_status_lock_safe(&st);
+        switch(next_state) {
+            case ACQUIRE: hputs(st.buf, status_key, "ACQUIRE"); break;
+            case CLEANUP: hputs(st.buf, status_key, "CLEANUP"); break;
+        }
+        hashpipe_status_unlock_safe(&st);
+        cur_state = next_state;
         pthread_testcancel();
     }
 
@@ -124,7 +157,7 @@ static void * run(hashpipe_thread_args_t * args) {
 // Thread description
 static hashpipe_thread_desc_t t_thread = {
     name: "flag_transpose_thread",
-    skey: "CORSTAT",
+    skey: "TRASTAT",
     init: NULL,
     run:  run,
     ibuf_desc: {flag_input_databuf_create},
