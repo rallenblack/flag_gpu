@@ -44,6 +44,7 @@ static void * run(hashpipe_thread_args_t * args) {
     while (run_threads()) {
         
         // Wait for input buffer block to be filled
+        // printf("TRA: Waiting for input buffer block\n");
         while ((rv=flag_input_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
             if (rv==HASHPIPE_TIMEOUT) {
                 hashpipe_status_lock_safe(&st);
@@ -56,8 +57,10 @@ static void * run(hashpipe_thread_args_t * args) {
                 break;
             }
         }
+	// printf("TRA: Got input block\n");
 
         // Wait for output buffer block to be freed
+        // printf("TRA: Waiting for output block\n");
         while ((rv=flag_gpu_input_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
             if (rv == HASHPIPE_TIMEOUT) {
                 hashpipe_status_lock_safe(&st);
@@ -70,6 +73,7 @@ static void * run(hashpipe_thread_args_t * args) {
                 break;
             }
         }
+	// printf("TRA: Block received\n");
        
         // Print out the header information for this block 
         flag_input_header_t tmp_header;

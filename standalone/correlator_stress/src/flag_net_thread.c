@@ -380,7 +380,9 @@ static void *run(hashpipe_thread_args_t * args) {
             binfo.block_i = (binfo.block_i + 1) % N_INPUT_BLOCKS;
             
             // Initialize next block
+            //printf("NET: Waiting for output buffer block to be free\n");
             flag_input_databuf_wait_free(db, binfo.block_i);
+	    //printf("NET: Block free!\n");
             initialize_block(db, binfo.mcnt_start);
             num_iter++;
             // clock_gettime(CLOCK_MONOTONIC, &start);

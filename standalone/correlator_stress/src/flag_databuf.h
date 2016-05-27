@@ -24,7 +24,7 @@
 #define N_INPUTS_PER_PACKET N_INPUTS_PER_FENGINE
 
 // Number of time samples per packet
-#define N_TIME_PER_PACKET 10
+#define N_TIME_PER_PACKET 20
 
 // Number of bits per I/Q sample
 // Determined by F engine packetizer

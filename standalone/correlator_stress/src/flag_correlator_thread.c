@@ -91,6 +91,7 @@ static void * run(hashpipe_thread_args_t * args) {
     while (run_threads()) {
         
         // Wait for input buffer block to be filled
+        // printf("COR: Waiting for input block\n");
         while ((rv=flag_gpu_input_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
             if (rv==HASHPIPE_TIMEOUT) {
                 hashpipe_status_lock_safe(&st);
@@ -103,6 +104,7 @@ static void * run(hashpipe_thread_args_t * args) {
                 break;
             }
         }
+	// printf("COR: Got input block!\n");
       
         // Retrieve correlator integrator status
         hashpipe_status_lock_safe(&st);
@@ -166,6 +168,7 @@ static void * run(hashpipe_thread_args_t * args) {
             doDump = 1;
 
             // Wait for new output block to be free
+            // printf("COR: Waiting for output block\n");
             while ((rv=flag_correlator_output_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
                 if (rv==HASHPIPE_TIMEOUT) {
                     continue;
@@ -178,8 +181,11 @@ static void * run(hashpipe_thread_args_t * args) {
             }
 
         }
+	// printf("COR: Got output block\n");
 
+	// printf("COR: Running correlator\n");
         xgpuCudaXengine(&context, doDump ? SYNCOP_DUMP : SYNCOP_SYNC_TRANSFER);
+	// printf("COR: Finished correlation\n");
         
         if (doDump) {
             xgpuClearDeviceIntegrationBuffer(&context);

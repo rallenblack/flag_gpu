@@ -162,12 +162,12 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
     // Validate that we're filling blocks in the proper sequence
     int next_filled = (last_filled + 1)% N_INPUT_BLOCKS;
     if (next_filled != block_idx) {
-        hashpipe_warn(__FUNCTION__, "block %d being marked filled, but expected block %d!", block_idx, next_filled);
+        //hashpipe_warn(__FUNCTION__, "block %d being marked filled, but expected block %d!", block_idx, next_filled);
     }
     
     // Validate that block_idx matches binfo->block_i
     if (block_idx != binfo->block_i) {
-        hashpipe_warn(__FUNCTION__, "block_idx (%d) != binfo->block_i (%d)", block_idx, binfo->block_i);
+        //hashpipe_warn(__FUNCTION__, "block_idx (%d) != binfo->block_i (%d)", block_idx, binfo->block_i);
     }
 
     // Mark block as good if all packets are there
@@ -259,8 +259,8 @@ static inline uint64_t process_packet(flag_input_databuf_t * db, struct hashpipe
         uint64_t new_mcnt = pkt_mcnt - (pkt_mcnt % (Nm*N_INPUT_BLOCKS)) + Nm*N_INPUT_BLOCKS;
 	// binfo.block_i = get_block_idx(new_mcnt);
 
-        fprintf(stderr, "Packet mcnt %lld is very late... resettting current block mcnt to %lld (%012lx)\n", (long long int)pkt_mcnt, (long long int)new_mcnt, new_mcnt);
-        fprintf(stderr, "pkt_mcnt_dist = %lld\n", (long long int)pkt_mcnt_dist);
+        // fprintf(stderr, "Packet mcnt %lld is very late... resettting current block mcnt to %lld (%012lx)\n", (long long int)pkt_mcnt, (long long int)new_mcnt, new_mcnt);
+        // fprintf(stderr, "pkt_mcnt_dist = %lld\n", (long long int)pkt_mcnt_dist);
 
         initialize_block(db, new_mcnt);
         binfo.packet_count[binfo.block_i] = 0;
@@ -272,7 +272,7 @@ static inline uint64_t process_packet(flag_input_databuf_t * db, struct hashpipe
         return -1;
     }
     else if (pkt_mcnt_dist < 0) {
-        fprintf(stderr, "Early packet, pkt_mcnt_dist = %lld\n", (long long int)pkt_mcnt_dist);
+        // fprintf(stderr, "Early packet, pkt_mcnt_dist = %lld\n", (long long int)pkt_mcnt_dist);
         return -1;
     }
     // Increment packet count for block

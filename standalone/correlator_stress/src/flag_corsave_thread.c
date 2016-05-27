@@ -36,6 +36,7 @@ static void * run(hashpipe_thread_args_t * args) {
     while (run_threads()) {
         
         // Wait for input buffer block to be filled
+        // printf("SAV: Waiting for input block\n");
         while ((rv=flag_correlator_output_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
             if (rv==HASHPIPE_TIMEOUT) {
                 hashpipe_status_lock_safe(&st);
@@ -48,6 +49,7 @@ static void * run(hashpipe_thread_args_t * args) {
                 break;
             }
         }
+	// printf("SAV: Got input block\n");
 
         flag_correlator_output_databuf_set_free(db_in, curblock_in);
         curblock_in = (curblock_in + 1) % db_in->header.n_block;
