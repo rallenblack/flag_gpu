@@ -9,7 +9,7 @@ AC_ARG_WITH([xgpu],
 
 orig_LDFLAGS="${LDFLAGS}"
 LDFLAGS="${orig_LDFLAGS} -L${XGPUDIR}/lib"
-AC_CHECK_LIB([xgpu], [xgpuInit],
+AC_CHECK_LIB([xgpu], [xgpuInfo],
              # Found
              AC_SUBST(XGPU_LIBDIR,${XGPUDIR}/lib),
              # Not found there, check XGPUDIR

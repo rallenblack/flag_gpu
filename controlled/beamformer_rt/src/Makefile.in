@@ -40,11 +40,11 @@ DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure config.guess config.sub depcomp \
 	install-sh ltmain.sh missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/hashpipe.m4 \
-	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltoptions.m4 \
-	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
-	$(top_srcdir)/m4/lt~obsolete.m4 $(top_srcdir)/m4/xgpu.m4 \
-	$(top_srcdir)/configure.ac
+am__aclocal_m4_deps = $(top_srcdir)/m4/flagbeamform.m4 \
+	$(top_srcdir)/m4/hashpipe.m4 $(top_srcdir)/m4/libtool.m4 \
+	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
+	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
+	$(top_srcdir)/m4/xgpu.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
@@ -76,20 +76,21 @@ am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
 am__installdirs = "$(DESTDIR)$(libdir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
-flag_gpu_la_DEPENDENCIES =
+flag_beamformer_la_DEPENDENCIES =
 am__objects_1 = flag_databuf.lo
 am__objects_2 = flag_net_thread.lo flag_transpose_thread.lo \
-	flag_correlator_thread.lo flag_corsave_thread.lo
+	flag_beamform_thread.lo flag_beamsave_thread.lo
 am__objects_3 = fifo.lo
-am_flag_gpu_la_OBJECTS = $(am__objects_1) $(am__objects_2) \
+am_flag_beamformer_la_OBJECTS = $(am__objects_1) $(am__objects_2) \
 	$(am__objects_3)
-flag_gpu_la_OBJECTS = $(am_flag_gpu_la_OBJECTS)
+flag_beamformer_la_OBJECTS = $(am_flag_beamformer_la_OBJECTS)
 AM_V_lt = $(am__v_lt_$(V))
 am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
 am__v_lt_0 = --silent
-flag_gpu_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(flag_gpu_la_LDFLAGS) $(LDFLAGS) -o $@
+flag_beamformer_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(flag_beamformer_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -116,8 +117,8 @@ am__v_CCLD_0 = @echo "  CCLD  " $@;
 AM_V_GEN = $(am__v_GEN_$(V))
 am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
 am__v_GEN_0 = @echo "  GEN   " $@;
-SOURCES = $(flag_gpu_la_SOURCES)
-DIST_SOURCES = $(flag_gpu_la_SOURCES)
+SOURCES = $(flag_beamformer_la_SOURCES)
+DIST_SOURCES = $(flag_beamformer_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -155,6 +156,9 @@ ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
+FLAGBEAM_INCDIR = @FLAGBEAM_INCDIR@
+FLAGBEAM_LIBDIR = @FLAGBEAM_LIBDIR@
+FLAGPOW_INCDIR = @FLAGPOW_INCDIR@
 GREP = @GREP@
 HASHPIPE_INCDIR = @HASHPIPE_INCDIR@
 HASHPIPE_LIBDIR = @HASHPIPE_LIBDIR@
@@ -248,7 +252,8 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 ACLOCAL_AMFLAGS = -I m4
-AM_CPPFLAGS = -I"@HASHPIPE_INCDIR@" -I"@XGPU_INCDIR@"
+AM_CPPFLAGS = -I"@HASHPIPE_INCDIR@" -I"@XGPU_INCDIR@" \
+	-I"@FLAGBEAM_INCDIR@"
 
 # AM_CFLAGS is used for all C compiles
 # AM_CFLAGS = -ggdb -fPIC -O3 -Wall -Werror -fno-strict-aliasing -mavx
@@ -265,25 +270,30 @@ AM_CFLAGS = -ggdb -fPIC -O3 -Wall -Werror -fno-strict-aliasing
 #		paper_fluff_thread.c          \
 #		paper_net_thread.c            \
 #		paper_crc_thread.c
+
+#paper_fluff = paper_fluff.h \
+#	      paper_fluff.c
 fifo_codes = fifo.h \
-	      fifo.c
+              fifo.c
 
 flag_databuf = flag_databuf.h \
                flag_databuf.c
 
 flag_threads = flag_net_thread.c \
                flag_transpose_thread.c \
-               flag_correlator_thread.c \
-               flag_corsave_thread.c
+               flag_beamform_thread.c \
+               flag_beamsave_thread.c
 
 
 # This is the flag_gpu plugin itself
-lib_LTLIBRARIES = flag_gpu.la
-flag_gpu_la_SOURCES = $(flag_databuf) $(flag_threads) $(fifo_codes)
-flag_gpu_la_LIBADD = -lrt -lxgpu -lcfitsio
-flag_gpu_la_LDFLAGS = -avoid-version -module -shared -export-dynamic \
-	-L"@XGPU_LIBDIR@" -Wl,-rpath,"@XGPU_LIBDIR@" \
-	-L"@HASHPIPE_LIBDIR@" -Wl,-rpath,"@HASHPIPE_LIBDIR@"
+lib_LTLIBRARIES = flag_beamformer.la
+flag_beamformer_la_SOURCES = $(flag_databuf) $(flag_threads) $(fifo_codes)
+flag_beamformer_la_LIBADD = -lrt -lxgpu -lflagbeamformer
+flag_beamformer_la_LDFLAGS = -avoid-version -module -shared \
+	-export-dynamic --enable-shared -L"@XGPU_LIBDIR@" \
+	-Wl,-rpath,"@XGPU_LIBDIR@" -L"@HASHPIPE_LIBDIR@" \
+	-Wl,-rpath,"@HASHPIPE_LIBDIR@" -L"@FLAGBEAM_LIBDIR@" -Wl, \
+	-rpath, "@FLAGBEAM_LIBDIR@"
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -371,8 +381,8 @@ clean-libLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-flag_gpu.la: $(flag_gpu_la_OBJECTS) $(flag_gpu_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(flag_gpu_la_LINK) -rpath $(libdir) $(flag_gpu_la_OBJECTS) $(flag_gpu_la_LIBADD) $(LIBS)
+flag_beamformer.la: $(flag_beamformer_la_OBJECTS) $(flag_beamformer_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(flag_beamformer_la_LINK) -rpath $(libdir) $(flag_beamformer_la_OBJECTS) $(flag_beamformer_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -381,8 +391,8 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fifo.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/flag_correlator_thread.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/flag_corsave_thread.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/flag_beamform_thread.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/flag_beamsave_thread.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/flag_databuf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/flag_net_thread.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/flag_transpose_thread.Plo@am__quote@

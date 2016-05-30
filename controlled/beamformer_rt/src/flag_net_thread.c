@@ -77,7 +77,6 @@ static inline void initialize_block_info(block_info_t * binfo) {
     }
 
 
-
     // Initialize our XID
     binfo->self_xid = -1;
     hashpipe_status_lock_safe(st_p);
@@ -184,7 +183,7 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
 
     // Mark block as filled so next thread can process it
     last_filled = block_idx;
-    printf("Filling block %d, starting mcnt = %lld\n", block_idx, (long long int)binfo->mcnt_start);
+    // printf("Filling block %d, starting mcnt = %lld\n", block_idx, (long long int)binfo->mcnt_start);
     flag_input_databuf_set_filled(db, block_idx);
 
     binfo->self_xid = -1;
@@ -290,7 +289,7 @@ static inline uint64_t process_packet(flag_input_databuf_t * db, struct hashpipe
     // Copy data into buffer
     memcpy(dest_p, payload_p, N_BYTES_PER_PACKET-8); // Ignore header
 
-    print_pkt_header(&pkt_header);
+    //print_pkt_header(&pkt_header);
 
     return pkt_mcnt;
 }
@@ -419,79 +418,80 @@ static void *run(hashpipe_thread_args_t * args) {
     hputs(st.buf, "INTSTAT", "start");
     hashpipe_status_unlock_safe(&st);
 
-    // Set up FIFO controls
+
     int cmd = INVALID;
     int state = INVALID;
-
     /* Main loop */
     uint64_t packet_count = 0;
 
     fprintf(stdout, "NET: Starting Thread!\n");
     
     while (run_threads()) {
-        
         // Get packet
-        do {
-	    // Wait for start command from Dealer/Player
+	do {
+
+        // Wait for start command from Dealer/Player
             cmd = check_cmd(gpu_fifo_id);
             switch(cmd) {
                 case START:
-        	    fprintf(stderr, "NET: Received START from Dealer\n");
-        	    break;
+                    fprintf(stderr, "NET: Received START from Dealer\n");
+                    break;
                 case QUIT:
-        	    fprintf(stderr, "NET: Received QUIT from Dealer\n");
-		    state = QUIT;
-        	    break;
-		default:
-		    continue;
+                    fprintf(stderr, "NET: Received QUIT from Dealer\n");
+                    state = QUIT;
+                    break;
+                default:
+                    continue;
             }
 	    p.packet_size = recv(up.sock, p.data, HASHPIPE_MAX_PACKET_SIZE, 0);
             fprintf(stderr, "NET: p.packet_size = %d\n", (int)p.packet_size);
-	    if (p.packet_size != -1 && !(errno == EAGAIN || errno == EWOULDBLOCK)) {
-		break;
-	    }
-	} while (run_threads() && state != QUIT);
-	if(!run_threads()) break;
-	if(state == QUIT) break;
-	fprintf(stderr, "NET: Something broke the packet loop...\n");
-	if (p.packet_size != -1) fprintf(stderr, "NET: p.packet_size != -1\n");
-	if (errno != EAGAIN && errno != EWOULDBLOCK) fprintf(stderr, "NET: errno != EAGAIN && errno != EWOULDBLOCK\n");
-	switch(cmd) {
+	 if (p.packet_size == -1 && (errno == EAGAIN || errno == EWOULDBLOCK) && run_threads()){
+	        break;
+            }
+
+         }while (run_threads() && state != QUIT);
+        if(!run_threads()) break;
+        if(state == QUIT) break;
+        fprintf(stderr, "NET: Something broke the packet loop...\n");
+        if (p.packet_size != -1) fprintf(stderr, "NET: p.packet_size != -1\n");
+        if (errno != EAGAIN && errno != EWOULDBLOCK) fprintf(stderr, "NET: errno != EAGAIN && errno != EWOULDBLOCK\n");
+        switch(cmd) {
             case START:
-    	        fprintf(stderr, "NET: START\n");
-    	        break;
+                fprintf(stderr, "NET: START\n");
+                break;
             case QUIT:
-    	        fprintf(stderr, "NET: QUIT\n");
-    	        break;
-    	    case INVALID:
-		fprintf(stderr, "NET: INVALID\n");
-		break;
-	    case STOP:
-		fprintf(stderr, "NET: STOP\n");
-		break;
-	    default:
-		fprintf(stderr, "NET: Unknown type = %d\n", state);
+                fprintf(stderr, "NET: QUIT\n");
+                break;
+            case INVALID:
+                fprintf(stderr, "NET: INVALID\n");
+                break;
+            case STOP:
+                fprintf(stderr, "NET: STOP\n");
+                break;
+            default:
+                fprintf(stderr, "NET: Unknown type = %d\n", state);
         }
-   
+
+
         // Check packet size and report errors 
         if (up.packet_size != p.packet_size) {
-        // If an error was returned instead of a valid packet size
+	    // If an error was returned instead of a valid packet size
             if (p.packet_size == -1) {
                 fprintf(stderr, "uh oh!\n");
-	    // Log error and exit
+		// Log error and exit
                 hashpipe_error("paper_net_thread",
                         "hashpipe_udp_recv returned error");
                 perror("hashpipe_udp_recv");
                 pthread_exit(NULL);
             } else {
-	    // Log warning and ignore wrongly sized packet
+		// Log warning and ignore wrongly sized packet
                 hashpipe_warn("paper_net_thread", "Incorrect pkt size (%d)", p.packet_size);
-                pthread_testcancel();
                 continue;
             }
 	}
+
         // Process packet
-	packet_count++;
+    	packet_count++;
         process_packet(db, &p);    
 
         /* Will exit if thread has been cancelled */
