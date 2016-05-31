@@ -87,6 +87,7 @@ class BeamformerBackend(VegasBackend):
 
         # our fake GPU simulator needs to know the start time of the scan
         # and it's duration, so we need to write it to status shared mem.
+        print "PLAYER: Starting scan in %d seconds for %d seconds" % (inSecs, durSecs)
         def secs_2_dmjd(secs):
             dmjd = (secs/86400) + 40587
             return dmjd + ((secs % 86400)/86400.)
@@ -100,6 +101,7 @@ class BeamformerBackend(VegasBackend):
 
         # NOTE: SCANLEN can also be set w/ player.set_param(scan_length=#)
         self.write_status(STRTDMJD=str(startDMJD),SCANLEN=str(durSecs))
+        self.scan_length = durSecs
 
         dt = datetime.utcnow()
         dt.replace(second = 0)
@@ -178,6 +180,9 @@ class BeamformerBackend(VegasBackend):
 
         self.stop_hpc()
 
+        # Clear shared memory for this instance
+        subprocess.call("hashpipe_clean_shmem -I 0", shell=True)
+
         hpc_program = self.mode.hpc_program
         if hpc_program is None:
             raise Exception("Configuration error: no field hpc_program specified in "
@@ -209,12 +214,13 @@ class BeamformerBackend(VegasBackend):
             return
 
         self.stop_fits_writer()
-        fits_writer_program = "bfFitsWriter"
+        #fits_writer_program = "bfFitsWriter"
 
-        cmd = self.dibas_dir + '/exec/x86_64-linux/' + fits_writer_program
+        #cmd = self.dibas_dir + '/exec/x86_64-linux/' + fits_writer_program
         #self.fits_writer_process = subprocess.Popen((sp_path, ), stdin=subprocess.PIPE)
-        cmd += " -i %d" % self.instance_id
-        cmd += " -m c" 
+        #cmd += " -i %d" % self.instance_id
+        #cmd += " -m c" 
+        cmd = "dummy_fits_writer"
         process_list = shlex.split(cmd)
         self.fits_writer_process = subprocess.Popen(process_list, stdin=subprocess.PIPE)
     

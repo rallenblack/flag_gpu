@@ -34,15 +34,15 @@ sigma2 = kb*Tsys*BW;    % Noise power per channel
 % 3 -> Send all ones
 % 4 -> Send chirp
 % else -> Send all zeros
-data_flag = 4;
+data_flag = 3;
 
 % Sinusoid parameters (only used if data_flag = 2)
 % It should be noted that the phase of the sinusoid will not change between
 % time samples-- this is just for convenience. A more sophisticated packet
 % generator would incorporate the phase shifts across time.
-s_bin   = 1; % Sinusoid's absolute bin number (1-500)
+s_bin   = 401; % Sinusoid's absolute bin number (1-500)
 s_ele   = 1; % Sinusoid's absolute element number (1-40)
-s_phi   = pi/2; % Sinusoid's phase (magnitude is set to 1)
+s_phi   = 0; % Sinusoid's phase (magnitude is set to 1)
 s_xid   = floor((s_bin - 1)/100) + 1; % X-engine ID for desired bin
 s_fid   = floor((s_ele - 1)/8) + 1;   % F-engine ID for desired input
 s_bin_r = mod(s_bin - 1, 100) + 1; % Relative bin number (internal fengine index)
@@ -85,7 +85,7 @@ while mcnt <= 1000
             % bits 49-56: F-engine ID (fid)
             % bits 57-64: X-engine ID
             % LSB = 64
-            header = uint64(mcnt)*2^20 + uint64(15)*2^16 + uint64(fid-1)*2^8 + uint64(xid-1);
+            header = uint64(mcnt)*2^20 + uint64(15)*2^16 + uint64(fid-1)*2^8 + uint64(xid);
             
             % Allocate memory for packet payload
             payload = zeros(16*Ntime_per_packet*Nbin_per_x+8, 1, 'uint8');

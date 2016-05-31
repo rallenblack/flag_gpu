@@ -67,6 +67,7 @@ typedef struct {
     int      m;                            // Indices for packet payload destination
     int      f;                            //
 } block_info_t;
+static block_info_t binfo;
 
 
 // Method to initialize the block_info_t structure
@@ -154,11 +155,33 @@ static inline void initialize_block(flag_input_databuf_t * db, uint64_t mcnt) {
     db->block[block_idx].header.mcnt_start = mcnt - (mcnt%Nm);
 }
 
+// Method to reinitialize the block info
+static int last_filled = -1; // The last block that was filled
+static inline void reinitialize_block_info() {
+    binfo.initialized = 0;
+    initialize_block_info(&binfo);
+    last_filled = -1;
+}
+
+// Method to reset pipeline after STOP or finished scan
+static inline void cleanup_blocks(flag_input_databuf_t * db) {
+    reinitialize_block_info();
+    hashpipe_status_lock_safe(st_p);
+    hputi4(st_p->buf, "NETMCNT", 0);
+    hashpipe_status_unlock_safe(st_p);
+
+    int i;
+    for (i = 0; i < N_INPUT_BLOCKS; i++) {
+        //printf("NET: Waiting for block %d to be free...\n", i);
+        flag_input_databuf_wait_free(db, i);
+        //printf("NET: Initializing block %d\n", i);
+        initialize_block(db, i*Nm);
+    }
+}
+
 
 // Method to mark the block as filled
 static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
-    
-    static int last_filled = -1; // The last block that was filled
 
     uint32_t block_idx = get_block_idx(binfo->mcnt_start);
     
@@ -200,23 +223,7 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
 // (2) block population (output buffer data type is a block)
 // (3) buffer population (if block is filled)
 static inline uint64_t process_packet(flag_input_databuf_t * db, struct hashpipe_udp_packet *p) {
-    static block_info_t binfo;
     packet_header_t     pkt_header;
-
-    // Check to see if we are in the stop state
-    char integ_status[17];
-    hashpipe_status_lock_safe(st_p);
-    hgets(st_p->buf, "INTSTAT", 16, integ_status);
-    hashpipe_status_unlock_safe(st_p);
-    if (strcmp(integ_status, "stop") == 0) {
-	binfo.initialized = 0;
-        initialize_block_info(&binfo);
-	hashpipe_status_lock_safe(st_p);
-	hputi4(st_p->buf, "NETMCNT", 0);
-	hashpipe_status_unlock_safe(st_p);
-	initialize_block(db, 0);
-        return -1;
-    }
 
     // Initialize block information data types
     if (!binfo.initialized) {
@@ -231,6 +238,7 @@ static inline uint64_t process_packet(flag_input_databuf_t * db, struct hashpipe
 
     // Check mcnt to see if packet belongs in current block, next, or the one after
     int64_t pkt_mcnt_dist = pkt_mcnt - cur_mcnt;
+    int64_t last_filled_mcnt = -1;
    
     // If packet is for the current block + 2, then mark current block as full
     // and increment current block
@@ -239,6 +247,7 @@ static inline uint64_t process_packet(flag_input_databuf_t * db, struct hashpipe
 
         // Advance mcnt_start to next block
         cur_mcnt += Nm;
+        last_filled_mcnt = cur_mcnt;
         binfo.mcnt_start += Nm;
         binfo.block_i = (binfo.block_i + 1) % N_INPUT_BLOCKS;
 
@@ -250,6 +259,7 @@ static inline uint64_t process_packet(flag_input_databuf_t * db, struct hashpipe
         binfo.packet_count[dest_block_idx] = 0;
     }
     else if (pkt_mcnt_dist >= 3*Nm) { // > current block + 2
+        /*
         // The x-engine is lagging behind the f-engine, or the x-engine
         // has just started. Reinitialize the current block
         // to have the next multiple of Nm. Then initialize the next block appropriately
@@ -266,7 +276,10 @@ static inline uint64_t process_packet(flag_input_databuf_t * db, struct hashpipe
         hashpipe_status_lock_safe(st_p);
         hputi4(st_p->buf, "NETMCNT", new_mcnt);
         hashpipe_status_unlock_safe(st_p);
+        */
+        printf("Net: Late packet... mcnt = %lld\n", (long long int)pkt_mcnt);
         return -1;
+    
     }
     else if (pkt_mcnt_dist < 0) {
         fprintf(stderr, "Early packet, pkt_mcnt_dist = %lld\n", (long long int)pkt_mcnt_dist);
@@ -290,11 +303,18 @@ static inline uint64_t process_packet(flag_input_databuf_t * db, struct hashpipe
     // Copy data into buffer
     memcpy(dest_p, payload_p, N_BYTES_PER_PACKET-8); // Ignore header
 
-    print_pkt_header(&pkt_header);
+    //print_pkt_header(&pkt_header);
 
-    return pkt_mcnt;
+    return last_filled_mcnt;
 }
 
+
+// Enumerated types for flag_net_thread state machine
+typedef enum {
+    IDLE,
+    ACQUIRE,
+    CLEANUP
+} state;
 
 // Run method for the thread
 // It is meant to do the following:
@@ -349,37 +369,37 @@ static void *run(hashpipe_thread_args_t * args) {
     	hputi4(st.buf, "BINDPORT", up.bindport);
     	hputu4(st.buf, "MISSEDFE", 0);
     	hputu4(st.buf, "MISSEDPK", 0);
-    	hputs(st.buf, status_key, "running");
     hashpipe_status_unlock_safe(&st);
 
     struct hashpipe_udp_packet p;
 
     /* Give all the threads a chance to start before opening network socket */
     int netready = 0;
+    int traready = 0;
     int corready = 0;
-    int checkready = 0;
+    // int savready = 0;
     while (!netready) {
-        sleep(1);
         // Check the correlator to see if it's ready yet
         hashpipe_status_lock_safe(&st);
+        hgeti4(st.buf, "TRAREADY",  &traready);
         hgeti4(st.buf, "CORREADY",  &corready);
-        hgeti4(st.buf, "SAVEREADY", &checkready);
+        // hgeti4(st.buf, "SAVEREADY", &savready);
         hashpipe_status_unlock_safe(&st);
-        if (!corready) {
-            continue;
-        }
-        //if (!checkready) {
-        //    continue;
-        //}
-
-        // Check the other threads to see if they're ready yet
-        // TBD
-
-        // If we get here, then all threads are initialized
-        netready = 1;
+        netready = traready & corready;
     }
     sleep(1);
 
+    // Create clean flags for other threads
+    hashpipe_status_lock_safe(&st);
+    hputl(st.buf, "CLEANA", 1);
+    hputl(st.buf, "CLEANB", 1);
+    hashpipe_status_unlock_safe(&st);
+
+    // Set correlator's starting mcnt to 0
+    hashpipe_status_lock_safe(&st);
+    hputi4(st.buf, "NETMCNT", 0);
+    hashpipe_status_unlock_safe(&st);
+   
     /* Set up UDP socket */
     fprintf(stderr, "NET: BINDHOST = %s\n", up.bindhost);
     fprintf(stderr, "NET: BINDPORT = %d\n", up.bindport);
@@ -401,7 +421,8 @@ static void *run(hashpipe_thread_args_t * args) {
             if (errno == EINTR) { // Interrupt occurred
                 hashpipe_error(__FUNCTION__, "waiting for free block interrupted\n");
                 pthread_exit(NULL);
-            } else {
+            }
+            else {
                 hashpipe_error(__FUNCTION__, "error waiting for free block\n");
                 pthread_exit(NULL);
             }
@@ -409,10 +430,6 @@ static void *run(hashpipe_thread_args_t * args) {
         initialize_block(db, i*Nm);
     }
 
-    // Set correlator's starting mcnt to 0
-    hashpipe_status_lock_safe(&st);
-    hputi4(st.buf, "NETMCNT", 0);
-    hashpipe_status_unlock_safe(&st);
 
     // Set correlator to "start" state
     hashpipe_status_lock_safe(&st);
@@ -425,74 +442,129 @@ static void *run(hashpipe_thread_args_t * args) {
 
     /* Main loop */
     uint64_t packet_count = 0;
+    int64_t last_filled_mcnt = -1;
+    int64_t scan_last_mcnt = -1;
 
     fprintf(stdout, "NET: Starting Thread!\n");
-    
     while (run_threads()) {
         
-        // Get packet
-        do {
-	    // Wait for start command from Dealer/Player
-            cmd = check_cmd(gpu_fifo_id);
-            switch(cmd) {
-                case START:
-        	    fprintf(stderr, "NET: Received START from Dealer\n");
-        	    break;
-                case QUIT:
-        	    fprintf(stderr, "NET: Received QUIT from Dealer\n");
-		    state = QUIT;
-        	    break;
-		default:
-		    continue;
-            }
-	    p.packet_size = recv(up.sock, p.data, HASHPIPE_MAX_PACKET_SIZE, 0);
-            fprintf(stderr, "NET: p.packet_size = %d\n", (int)p.packet_size);
-	    if (p.packet_size != -1 && !(errno == EAGAIN || errno == EWOULDBLOCK)) {
-		break;
-	    }
-	} while (run_threads() && state != QUIT);
+	// Get command from Dealer/Player
+        cmd = check_cmd(gpu_fifo_id);
+
+        // If command is QUIT, stop all processing
+        if (cmd == QUIT) break;
+
+        // If pipeline terminated somewhere else, stop processing
 	if(!run_threads()) break;
-	if(state == QUIT) break;
-	fprintf(stderr, "NET: Something broke the packet loop...\n");
-	if (p.packet_size != -1) fprintf(stderr, "NET: p.packet_size != -1\n");
-	if (errno != EAGAIN && errno != EWOULDBLOCK) fprintf(stderr, "NET: errno != EAGAIN && errno != EWOULDBLOCK\n");
-	switch(cmd) {
-            case START:
-    	        fprintf(stderr, "NET: START\n");
-    	        break;
-            case QUIT:
-    	        fprintf(stderr, "NET: QUIT\n");
-    	        break;
-    	    case INVALID:
-		fprintf(stderr, "NET: INVALID\n");
-		break;
-	    case STOP:
-		fprintf(stderr, "NET: STOP\n");
-		break;
-	    default:
-		fprintf(stderr, "NET: Unknown type = %d\n", state);
-        }
-   
-        // Check packet size and report errors 
-        if (up.packet_size != p.packet_size) {
-        // If an error was returned instead of a valid packet size
-            if (p.packet_size == -1) {
-                fprintf(stderr, "uh oh!\n");
-	    // Log error and exit
-                hashpipe_error("paper_net_thread",
-                        "hashpipe_udp_recv returned error");
-                perror("hashpipe_udp_recv");
-                pthread_exit(NULL);
-            } else {
-	    // Log warning and ignore wrongly sized packet
-                hashpipe_warn("paper_net_thread", "Incorrect pkt size (%d)", p.packet_size);
-                pthread_testcancel();
-                continue;
+
+
+        /************************************************************
+         * IDLE state processing
+         ************************************************************/
+        // If in IDLE state, look for START command
+        if (cur_state == IDLE) {
+            // If command is START, proceed to ACQUIRE state
+            if (cmd == START) {
+                next_state = ACQUIRE;
+                // Get scan length from shared memory (set by BeamformerBackend.py)
+                int scanlen;
+                hashpipe_status_lock_safe(st_p);
+                hgeti4(st.buf, "SCANLEN", &scanlen);
+                hashpipe_status_unlock_safe(st_p);
+                scan_last_mcnt = scanlen*N_MCNT_PER_SECOND;
+                printf("Net: Ending scan after mcnt = %lld\n", (long long int)scan_last_mcnt);
             }
-	}
-        // Process packet
-	packet_count++;
-        process_packet(db, &p);    
+        }
+
+        /************************************************************
+         * ACQUIRE state processing
+         ************************************************************/
+        // If in ACQUIRE state, get packets
+        if (cur_state == ACQUIRE) {
+            // Loop over (non-blocking) packet receive
+            do {
+                p.packet_size = recv(up.sock, p.data, HASHPIPE_MAX_PACKET_SIZE, 0);
+            } while (p.packet_size == -1 && (errno == EAGAIN || errno == EWOULDBLOCK) && run_threads());
+            if (!run_threads()) break;
+            // Check packet size and report errors
+            if (up.packet_size != p.packet_size) {
+                // If an error was returned instead of a valid packet size
+                if (p.packet_size == -1) {
+                    fprintf(stderr, "uh oh!\n");
+                    // Log error and exit
+                    hashpipe_error("paper_net_thread",
+                            "hashpipe_udp_recv returned error");
+                    perror("hashpipe_udp_recv");
+                    pthread_exit(NULL);
+                }
+                 else {
+                    // Log warning and ignore wrongly sized packet
+                    hashpipe_warn("paper_net_thread", "Incorrect pkt_size (%d)", p.packet_size);
+                    pthread_testcancel();
+                    continue;
+                }
+            }
+            // Process packet
+            packet_count++;
+            last_filled_mcnt = process_packet(db, &p);
+
+            // Next state processing
+            if ((last_filled_mcnt != 1 && last_filled_mcnt >= scan_last_mcnt) || cmd == STOP) {
+                int cleanA = 1;
+                int cleanB = 1;
+                while (cleanA != 0 && cleanB != 0) {
+                    hashpipe_status_lock_safe(&st);
+                    hputl(st.buf, "CLEANA", 0);
+                    hputl(st.buf, "CLEANB", 0);
+                    hashpipe_status_unlock_safe(&st);
+
+                    sleep(1);
+                    hashpipe_status_lock_safe(&st);
+                    hgetl(st.buf, "CLEANA", &cleanA);
+                    hgetl(st.buf, "CLEANB", &cleanB);
+                    hashpipe_status_unlock_safe(&st);
+                }
+                next_state = CLEANUP;
+            }
+            else {
+                next_state = ACQUIRE;
+            }
+        }
+
+        /************************************************************
+         * CLEANUP state processing
+         ************************************************************/
+        // If in CLEANUP state, cleanup and reinitialize. Proceed to IDLE state.
+        if (cur_state == CLEANUP) {
+            cleanup_blocks(db);
+
+            // Check other threads to make sure they've finished cleaning up
+            int traclean = 0;
+            int corclean = 0;
+            hashpipe_status_lock_safe(&st);
+            hgetl(st.buf, "CLEANA",  &traclean);
+            hgetl(st.buf, "CLEANB",  &corclean);
+            hashpipe_status_unlock_safe(&st);
+            netready = traclean & corclean;
+            
+            if (netready) {
+                next_state = IDLE;
+            }
+            else {
+                next_state = CLEANUP;
+                sleep(1);
+            }
+        }
+
+        // Update state variable if needed
+        hashpipe_status_lock_safe(&st);
+        switch (next_state) {
+            case IDLE: hputs(st.buf, status_key, "IDLE"); break;
+            case ACQUIRE: hputs(st.buf, status_key, "ACQUIRE"); break;
+            case CLEANUP: hputs(st.buf, status_key, "CLEANUP"); break;
+        }
+        hashpipe_status_unlock_safe(&st);
+        cur_state = next_state;
 
         /* Will exit if thread has been cancelled */
         pthread_testcancel();

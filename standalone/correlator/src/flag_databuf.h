@@ -9,6 +9,8 @@
 // Total number of antennas (nominally 40)
 // Determined by XGPU code
 #define N_INPUTS (2*XGPU_NSTATION)
+// xGPU needs a multiple of 32 inputs. The real number is...
+#define N_REAL_INPUTS 40
 
 // Number of antennas per F engine
 // Determined by F engine DDL cards
@@ -16,15 +18,16 @@
 
 // Number of F engines
 #define N_FENGINES (N_INPUTS/N_INPUTS_PER_FENGINE)
+#define N_REAL_FENGINES (N_REAL_INPUTS/N_INPUTS_PER_FENGINE)
 
 // Number of X engines
-#define N_XENGINES (10)
+#define N_XENGINES (20)
 
 // Number of inputs per packet
 #define N_INPUTS_PER_PACKET N_INPUTS_PER_FENGINE
 
 // Number of time samples per packet
-#define N_TIME_PER_PACKET 10
+#define N_TIME_PER_PACKET 20
 
 // Number of bits per I/Q sample
 // Determined by F engine packetizer
@@ -56,10 +59,12 @@
 
 // Number of bytes per block
 #define N_BYTES_PER_BLOCK (N_TIME_PER_BLOCK * N_CHAN_PER_X * N_INPUTS * N_BITS_IQ * 2 / 8)
+#define N_REAL_BYTES_PER_BLOCK (N_TIME_PER_BLOCK * N_CHAN_PER_X * N_REAL_INPUTS * N_BITS_IQ * 2 / 8)
 // #define N_BYTES_PER_BLOCK (N_TIME_PER_BLOCK * N_CHAN_PER_PACKET * N_INPUTS)
 
 // Number of packets per block
 #define N_PACKETS_PER_BLOCK (N_BYTES_PER_BLOCK / N_BYTES_PER_PAYLOAD)
+#define N_REAL_PACKETS_PER_BLOCK (N_REAL_BYTES_PER_BLOCK / N_BYTES_PER_PAYLOAD)
 
 // Macro to compute data word offset for complex data word
 #define Nm (N_TIME_PER_BLOCK/N_TIME_PER_PACKET) // Number of mcnts per block
@@ -90,7 +95,7 @@ typedef uint8_t hashpipe_databuf_cache_alignment[
  * It is the output buffer of the flag_net_thread.
  * It is the input buffer of the flag_transpose_thread.
  */
-#define N_INPUT_BLOCKS 4
+#define N_INPUT_BLOCKS 10
 
 // A typedef for a block header
 typedef struct flag_input_header {
