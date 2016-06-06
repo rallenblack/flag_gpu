@@ -6,22 +6,26 @@ dibas.conf is significantly different than the one found at GB.
 
 This requires the flag_gpu plugin to be installed. The version that must be installed is the "controlled" version, which is found in flag_gpu/controlled/correlator/src.
 
-The magic code in BeamformerBackend.py that connects the player with the hashpipe pipeline is
+There are runtime parameters that are set by the dibas.conf file.
 
-def start_hpc(self):
-    ...
-    hpc_program = self.mode.hpc_prgram #Set by mode definitions in dibas.conf
-    ...
-    process_list = [hpc_program]
-    if self.mode.hpc_program_flags:
-        process_list = process_list + self.mode.hpc_program_flags.split()
-    self.hpc_process = subprocess.Popen(process_list, stdin=subprocess.PIPE)
-    ...
+For example:
 
-In the dibas.conf file:
+[BANKA]
+...
+data_destination_host = 10.0.0.1 # The 10 GbE IP address/hostname on which data arrive
+data_destination_port = 60000    # Ditto, but the fabric port
+...
+xid = 3           # The Xengine ID
+instance = 2      # The hashpipe instance ID
+gpudev = 0        # The GPU device ID
+cpus = 0, 1, 2, 3 # The CPU cores that the threads should run on (not fully implemented yet)
+
 
 [FLAG_BETA_MODE1]
 ...
 hpc_program = hashpipe
-hpc_program_flags = -p flag_gpu -c 0 flag_net_thread -c 1 flag_transpose_thread -c 2 flag_correlator_thread -c 3 flag_corsave_thread
+hpc_program_flags = -p flag_gpu
 ...
+
+
+In future revisions, the thread names will likely also reside in the MODE definition

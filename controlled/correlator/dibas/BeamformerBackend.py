@@ -32,9 +32,11 @@
 import time
 import shlex
 import subprocess
+import os
 from datetime import datetime, timedelta
 
 from VegasBackend import VegasBackend
+import ConfigParser # We have additional parameters that are in the config file
 
 class BeamformerBackend(VegasBackend):
     """A class which implements the FLAG Beamformer functionality. 
@@ -61,6 +63,9 @@ class BeamformerBackend(VegasBackend):
 
         VegasBackend.__init__(self, theBank, theMode, theRoach, theValon, hpc_macs, unit_test)
 
+        # Read in the additional parameters from the configuration file
+        self.read_parameters(theBank)
+
         # In the Beamformer, there are 2 GPUs, so we run multiple instances
         # of the 'pipeline': more then one player!
         # should be set in base class ...
@@ -82,12 +87,27 @@ class BeamformerBackend(VegasBackend):
         self.fits_writer_program = 'bfFitsWriter'
         self.start_fits_writer()
 
+
+    def read_parameters(self, theBank):
+        int2ip  = lambda n: '.'.join([str(n >> (i << 3) & 0xFF) for i in range(0,4)[::-1]])
+        bank = theBank.name
+        dibas_dir = os.getenv('DIBAS_DIR') # Should always succeed since player started up
+        config = ConfigParser.ConfigParser()
+        filename = dibas_dir + '/etc/config/dibas.conf'
+        config.readfp(open(filename))
+        self.xid = config.getint(bank, 'xid')
+        self.instance = config.getint(bank, 'instance')
+        self.gpudev = config.getint(bank, 'gpudev')
+        self.cpus = config.get(bank, 'cpus')
+        self.bindhost = int2ip(theBank.dest_ip)
+        self.bindport = theBank.dest_port
+
+
     def start(self, inSecs, durSecs):
         "Start a scan in inSecs for durSecs long"
 
         # our fake GPU simulator needs to know the start time of the scan
         # and it's duration, so we need to write it to status shared mem.
-        print "PLAYER: Starting scan in %d seconds for %d seconds" % (inSecs, durSecs)
         def secs_2_dmjd(secs):
             dmjd = (secs/86400) + 40587
             return dmjd + ((secs % 86400)/86400.)
@@ -101,7 +121,6 @@ class BeamformerBackend(VegasBackend):
 
         # NOTE: SCANLEN can also be set w/ player.set_param(scan_length=#)
         self.write_status(STRTDMJD=str(startDMJD),SCANLEN=str(durSecs))
-        self.scan_length = durSecs
 
         dt = datetime.utcnow()
         dt.replace(second = 0)
@@ -180,27 +199,46 @@ class BeamformerBackend(VegasBackend):
 
         self.stop_hpc()
 
-        # Clear shared memory for this instance
-        subprocess.call("hashpipe_clean_shmem -I 0", shell=True)
-
+        # Get hashpipe command (specified by configuration file)
         hpc_program = self.mode.hpc_program
         if hpc_program is None:
             raise Exception("Configuration error: no field hpc_program specified in "
                             "MODE section of %s " % (self.current_mode))
 
-        # TBF: remove the special handling of beamformer
-        if hpc_program == 'beamformer':
-            # cmd = 'taskset 0x0606 hashpipe -p fake_gpu -I %d -o BINDHOST=px1-2.gb.nrao.edu -o GPUDEV=0 -o XID=0 -c 3 fake_gpu_thread' % self.instance_id
-            cmd = 'hashpipe -p flag_sim2 -I %d -o BINDHOST=10.16.96.239 -o BINDPORT=50001 -o GPUDEV=0 -o XID=0 -c 0 flag_net_thread -c 1 flag_transpose_thread -c 2 flag_fakecor_thread -c 3 flag_corsave_thread' % self.instance_id
-             
-            process_list = shlex.split(cmd)
-        else:
-            process_list = [hpc_program]
+        # Create command to start process
+        process_list = [hpc_program]
 
-        if self.mode.hpc_program_flags and hpc_program != 'beamformer':
+        # Add flags specified by configuration file
+        if self.mode.hpc_program_flags:
             process_list = process_list + self.mode.hpc_program_flags.split()
 
-        print "process_list: ", process_list
+        # Add Instance ID
+        inst_str = "-I " + str(self.instance)
+        process_list = process_list + inst_str.split()
+
+        # Add BINDHOST
+        host_str = "-o BINDHOST=" + str(self.bindhost)
+        process_list = process_list + host_str.split()
+
+        # Add BINDPORT
+        port_str = "-o BINDPORT=" + str(self.bindport)
+        process_list = process_list + port_str.split()
+
+        # Add XID
+        xid_str = "-o XID=" + str(self.xid)
+        process_list = process_list + xid_str.split()
+
+        # Add GPUDEV
+        gpu_str = "-o GPUDEV=" + str(self.gpudev)
+        process_list = process_list + gpu_str.split()
+
+        # Add threads
+        process_list = process_list + "-c 0 flag_net_thread".split()
+        process_list = process_list + "-c 1 flag_transpose_thread".split()
+        process_list = process_list + "-c 2 flag_correlator_thread".split()
+        process_list = process_list + "-c 3 flag_corsave_thread".split()
+
+        print ' '.join(process_list)
         self.hpc_process = subprocess.Popen(process_list, stdin=subprocess.PIPE)
 
     def start_fits_writer(self):
@@ -214,13 +252,12 @@ class BeamformerBackend(VegasBackend):
             return
 
         self.stop_fits_writer()
-        #fits_writer_program = "bfFitsWriter"
+        fits_writer_program = "bfFitsWriter"
 
-        #cmd = self.dibas_dir + '/exec/x86_64-linux/' + fits_writer_program
+        cmd = self.dibas_dir + '/exec/x86_64-linux/' + fits_writer_program
         #self.fits_writer_process = subprocess.Popen((sp_path, ), stdin=subprocess.PIPE)
-        #cmd += " -i %d" % self.instance_id
-        #cmd += " -m c" 
-        cmd = "dummy_fits_writer"
+        cmd += " -i %d" % self.instance_id
+        cmd += " -m c" 
         process_list = shlex.split(cmd)
         self.fits_writer_process = subprocess.Popen(process_list, stdin=subprocess.PIPE)
     
