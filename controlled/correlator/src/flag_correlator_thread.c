@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <string.h>
+#include <math.h>
 
 #include <xgpu.h>
 #include "hashpipe.h"
@@ -44,7 +45,9 @@ static void * run(hashpipe_thread_args_t * args) {
     hashpipe_status_lock_safe(&st);
     hputs(st.buf, "INTSTAT", "off");
     hputi8(st.buf, "INTSYNC", 0);
-    hputi4(st.buf, "INTCOUNT", 1);
+    hputr4(st.buf, "REQSTI", 0.5); // Requested STI length (set by Dealer/Player)
+    hputr4(st.buf, "ACTSTI", 0.0); // Delivered (actual) STI length (based on whole number of blocks)
+    hputi4(st.buf, "INTCOUNT", 1); // Number of blocks to integrate per STI
     hgeti4(st.buf, "GPUDEV", &gpu_dev);
     hputi4(st.buf, "GPUDEV", gpu_dev);
     hashpipe_status_unlock_safe(&st);
@@ -79,7 +82,7 @@ static void * run(hashpipe_thread_args_t * args) {
     int curblock_out = 0;
     uint64_t start_mcnt = 0;
     uint64_t last_mcnt = 0;
-    int int_count; // Number of blocks to integrate per dump
+    int int_count = 1; // Number of blocks to integrate per dump
     state cur_state = ACQUIRE;
     state next_state = ACQUIRE;
     char netstat[17];
@@ -153,9 +156,19 @@ static void * run(hashpipe_thread_args_t * args) {
                     // set correlator integrator to "on"
                     fprintf(stderr, "COR: Starting correlator!\n");
                     strcpy(integ_status, "on");
+                    float requested_integration_time = 0.0;
+                    float actual_integration_time = 0.0;
                     hashpipe_status_lock_safe(&st);
                     hputs(st.buf, "INTSTAT", integ_status);
-                    hgeti4(st.buf, "INTCOUNT", &int_count);
+                    hgetr4(st.buf, "REQSTI", &requested_integration_time);
+                    hashpipe_status_unlock_safe(&st);
+
+                    int_count = ceil((N_MCNT_PER_SECOND / Nm) * requested_integration_time);
+                    actual_integration_time = int_count/(N_MCNT_PER_SECOND / Nm);
+
+                    hashpipe_status_lock_safe(&st);
+                    hputr4(st.buf, "ACTSTI", actual_integration_time);
+                    hputi4(st.buf, "INTCOUNT", int_count);
                     hashpipe_status_unlock_safe(&st);
 
                     // Compute last mcount
@@ -201,6 +214,7 @@ static void * run(hashpipe_thread_args_t * args) {
                 xgpuClearDeviceIntegrationBuffer(&context);
                 //xgpuReorderMatrix((Complex *)db_out->block[curblock_out].data);
                 db_out->block[curblock_out].header.mcnt = start_mcnt;
+                printf("COR: Dumping correlator output to block %d\n", curblock_out);
             
                 // Mark output block as full and advance
                 flag_correlator_output_databuf_set_filled(db_out, curblock_out);
@@ -214,6 +228,9 @@ static void * run(hashpipe_thread_args_t * args) {
         }
         else if (cur_state == CLEANUP) {
             next_state = ACQUIRE;
+            // Set interntal integ_status to start
+            strcpy(integ_status, "start");
+
             // Clear out integration buffer on GPU
             xgpuClearDeviceIntegrationBuffer(&context);
             curblock_in = 0;

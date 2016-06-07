@@ -63,6 +63,9 @@ class BeamformerBackend(VegasBackend):
 
         VegasBackend.__init__(self, theBank, theMode, theRoach, theValon, hpc_macs, unit_test)
 
+        # Add additional dealer-controlled parameters
+        self.params["int_length"] = self.setIntegrationTime
+
         # Read in the additional parameters from the configuration file
         self.read_parameters(theBank)
 
@@ -121,6 +124,7 @@ class BeamformerBackend(VegasBackend):
 
         # NOTE: SCANLEN can also be set w/ player.set_param(scan_length=#)
         self.write_status(STRTDMJD=str(startDMJD),SCANLEN=str(durSecs))
+        self.write_status(REQSTI=str(self.requested_integration_time))
 
         dt = datetime.utcnow()
         dt.replace(second = 0)
@@ -252,7 +256,7 @@ class BeamformerBackend(VegasBackend):
             return
 
         self.stop_fits_writer()
-        fits_writer_program = "bfFitsWriter"
+        fits_writer_program = "dummy_fits_writer"
 
         cmd = self.dibas_dir + '/exec/x86_64-linux/' + fits_writer_program
         #self.fits_writer_process = subprocess.Popen((sp_path, ), stdin=subprocess.PIPE)

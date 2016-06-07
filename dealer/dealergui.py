@@ -161,11 +161,15 @@ class MyFrame(wx.Frame):
         self.scanStart = wx.TextCtrl(self.panel, wx.ID_ANY, "5")
         lengthText = wx.StaticText(self.panel, wx.ID_ANY, "Scan Length (sec)")
         self.scanLength = wx.TextCtrl(self.panel, wx.ID_ANY, "1")
+        intText = wx.StaticText(self.panel, wx.ID_ANY, "Integration Length (sec)")
+        self.intLength = wx.TextCtrl(self.panel, wx.ID_ANY, "1")
 
         buttonSizer.Add(startText, 0, wx.EXPAND);
         buttonSizer.Add(self.scanStart, 0, wx.EXPAND);
         buttonSizer.Add(lengthText, 0, wx.EXPAND);
         buttonSizer.Add(self.scanLength, 0, wx.EXPAND);
+        buttonSizer.Add(intText, 0, wx.EXPAND);
+        buttonSizer.Add(self.intLength, 0, wx.EXPAND);
         
         contentSizer.AddSpacer((10,-1))
         contentSizer.Add(buttonSizer, 0, wx.EXPAND)
@@ -193,11 +197,14 @@ class MyFrame(wx.Frame):
             d.remove_active_player(playerName)
 
     def setMode(self, event):
-        d.set_mode(self.modeBox.GetValue())
+        mode_name = self.modeBox.GetValue()
+        d.set_mode(mode_name)
 
     def sendStart(self, event):
-        startTime = int(self.scanStart.GetValue());
-        scanLength = int(self.scanLength.GetValue());
+        startTime = float(self.scanStart.GetValue());
+        scanLength = float(self.scanLength.GetValue());
+        intLength = float(self.intLength.GetValue());
+        d.set_param(int_length=intLength)
         d.startin(startTime,scanLength)
 
     def sendStop(self, event):
