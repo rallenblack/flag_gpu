@@ -1,0 +1,31 @@
+BeamformerBackend.py should be placed in $DIBAS_DIR/lib/python
+dibas.conf should be placed in $DIBAS_DIR/etc/config
+
+Before clobbering any GB configurations, I would backup these files on their end.
+dibas.conf is significantly different than the one found at GB.
+
+This requires the flag_gpu plugin to be installed. The version that must be installed is the "controlled" version, which is found in flag_gpu/controlled/correlator/src.
+
+There are runtime parameters that are set by the dibas.conf file.
+
+For example:
+
+[BANKA]
+...
+data_destination_host = 10.0.0.1 # The 10 GbE IP address/hostname on which data arrive
+data_destination_port = 60000    # Ditto, but the fabric port
+...
+xid = 3           # The Xengine ID
+instance = 2      # The hashpipe instance ID
+gpudev = 0        # The GPU device ID
+cpus = 0, 1, 2, 3 # The CPU cores that the threads should run on (not fully implemented yet)
+
+
+[FLAG_BETA_MODE1]
+...
+hpc_program = hashpipe
+hpc_program_flags = -p flag_gpu
+...
+
+
+In future revisions, the thread names will likely also reside in the MODE definition

@@ -50,10 +50,11 @@ static void * run(hashpipe_thread_args_t * args) {
         }
 
         uint64_t start_mcnt = db_in->block[curblock_in].header.mcnt;
-        Complex * p = (Complex *)db_in->block[curblock_in].data;
+        // Complex * p = (Complex *)db_in->block[curblock_in].data;
         char filename[128];
         sprintf(filename, "cor_mcnt_%lld.out", (long long)start_mcnt);
-        fprintf(stderr, "Saving to %s\n", filename);
+        // fprintf(stderr, "Saving to %s (but not really) \n", filename);
+        /*
         FILE * filePtr = fopen(filename, "w");
 
         int j;
@@ -64,6 +65,7 @@ static void * run(hashpipe_thread_args_t * args) {
             fprintf(filePtr, "%g\n", p_im);
         }
         fclose(filePtr);
+        */
 
         flag_correlator_output_databuf_set_free(db_in, curblock_in);
         curblock_in = (curblock_in + 1) % db_in->header.n_block;

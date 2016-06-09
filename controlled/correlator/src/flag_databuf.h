@@ -18,13 +18,16 @@
 #define N_FENGINES (N_INPUTS/N_INPUTS_PER_FENGINE)
 
 // Number of X engines
-#define N_XENGINES (10)
+#define N_XENGINES (20)
 
 // Number of inputs per packet
 #define N_INPUTS_PER_PACKET N_INPUTS_PER_FENGINE
 
 // Number of time samples per packet
 #define N_TIME_PER_PACKET 20
+#define SAMP_RATE 155.52e6
+#define COARSE_SAMP_RATE (SAMP_RATE/512)
+#define N_MCNT_PER_SECOND (COARSE_SAMP_RATE/N_TIME_PER_PACKET)
 
 // Number of bits per I/Q sample
 // Determined by F engine packetizer

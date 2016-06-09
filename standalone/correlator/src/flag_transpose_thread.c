@@ -63,7 +63,8 @@ static void * run(hashpipe_thread_args_t * args) {
 		curblock_in = 0;
 	    }
         }
-
+        
+        
         // Wait for output buffer block to be freed
         while ((rv=flag_gpu_input_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
             if (rv == HASHPIPE_TIMEOUT) {
@@ -77,12 +78,14 @@ static void * run(hashpipe_thread_args_t * args) {
                 break;
             }
         }
+        
        
+        
         // Print out the header information for this block 
         flag_input_header_t tmp_header;
         memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_input_header_t));
         mcnt = tmp_header.mcnt_start;
-	printf("TRA: Receiving mcnt = %lld\n", (long long int)mcnt);
+	// printf("TRA: Receiving mcnt = %lld\n", (long long int)mcnt);
 
         // Perform transpose
 
@@ -105,10 +108,13 @@ static void * run(hashpipe_thread_args_t * args) {
             }
         }
         db_out->block[curblock_out].header.mcnt = mcnt;
+        
 
         flag_gpu_input_databuf_set_filled(db_out, curblock_out);
         curblock_out = (curblock_out + 1) % db_out->header.n_block;
+        
 
+        
         flag_input_databuf_set_free(db_in, curblock_in);
         curblock_in = (curblock_in + 1) % db_in->header.n_block;
 
