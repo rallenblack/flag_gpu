@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include "hashpipe_databuf.h"
 #include "config.h"
-#include "flag_beamformer.h"
+#include "cublas_beamformer.h"
 
 
 // Total number of antennas (nominally 40)
@@ -19,13 +19,13 @@
 #define N_FENGINES (N_INPUTS/N_INPUTS_PER_FENGINE)
 
 // Number of X engines
-#define N_XENGINES (10)
+#define N_XENGINES (20)
 
 // Number of inputs per packet
 #define N_INPUTS_PER_PACKET N_INPUTS_PER_FENGINE
 
 // Number of time samples per packet
-#define N_TIME_PER_PACKET 10
+#define N_TIME_PER_PACKET 20
 
 // Number of bits per I/Q sample
 // Determined by F engine packetizer
@@ -45,6 +45,8 @@
 
 // Number of channels processed per XGPU instance?
 #define N_CHAN_PER_X XGPU_NFREQUENCY
+
+// We really should assert that N_CHAN_PER_PACKET == N_CHAN_PER_X (RB, June 9, 2016)
 
 // Number of time samples processed per XGPU instance?
 #define N_TIME_PER_BLOCK XGPU_NTIME
@@ -78,7 +80,7 @@
 // #define N_COR_MATRIX (N_INPUTS*(N_INPUTS + 1)/2*N_CHAN_PER_X)
 #define N_COR_MATRIX (N_INPUTS/2*(N_INPUTS/2 + 1)/2*N_CHAN_PER_X*4)
 #define N_OUT_SAMPS N_INPUT
-#define N_BEAM_SAMPS N_OUTPUTS
+#define N_BEAM_SAMPS (2*N_OUTPUTS)
 
 // Macros to maintain cache alignment
 #define CACHE_ALIGNMENT (128)

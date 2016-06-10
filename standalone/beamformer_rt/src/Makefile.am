@@ -35,7 +35,7 @@ flag_threads = flag_net_thread.c \
 # This is the flag_gpu plugin itself
 lib_LTLIBRARIES = flag_beamformer.la
 flag_beamformer_la_SOURCES  = $(flag_databuf) $(flag_threads)
-flag_beamformer_la_LIBADD   = -lrt -lxgpu -lflagbeamformer
+flag_beamformer_la_LIBADD   = -lrt -lxgpu -lflagbeamformer -lcublas -L/usr/local/cuda/lib64
 flag_beamformer_la_LDFLAGS  = -avoid-version -module -shared -export-dynamic --enable-shared
 flag_beamformer_la_LDFLAGS += -L"@XGPU_LIBDIR@" -Wl,-rpath,"@XGPU_LIBDIR@"
 flag_beamformer_la_LDFLAGS += -L"@HASHPIPE_LIBDIR@" -Wl,-rpath,"@HASHPIPE_LIBDIR@"

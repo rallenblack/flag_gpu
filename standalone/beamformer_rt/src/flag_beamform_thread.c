@@ -9,7 +9,7 @@
 #include <pthread.h>
 #include <string.h>
 
-#include "flag_beamformer.h"
+#include "cublas_beamformer.h"
 #include "hashpipe.h"
 #include "flag_databuf.h"
 
@@ -87,7 +87,7 @@ static void * run(hashpipe_thread_args_t * args) {
         }
        
         // Run the beamformer
-        run_beamformer((unsigned char *)&db_in->block[curblock_in].data, (float *)&db_out->block[curblock_out].data);
+        run_beamformer((signed char *)&db_in->block[curblock_in].data, (float *)&db_out->block[curblock_out].data);
         
 	// Get block's starting mcnt for output block
         db_out->block[curblock_out].header.mcnt = start_mcnt;
