@@ -13,6 +13,8 @@
 
 using namespace std;
 
+// Main-specific function prototypes
+signed char * data_in(char * input_filename);
 void printUsage();
 
 int main(int argc, char * argv[]) {
@@ -30,12 +32,6 @@ int main(int argc, char * argv[]) {
 	strcpy(output_filename, argv[3]);
 
 	/*********************************************************
-	 *Create a handle for CUBLAS
-	 *********************************************************/
-	cublasHandle_t handle;
-	cublasCreate(&handle);
-
-	/*********************************************************
 	 * Initialize beamformer
 	 *********************************************************/
 	init_beamformer();
@@ -48,16 +44,16 @@ int main(int argc, char * argv[]) {
 	/*********************************************************
 	 * Input data and restructure for cublasCgemmBatched()
 	 *********************************************************/
-	data_in(input_filename);
+	signed char * input_f = data_in(input_filename);
 
 	// Allocate memory for the output
 	float * output_f;
 	output_f = (float *)calloc(N_POL*(N_OUTPUTS/2),sizeof(float));
 
 	/*********************************************************
-     * Run beamformer
-     *********************************************************/
-	run_beamformer(handle, output_f);
+         * Run beamformer
+         *********************************************************/
+	run_beamformer(input_f, output_f);
 
 	// Save output data to file
 	FILE * output;
@@ -66,13 +62,12 @@ int main(int argc, char * argv[]) {
 	fclose(output);
 
 	free(output_f);
-	//	cublasDestroy(handle);
 
 	return 0;
 }
 
 void printUsage() {
-	printf("Usage: my_beamformer <input_filename> <weight_filename> <output_filename>\n");
+	printf("Usage: cublas_main <input_filename> <weight_filename> <output_filename>\n");
 }
 //  // Start and stop time - Used time certain sections of code (Not very accurate, use profiler or cudaThreadSynchronize())
 //	struct timespec tstart = {0,0};

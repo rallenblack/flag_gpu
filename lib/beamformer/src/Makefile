@@ -13,27 +13,27 @@ endif
 
 NVCC = $(CUDA_DIR)/bin/nvcc
 
-all: libflagbeamformer.so test_beamformer.o
-	gcc -L $(CUDA_LIBDIR) -lstdc++ -lcudart -o test_beamformer libflagbeamformer.so test_beamformer.o
+all: libflagbeamformer.so cublas_main.o
+	gcc -L $(CUDA_LIBDIR) -lstdc++ -lcudart -lcublas -o cublas_main libflagbeamformer.so cublas_main.o
 
-flag_beamformer.o: flag_beamformer.cu flag_beamformer.h
-	$(NVCC) -c -o flag_beamformer.o -Xcompiler -fPIC -Xcompiler -D_REENTRANT -O3 flag_beamformer.cu
+cublas_beamformer.o: cublas_beamformer.cu cublas_beamformer.h
+	$(NVCC) -c -o cublas_beamformer.o -Xcompiler -fPIC -Xcompiler -D_REENTRANT -O3 cublas_beamformer.cu
 
-libflagbeamformer.so: flag_beamformer.o
-	$(NVCC) -Xcompiler -fPIC -Xcompiler -D_REENTRANT -O3 flag_beamformer.o -o libflagbeamformer.so -L$(CUDA_LIBDIR) --shared
+libflagbeamformer.so: cublas_beamformer.o
+	$(NVCC) -Xcompiler -fPIC -Xcompiler -D_REENTRANT -O3 cublas_beamformer.o -o libflagbeamformer.so -L$(CUDA_LIBDIR) --shared
 
-test_beamformer.o: test_beamformer.cu flag_beamformer.h
-	$(NVCC) -I $(CUDA_DIR)/include -c -o test_beamformer.o test_beamformer.cu
+cublas_main.o: cublas_main.cu cublas_beamformer.h
+	$(NVCC) -I $(CUDA_DIR)/include -c -o cublas_main.o cublas_main.cu
 
 clean:
 	rm -f *.o
 	rm -f *.so
-	rm -f test_beamformer
+	rm -f cublas_main
 
-install: test_beamformer flag_beamformer.h libflagbeamformer.so
+install: cublas_main cublas_beamformer.h libflagbeamformer.so
 	mkdir -p $(includedir)
-	cp flag_beamformer.h $(includedir)
+	cp cublas_beamformer.h $(includedir)
 	mkdir -p $(libdir)
 	cp libflagbeamformer.so $(libdir)
 	mkdir -p $(bindir)
-	cp test_beamformer $(bindir)
+	cp cublas_main $(bindir)
