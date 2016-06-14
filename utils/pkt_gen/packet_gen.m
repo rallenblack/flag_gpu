@@ -12,11 +12,11 @@ Ninputs   = 40;    % Number of inputs/antennas
 Nbins     = 500;   % Total number of frequency bins
 Nfft      = 512;   % F-engine FFT size
 Nfengines = 5;     % Number of F-engines
-Nxengines = 10;    % Number of X-engines (i.e. Number of GPUs)
+Nxengines = 20;    % Number of X-engines (i.e. Number of GPUs)
 
 Nin_per_f        = Ninputs/Nfengines; % Number of inputs per F-engine
 Nbin_per_x       = Nbins/Nxengines; % Number of bins per X-engine
-Ntime_per_packet = 10; % Number of time samples (spectra snapshots) per packet
+Ntime_per_packet = 20; % Number of time samples (spectra snapshots) per packet
 
 quant_res = 0.5e-8; % Arbitrary quantization resolution for noise generation
 
@@ -34,7 +34,7 @@ sigma2 = kb*Tsys*BW;    % Noise power per channel
 % 3 -> Send all ones
 % 4 -> Send chirp
 % else -> Send all zeros
-data_flag = 3;
+data_flag = 0;
 
 % Sinusoid parameters (only used if data_flag = 2)
 % It should be noted that the phase of the sinusoid will not change between
@@ -61,19 +61,19 @@ c_time_per_bin = c_ntime/c_num_bins;
 
 % Create UDP sockets - 1 IP address per Xengine (xid)
 for xid = 1:Nxengines
-    remoteHost = ['10.40.', num2str(xid), '.1'];
-    sock(xid) = udp(remoteHost, 'RemotePort', 8511, 'LocalPort', 8511);
+    remoteHost = ['10.10.', num2str(xid), '.1'];
+    sock(xid) = udp(remoteHost, 'RemotePort', 60000, 'LocalPort', 60000);
     set(sock(xid), 'OutputBufferSize', 9000);
     set(sock(xid), 'OutputDatagramPacketSize', 9000);
 end
 
 
 % Generate packet payloads
-mcnt = 0; % Each mcnt represents 10 packets across all F-engines in the
+mcnt = 0; % Each mcnt represents 20 packets across all F-engines in the
           % same time frame
-while mcnt <= 1000
+while mcnt <= 10000
     disp(['Sending mcnt = ', num2str(mcnt)]);
-    for xid = 4:4 % Set to a single X-engine for single HPC testing (Richard B.)
+    for xid = 13:13 % Set to a single X-engine for single HPC testing (Richard B.)
         for fid = 1:Nfengines
             w_idx = 1;
             
