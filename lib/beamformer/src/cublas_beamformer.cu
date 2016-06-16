@@ -117,13 +117,13 @@ void update_weights(char * filename){
 
 		// Transpose the weights
 		int m,n;
-		float complex transpose[BN_BEAM][BN_ELE*BN_BIN];
+		float complex transpose[BN_BEAM][BN_ELE_BLOC*BN_BIN];
 		for(m=0;m<BN_BEAM;m++){
-			for(n=0;n<BN_ELE*BN_BIN;n++){
-				transpose[m][n] = weights_dc_n[m*BN_ELE*BN_BIN + n];
+			for(n=0;n<BN_ELE_BLOC*BN_BIN;n++){
+				transpose[m][n] = weights_dc_n[m*BN_ELE_BLOC*BN_BIN + n];
 			}
 		}
-		for(n=0;n<BN_ELE*BN_BIN;n++){
+		for(n=0;n<BN_ELE_BLOC*BN_BIN;n++){
 			for(m=0;m<BN_BEAM;m++){
 				weights_dc[n*BN_BEAM+ m] = transpose[m][n];
 			}
@@ -277,8 +277,8 @@ signed char * data_in(char * input_filename){
 void beamform() {
 	int nr_rows_A, nr_cols_A, nr_rows_B, nr_cols_B, nr_rows_C;
 	nr_rows_A = BN_BEAM;
-	nr_cols_A = BN_ELE;
-	nr_rows_B = BN_ELE;
+	nr_cols_A = BN_ELE_BLOC;
+	nr_rows_B = BN_ELE_BLOC;
 	nr_cols_B = BN_TIME;
 	nr_rows_C = BN_BEAM;
 
@@ -411,7 +411,7 @@ void run_beamformer(signed char * data_in, float * data_out) {
 	dim3 dimGrid(BN_BIN, BN_BEAM1, BN_STI);
 
 	// Specify grid and block dimensions
-	dim3 dimBlock_d(BN_ELE, 1, 1);
+	dim3 dimBlock_d(BN_ELE_BLOC, 1, 1);
 	dim3 dimGrid_d(BN_TIME, BN_BIN, 1);
 
 	signed char * d_restruct_in = d_data1;
