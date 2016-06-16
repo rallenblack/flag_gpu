@@ -48,7 +48,7 @@ int main(int argc, char * argv[]) {
 
 	// Allocate memory for the output
 	float * output_f;
-	output_f = (float *)calloc(N_POL*(N_OUTPUTS/2),sizeof(float));
+	output_f = (float *)calloc(BN_POL*(BN_OUTPUTS/2),sizeof(float));
 
 	/*********************************************************
          * Run beamformer
@@ -58,7 +58,7 @@ int main(int argc, char * argv[]) {
 	// Save output data to file
 	FILE * output;
 	output = fopen(output_filename, "w");
-	fwrite(output_f, sizeof(float), N_POL*(N_OUTPUTS/2), output);
+	fwrite(output_f, sizeof(float), BN_POL*(BN_OUTPUTS/2), output);
 	fclose(output);
 
 	free(output_f);

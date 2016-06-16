@@ -38,8 +38,8 @@ void GPU_fill(cuComplex *A, int nr_rows_A, int nr_cols_A) {
 	cuComplex *G;
 	G = new cuComplex[nr_rows_A*nr_cols_A];
 	for(int i = 0; i < nr_rows_A*nr_cols_A; ++i){
-		G[i].x = (i + 1)%(nr_rows_A*nr_cols_A/(N_BIN));
-		G[i].y = (i + 1)%(nr_rows_A*nr_cols_A/(N_BIN));
+		G[i].x = (i + 1)%(nr_rows_A*nr_cols_A/(BN_BIN));
+		G[i].y = (i + 1)%(nr_rows_A*nr_cols_A/(BN_BIN));
 
 	}
 
@@ -51,8 +51,8 @@ void GPU_fill2(cuComplex *A, int nr_rows_A, int nr_cols_A) {
 	cuComplex *G;
 	G = new cuComplex[nr_rows_A*nr_cols_A];
 	for(int i = 0; i < nr_rows_A*nr_cols_A; ++i){
-		G[i].x = i%(nr_rows_A*nr_cols_A/(N_BIN));
-		G[i].y = i%(nr_rows_A*nr_cols_A/(N_BIN));
+		G[i].x = i%(nr_rows_A*nr_cols_A/(BN_BIN));
+		G[i].y = i%(nr_rows_A*nr_cols_A/(BN_BIN));
 	}
 
 	cudaMemcpy(A,G,nr_rows_A * nr_cols_A * sizeof(cuComplex),cudaMemcpyHostToDevice);
@@ -101,31 +101,31 @@ void update_weights(char * filename){
 	float complex * weights_dc_n;
 
 	// Allocate heap memory for file data
-	bf_weights = (float *)malloc(2*N_WEIGHTS*sizeof(float));
-	weights_dc = (float complex *)malloc(N_WEIGHTS*sizeof(float complex *));
-	weights_dc_n = (float complex *)malloc(N_WEIGHTS*sizeof(float complex *));
+	bf_weights = (float *)malloc(2*BN_WEIGHTS*sizeof(float));
+	weights_dc = (float complex *)malloc(BN_WEIGHTS*sizeof(float complex *));
+	weights_dc_n = (float complex *)malloc(BN_WEIGHTS*sizeof(float complex *));
 	weights = fopen(weight_filename, "r");
 
 	int j;
 	if (weights != NULL) {
-		fread(bf_weights, sizeof(float), 2*N_WEIGHTS, weights);
+		fread(bf_weights, sizeof(float), 2*BN_WEIGHTS, weights);
 
 		// Convert to complex numbers (do a conjugate at the same time)
-		for(j = 0; j < N_WEIGHTS; j++){
+		for(j = 0; j < BN_WEIGHTS; j++){
 			weights_dc_n[j] = bf_weights[2*j] - bf_weights[(2*j)+1]*I;
 		}
 
 		// Transpose the weights
 		int m,n;
-		float complex transpose[N_BEAM][N_ELE*N_BIN];
-		for(m=0;m<N_BEAM;m++){
-			for(n=0;n<N_ELE*N_BIN;n++){
-				transpose[m][n] = weights_dc_n[m*N_ELE*N_BIN + n];
+		float complex transpose[BN_BEAM][BN_ELE*BN_BIN];
+		for(m=0;m<BN_BEAM;m++){
+			for(n=0;n<BN_ELE*BN_BIN;n++){
+				transpose[m][n] = weights_dc_n[m*BN_ELE*BN_BIN + n];
 			}
 		}
-		for(n=0;n<N_ELE*N_BIN;n++){
-			for(m=0;m<N_BEAM;m++){
-				weights_dc[n*N_BEAM+ m] = transpose[m][n];
+		for(n=0;n<BN_ELE*BN_BIN;n++){
+			for(m=0;m<BN_BEAM;m++){
+				weights_dc[n*BN_BEAM+ m] = transpose[m][n];
 			}
 		}
 		fclose(weights);
@@ -133,7 +133,7 @@ void update_weights(char * filename){
 	free(bf_weights);
 
 	// Copy weights to device
-	cudaMemcpy(d_weights, weights_dc, N_WEIGHTS*sizeof(cuComplex), cudaMemcpyHostToDevice); //r_weights instead of weights_dc //*N_TIME
+	cudaMemcpy(d_weights, weights_dc, BN_WEIGHTS*sizeof(cuComplex), cudaMemcpyHostToDevice); //r_weights instead of weights_dc //*BN_TIME
 
 	free(weights_dc);
 }
@@ -148,18 +148,18 @@ static cublasHandle_t handle;
 void init_beamformer(){
 	// Allocate memory for the weights, data, beamformer output, and sti output.
 
-	cudaMalloc((void **)&d_weights, N_WEIGHTS*sizeof(cuComplex)); //*N_TIME
+	cudaMalloc((void **)&d_weights, BN_WEIGHTS*sizeof(cuComplex)); //*BN_TIME
 
-	cudaMalloc((void **)&d_data1, 2*N_SAMP*sizeof(signed char));
+	cudaMalloc((void **)&d_data1, 2*BN_SAMP*sizeof(signed char));
 
-	cudaMalloc((void **)&d_data, N_SAMP*sizeof(cuComplex));
+	cudaMalloc((void **)&d_data, BN_SAMP*sizeof(cuComplex));
 
-	cudaError_t err_malloc = cudaMalloc((void **)&d_beamformed, N_TBF*sizeof(cuComplex));
+	cudaError_t err_malloc = cudaMalloc((void **)&d_beamformed, BN_TBF*sizeof(cuComplex));
 	if (err_malloc != cudaSuccess) {
 		printf("CUDA Error (cudaMalloc2): %s\n", cudaGetErrorString(err_malloc));
 	}
 
-	cudaMalloc((void **)&d_outputs, N_POL*(N_OUTPUTS*sizeof(float)/2));
+	cudaMalloc((void **)&d_outputs, BN_POL*(BN_OUTPUTS*sizeof(float)/2));
 
         /**********************************************************
          * Create a handle for CUBLAS
@@ -172,21 +172,21 @@ void init_beamformer(){
 
 	int nr_rows_A, nr_cols_A, nr_rows_B, nr_cols_B, nr_rows_C, nr_cols_C;
 
-	nr_rows_A = N_BEAM;
-	nr_cols_A = N_ELE;
-	nr_rows_B = N_ELE;
-	nr_cols_B = N_TIME;
-	nr_rows_C = N_BEAM;
-	nr_cols_C = N_TIME;
+	nr_rows_A = BN_BEAM;
+	nr_cols_A = BN_ELE_BLOC;
+	nr_rows_B = BN_ELE_BLOC;
+	nr_cols_B = BN_TIME;
+	nr_rows_C = BN_BEAM;
+	nr_cols_C = BN_TIME;
 
 	// Allocate memory to host arrays.
 	const cuComplex **h_arr_A = 0; const cuComplex **h_arr_B = 0; cuComplex **h_arr_C = 0;
-	h_arr_A = (const cuComplex **)malloc(nr_rows_A * nr_cols_A *N_BIN*sizeof(const cuComplex*));
-	h_arr_B = (const cuComplex **)malloc(nr_rows_B * nr_cols_B *N_BIN*sizeof(const cuComplex*));
-	h_arr_C = (cuComplex **)malloc(nr_rows_C * nr_cols_C *N_BIN*sizeof(cuComplex*));
+	h_arr_A = (const cuComplex **)malloc(nr_rows_A * nr_cols_A *BN_BIN*sizeof(const cuComplex*));
+	h_arr_B = (const cuComplex **)malloc(nr_rows_B * nr_cols_B *BN_BIN*sizeof(const cuComplex*));
+	h_arr_C = (cuComplex **)malloc(nr_rows_C * nr_cols_C *BN_BIN*sizeof(cuComplex*));
 
 	// Allocate memory for each batch in an array.
-	for(int i = 0; i < N_BIN; i++){
+	for(int i = 0; i < BN_BIN; i++){
 		h_arr_A[i] = d_weights + i*nr_rows_A*nr_cols_A;
 		h_arr_B[i] = d_data + i*nr_rows_B*nr_cols_B;
 		h_arr_C[i] = d_beamformed + i*nr_rows_C*nr_cols_C;
@@ -196,19 +196,19 @@ void init_beamformer(){
 	//	delete[] d_B;
 
 	// Allocate memory to arrays on device.
-	cudaStat = cudaMalloc((void **)&d_arr_A,nr_rows_A * nr_cols_A * N_BIN * sizeof(cuComplex*));
+	cudaStat = cudaMalloc((void **)&d_arr_A,nr_rows_A * nr_cols_A * BN_BIN * sizeof(cuComplex*));
 	assert(!cudaStat);
-	cudaStat = cudaMalloc((void **)&d_arr_B,nr_rows_B * nr_cols_B * N_BIN * sizeof(cuComplex*));
+	cudaStat = cudaMalloc((void **)&d_arr_B,nr_rows_B * nr_cols_B * BN_BIN * sizeof(cuComplex*));
 	assert(!cudaStat);
-	cudaStat = cudaMalloc((void **)&d_arr_C,nr_rows_C * nr_cols_C * N_BIN * sizeof(cuComplex*));
+	cudaStat = cudaMalloc((void **)&d_arr_C,nr_rows_C * nr_cols_C * BN_BIN * sizeof(cuComplex*));
 	assert(!cudaStat);
 
 	// Copy memory from host to device.
-	cudaStat = cudaMemcpy(d_arr_A,h_arr_A,nr_rows_A * nr_cols_A * N_BIN * sizeof(cuComplex*),cudaMemcpyHostToDevice);
+	cudaStat = cudaMemcpy(d_arr_A,h_arr_A,nr_rows_A * nr_cols_A * BN_BIN * sizeof(cuComplex*),cudaMemcpyHostToDevice);
 	assert(!cudaStat);
-	cudaStat = cudaMemcpy(d_arr_B,h_arr_B,nr_rows_B * nr_cols_B * N_BIN * sizeof(cuComplex*),cudaMemcpyHostToDevice);
+	cudaStat = cudaMemcpy(d_arr_B,h_arr_B,nr_rows_B * nr_cols_B * BN_BIN * sizeof(cuComplex*),cudaMemcpyHostToDevice);
 	assert(!cudaStat);
-	cudaStat = cudaMemcpy(d_arr_C,h_arr_C,nr_rows_C * nr_cols_C * N_BIN * sizeof(cuComplex*),cudaMemcpyHostToDevice);
+	cudaStat = cudaMemcpy(d_arr_C,h_arr_C,nr_rows_C * nr_cols_C * BN_BIN * sizeof(cuComplex*),cudaMemcpyHostToDevice);
 	assert(!cudaStat);
 
         
@@ -222,8 +222,8 @@ void data_restructure(signed char * data, cuComplex * data_restruc){
 	int f = blockIdx.y;
 
 	//Restructure data so that the frequency bin is the slowest moving index
-	data_restruc[f*N_TIME*N_ELE + t*N_ELE + e].x = data[2*(t*N_BIN*N_ELE + f*N_ELE + e)]*1.0f;
-	data_restruc[f*N_TIME*N_ELE + t*N_ELE + e].y = data[2*(t*N_BIN*N_ELE + f*N_ELE + e) + 1]*1.0f;
+	data_restruc[f*BN_TIME*BN_ELE_BLOC + t*BN_ELE_BLOC + e].x = data[2*(t*BN_BIN*BN_ELE_BLOC + f*BN_ELE_BLOC + e)]*1.0f;
+	data_restruc[f*BN_TIME*BN_ELE_BLOC + t*BN_ELE_BLOC + e].y = data[2*(t*BN_BIN*BN_ELE_BLOC + f*BN_ELE_BLOC + e) + 1]*1.0f;
 }
 
 signed char * data_in(char * input_filename){
@@ -236,8 +236,8 @@ signed char * data_in(char * input_filename){
 	// float complex * data_dc;
 
 	// Allocate heap memory for file data
-	bf_data = (signed char *)malloc(2*N_SAMP*sizeof(signed char));
-	//data_dc = (float complex *)malloc(N_SAMP*sizeof(float complex *));
+	bf_data = (signed char *)malloc(2*BN_SAMP*sizeof(signed char));
+	//data_dc = (float complex *)malloc(BN_SAMP*sizeof(float complex *));
 
 	// Open files
 	data = fopen(input_filename, "r");
@@ -246,23 +246,23 @@ signed char * data_in(char * input_filename){
 	 * Read in Data
 	 *********************************************************/
 	if (data != NULL) {
-		fread(bf_data, sizeof(signed char), 2*N_SAMP, data);
+		fread(bf_data, sizeof(signed char), 2*BN_SAMP, data);
 		/*
 		int j;
 		// Make 'em complex!
-		for (j = 0; j < N_SAMP; j++) {
+		for (j = 0; j < BN_SAMP; j++) {
 			data_dc[j] = bf_data[2*j] + bf_data[(2*j)+1]*I;
 		}
 		*/
 
 		// Specify grid and block dimensions
-		// dim3 dimBlock_d(N_ELE, 1, 1);
-		// dim3 dimGrid_d(N_TIME, N_BIN, 1);
+		// dim3 dimBlock_d(BN_ELE, 1, 1);
+		// dim3 dimGrid_d(BN_TIME, BN_BIN, 1);
 
 		//cuComplex * d_data_in = d_data1;
 		//cuComplex * d_data_out = d_data;
 
-		//cudaMemcpy(d_data_in,    data_dc,   N_SAMP*sizeof(cuComplex), cudaMemcpyHostToDevice);
+		//cudaMemcpy(d_data_in,    data_dc,   BN_SAMP*sizeof(cuComplex), cudaMemcpyHostToDevice);
 
 		// Restructure data for cublasCgemmBatched function.
 		//data_restructure<<<dimGrid_d, dimBlock_d>>>(d_data_in, d_data_out);
@@ -276,11 +276,11 @@ signed char * data_in(char * input_filename){
 
 void beamform() {
 	int nr_rows_A, nr_cols_A, nr_rows_B, nr_cols_B, nr_rows_C;
-	nr_rows_A = N_BEAM;
-	nr_cols_A = N_ELE;
-	nr_rows_B = N_ELE;
-	nr_cols_B = N_TIME;
-	nr_rows_C = N_BEAM;
+	nr_rows_A = BN_BEAM;
+	nr_cols_A = BN_ELE;
+	nr_rows_B = BN_ELE;
+	nr_cols_B = BN_TIME;
+	nr_rows_C = BN_BEAM;
 
 	// Leading dimensions are always the rows of each matrix since the data is stored in a column-wise order.
 	int lda=nr_rows_A,ldb=nr_rows_B,ldc=nr_rows_C;
@@ -292,7 +292,7 @@ void beamform() {
 	bet.x = 0;
 	bet.y = 0;
 
-	int batchCount = N_BIN; 				// There must be the same number of batches in each array.
+	int batchCount = BN_BIN; 				// There must be the same number of batches in each array.
 
 	cublasStatus_t stat;
 	/*
@@ -341,8 +341,8 @@ void sti_reduction(cuComplex * data_in, float * data_out) {
 	int t = threadIdx.x;
 	int s = blockIdx.z;
 
-	int h = sample_idx(s*N_TIME_STI + t,b,f);						// Preprocessor macro used for the output of the beamformer. More detail can be seen in the header file. (First set of beams)
-	int h1 = sample_idx(s*N_TIME_STI + t,b+N_BEAM1,f);				// Preprocessor macro used for the output of the beamformer. More detail can be seen in the header file. (Last set of beams)
+	int h = sample_idx(s*BN_TIME_STI + t,b,f);						// Preprocessor macro used for the output of the beamformer. More detail can be seen in the header file. (First set of beams)
+	int h1 = sample_idx(s*BN_TIME_STI + t,b+BN_BEAM1,f);				// Preprocessor macro used for the output of the beamformer. More detail can be seen in the header file. (Last set of beams)
 
 	// Temporary variables used for updating.
 	float beam_power1;
@@ -352,12 +352,12 @@ void sti_reduction(cuComplex * data_in, float * data_out) {
 
 	cuFloatComplex samp1;
 	cuFloatComplex samp2;
-	float scale = 1.0/N_TIME_STI; 									// Scale power by number of samples per STI window.
+	float scale = 1.0/BN_TIME_STI; 									// Scale power by number of samples per STI window.
 
-	__shared__ cuFloatComplex reduced_array1[N_STI_BLOC];
-	__shared__ cuFloatComplex reduced_array[N_STI_BLOC];
+	__shared__ cuFloatComplex reduced_array1[BN_STI_BLOC];
+	__shared__ cuFloatComplex reduced_array[BN_STI_BLOC];
 
-	if (t < N_TIME_STI) {
+	if (t < BN_TIME_STI) {
 		// X polarization (XX*).
 		samp1.x = data_in[h].x;
 		samp1.y = data_in[h].y;
@@ -407,17 +407,17 @@ void sti_reduction(cuComplex * data_in, float * data_out) {
 
 void run_beamformer(signed char * data_in, float * data_out) {
 	// Specify grid and block dimensions
-	dim3 dimBlock(N_STI_BLOC, 1, 1);
-	dim3 dimGrid(N_BIN, N_BEAM1, N_STI);
+	dim3 dimBlock(BN_STI_BLOC, 1, 1);
+	dim3 dimGrid(BN_BIN, BN_BEAM1, BN_STI);
 
 	// Specify grid and block dimensions
-	dim3 dimBlock_d(N_ELE, 1, 1);
-	dim3 dimGrid_d(N_TIME, N_BIN, 1);
+	dim3 dimBlock_d(BN_ELE, 1, 1);
+	dim3 dimGrid_d(BN_TIME, BN_BIN, 1);
 
 	signed char * d_restruct_in = d_data1;
 	cuComplex * d_restruct_out = d_data;
 
-	cudaMemcpy(d_restruct_in, data_in, 2*N_SAMP*sizeof(signed char), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_restruct_in, data_in, 2*BN_SAMP*sizeof(signed char), cudaMemcpyHostToDevice);
 
 	// Restructure data for cublasCgemmBatched function.
 	data_restructure<<<dimGrid_d, dimBlock_d>>>(d_restruct_in, d_restruct_out);
@@ -447,7 +447,7 @@ void run_beamformer(signed char * data_in, float * data_out) {
 	}
 
 	// Copy output data from device to host.
-	cudaMemcpy(data_out, d_sti_out, N_POL*(N_OUTPUTS*sizeof(float)/2),cudaMemcpyDeviceToHost);
+	cudaMemcpy(data_out, d_sti_out, BN_POL*(BN_OUTPUTS*sizeof(float)/2),cudaMemcpyDeviceToHost);
 
 	// cudaFree(d_data);
 	// cudaFree(d_outputs);

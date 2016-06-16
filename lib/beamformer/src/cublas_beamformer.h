@@ -6,27 +6,27 @@
 #include <complex.h>
 #include <math.h>
 
-#define N_ELE	   38	// Number of elements/antennas in the array
-#define N_BIN	   25	// Number of frequency bins
-#define N_TIME	   4000	//40 // Number of decimated time samples
-#define N_BEAM     14   // Number of beams we are forming
-#define N_POL       4
-#define N_BEAM1    (N_BEAM/2)   // Number of beams we are forming
-#define N_TIME_STI 40	//40 // Number of decimated time samples per integrated beamformer output
-#define N_STI	   (N_TIME/N_TIME_STI) // Number of short time integrations
-#define N_STI_BLOC 64
-#define N_ELE_BLOC 64
-#define N_SAMP     (N_ELE*N_BIN*N_TIME) // Number of complex samples to process
-#define N_WEIGHTS  (N_ELE*N_BIN*N_BEAM) // Number of complex beamformer weights
-#define N_OUTPUTS  (N_BEAM*N_STI*N_BIN) // Number of complex samples in output structure
+#define BN_ELE	   38	// Number of elements/antennas in the array
+#define BN_BIN	   25	// Number of frequency bins
+#define BN_TIME	   4000	//40 // Number of decimated time samples
+#define BN_BEAM     14   // Number of beams we are forming
+#define BN_POL     4
+#define BN_BEAM1    (BN_BEAM/2)   // Number of beams we are forming
+#define BN_TIME_STI 40	//40 // Number of decimated time samples per integrated beamformer output
+#define BN_STI	   (BN_TIME/BN_TIME_STI) // Number of short time integrations
+#define BN_STI_BLOC 64
+#define BN_ELE_BLOC 64
+#define BN_SAMP     (BN_ELE_BLOC*BN_BIN*BN_TIME) // Number of complex samples to process
+#define BN_WEIGHTS  (BN_ELE_BLOC*BN_BIN*BN_BEAM) // Number of complex beamformer weights
+#define BN_OUTPUTS  (BN_BEAM*BN_STI*BN_BIN) // Number of complex samples in output structure
 //
-#define N_TBF     (N_BEAM*N_BIN*N_TIME)
+#define BN_TBF     (BN_BEAM*BN_BIN*BN_TIME)
 //
 
-#define input_idx(t,f,e)     ((e) + (f)*N_ELE + (t)*N_ELE*N_BIN)
-#define weight_idx(b,f,e)    ((e) + (f)*N_ELE + (b)*N_ELE*N_BIN)
-#define sample_idx(t,b,f)    ((b) + (t)*N_BEAM + (f)*N_BEAM*N_TIME)
-#define output_idx(p,b,s,f)    ((b) + (p)*N_BEAM1 + (f)*N_BEAM1*N_POL + (s)*N_BEAM1*N_BIN*N_POL)
+#define input_idx(t,f,e)     ((e) + (f)*BN_ELE_BLOC + (t)*BN_ELE_BLOC*BN_BIN)
+#define weight_idx(b,f,e)    ((e) + (f)*BN_ELE_BLOC + (b)*BN_ELE_BLOC*BN_BIN)
+#define sample_idx(t,b,f)    ((b) + (t)*BN_BEAM + (f)*BN_BEAM*BN_TIME)
+#define output_idx(p,b,s,f)    ((b) + (p)*BN_BEAM1 + (f)*BN_BEAM1*BN_POL + (s)*BN_BEAM1*BN_BIN*BN_POL)
 
 #ifdef __cplusplus
 extern "C" {
