@@ -46,7 +46,7 @@ static void * run(hashpipe_thread_args_t * args) {
     int rv;
     int curblock_in = 0;
     int curblock_out = 0;
-    int mcnt;
+    uint64_t mcnt;
     state cur_state = ACQUIRE;
     state next_state = ACQUIRE;
     int traclean = -1;
@@ -95,7 +95,7 @@ static void * run(hashpipe_thread_args_t * args) {
             flag_input_header_t tmp_header;
             memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_input_header_t));
             mcnt = tmp_header.mcnt_start;
-            printf("TRA: Receiving block %d with starting mcnt = %lld\n", curblock_in, (long long int)mcnt);
+            //printf("TRA: Receiving block %d with starting mcnt = %lld\n", curblock_in, (long long int)mcnt);
 
             /**********************************************
              * Perform transpose
@@ -117,7 +117,12 @@ static void * run(hashpipe_thread_args_t * args) {
                     }
                 }
             }
+
+            /***********************************************
+             * Add header information to output block
+             ***********************************************/
             db_out->block[curblock_out].header.mcnt = mcnt;
+            db_out->block[curblock_out].header.good_data = db_in->block[curblock_in].header.good_data;
 
             // Set output block to filled
             flag_gpu_input_databuf_set_filled(db_out, curblock_out);

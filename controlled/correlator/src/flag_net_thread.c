@@ -195,7 +195,7 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
     }
 
     // Mark block as good if all packets are there
-    if (binfo->packet_count[block_idx] == N_PACKETS_PER_BLOCK) {
+    if (binfo->packet_count[block_idx] == N_REAL_PACKETS_PER_BLOCK) {
         // RACE CONDITION !!!!!!!!!
         // We need to lock the buffer first before modifing it.
         // Arguably, this data will not be accessed by the next thread until the

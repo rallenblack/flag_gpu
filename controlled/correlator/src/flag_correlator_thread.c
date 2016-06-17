@@ -86,6 +86,7 @@ static void * run(hashpipe_thread_args_t * args) {
     state cur_state = ACQUIRE;
     state next_state = ACQUIRE;
     char netstat[17];
+    int64_t good_data = 1;
     while (run_threads()) {
        
         if (cur_state == ACQUIRE) {
@@ -113,7 +114,8 @@ static void * run(hashpipe_thread_args_t * args) {
             // Print out the header information for this block 
             flag_gpu_input_header_t tmp_header;
             memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_gpu_input_header_t));
-	    printf("COR: Received block %d, starting mcnt = %lld\n", curblock_in, (long long int)tmp_header.mcnt);
+	    // printf("COR: Received block %d, starting mcnt = %lld\n", curblock_in, (long long int)tmp_header.mcnt);
+            good_data &= tmp_header.good_data;
 
             // Retrieve correlator integrator status
             hashpipe_status_lock_safe(&st);
@@ -126,6 +128,7 @@ static void * run(hashpipe_thread_args_t * args) {
                 fprintf(stderr, "COR: Correlator is off...\n");
                 flag_gpu_input_databuf_set_free(db_in, curblock_in);
                 curblock_in = (curblock_in + 1) % db_in->header.n_block;
+                good_data = 1;
                 continue;
             }
 
@@ -214,13 +217,17 @@ static void * run(hashpipe_thread_args_t * args) {
                 xgpuClearDeviceIntegrationBuffer(&context);
                 //xgpuReorderMatrix((Complex *)db_out->block[curblock_out].data);
                 db_out->block[curblock_out].header.mcnt = start_mcnt;
+                db_out->block[curblock_out].header.good_data = good_data;
                 printf("COR: Dumping correlator output to block %d\n", curblock_out);
             
+
                 // Mark output block as full and advance
                 flag_correlator_output_databuf_set_filled(db_out, curblock_out);
                 curblock_out = (curblock_out + 1) % db_out->header.n_block;
                 start_mcnt = last_mcnt + 1;
                 last_mcnt = start_mcnt + int_count*Nm -1;
+                // Reset good_data flag for next block
+                good_data = 1;
             }
 
             flag_gpu_input_databuf_set_free(db_in, curblock_in);
@@ -235,6 +242,7 @@ static void * run(hashpipe_thread_args_t * args) {
             xgpuClearDeviceIntegrationBuffer(&context);
             curblock_in = 0;
             curblock_out = 0;
+            good_data = 1;
             hashpipe_status_lock_safe(&st);
             hputl(st.buf, "CLEANB", 1);
             hashpipe_status_unlock_safe(&st);

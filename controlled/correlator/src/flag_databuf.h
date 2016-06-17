@@ -9,6 +9,7 @@
 // Total number of antennas (nominally 40)
 // Determined by XGPU code
 #define N_INPUTS (2*XGPU_NSTATION)
+#define N_REAL_INPUTS 40
 
 // Number of antennas per F engine
 // Determined by F engine DDL cards
@@ -16,6 +17,7 @@
 
 // Number of F engines
 #define N_FENGINES (N_INPUTS/N_INPUTS_PER_FENGINE)
+#define N_REAL_FENGINES (N_REAL_INPUTS/N_INPUTS_PER_FENGINE)
 
 // Number of X engines
 #define N_XENGINES (20)
@@ -59,10 +61,12 @@
 
 // Number of bytes per block
 #define N_BYTES_PER_BLOCK (N_TIME_PER_BLOCK * N_CHAN_PER_X * N_INPUTS * N_BITS_IQ * 2 / 8)
+#define N_REAL_BYTES_PER_BLOCK (N_TIME_PER_BLOCK * N_CHAN_PER_X * N_REAL_INPUTS * N_BITS_IQ * 2 / 8)
 // #define N_BYTES_PER_BLOCK (N_TIME_PER_BLOCK * N_CHAN_PER_PACKET * N_INPUTS)
 
 // Number of packets per block
 #define N_PACKETS_PER_BLOCK (N_BYTES_PER_BLOCK / N_BYTES_PER_PAYLOAD)
+#define N_REAL_PACKETS_PER_BLOCK (N_REAL_BYTES_PER_BLOCK / N_BYTES_PER_PAYLOAD)
 
 // Macro to compute data word offset for complex data word
 #define Nm (N_TIME_PER_BLOCK/N_TIME_PER_PACKET) // Number of mcnts per block
@@ -129,6 +133,7 @@ typedef struct flag_input_databuf {
 
 // A typedef for a GPU input block header
 typedef struct flag_gpu_input_header {
+    int64_t  good_data;
     uint64_t mcnt;
 } flag_gpu_input_header_t;
 
@@ -158,6 +163,7 @@ typedef struct flag_gpu_input_databuf {
 
 // A typedef for a correlator output block header
 typedef struct flag_correlator_output_header {
+    int64_t  good_data;
     uint64_t mcnt;
     uint64_t flags[(N_CHAN_PER_X+63)/64];
 } flag_correlator_output_header_t;
