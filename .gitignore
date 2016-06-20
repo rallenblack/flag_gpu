@@ -17,3 +17,6 @@ lib/beamformer/src/test_beamformer
 autom4te.cache
 .libs/
 *.old
+*.fig
+*.txt
+*.mat
