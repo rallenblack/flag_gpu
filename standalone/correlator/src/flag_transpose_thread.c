@@ -102,6 +102,12 @@ static void * run(hashpipe_thread_args_t * args) {
                         in_p  = block_in_p + flag_input_databuf_idx(m,f,t,c);
                         out_p = block_out_p + flag_gpu_input_databuf_idx(m,f,t,c);
                         //fprintf(stderr, "(m,t,f,c) = (%d,%d,%d,%d), in_off = %lu, out_off = %lu\n", m, t, f, c, flag_input_databuf_idx(m,f,t,c), flag_gpu_input_databuf_idx(m,f,t,c));
+                        /*
+                        if (block_in_p[flag_input_databuf_idx(m,f,t,c)] != 0) {
+                            fprintf(stderr, "(m,t,f,c) = (%d,%d,%d,%d) = 0x%16llX ", m,t,f,c,(long long unsigned int)block_in_p[flag_input_databuf_idx(m,f,t,c)]);
+                            fprintf(stderr, "0x%16llX\n", (long long unsigned int)block_in_p[flag_input_databuf_idx(m,f,t,c)+1]);
+                        }
+                        */
                         memcpy(out_p, in_p, 128/8);
                     }
                 }

@@ -182,6 +182,7 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
     }
     else {
         printf("NET: Bad block - mcnt = %ld\n", binfo->mcnt_start);
+        printf("NET: Only received %d/%d packets!\n", binfo->packet_count[block_idx], N_REAL_PACKETS_PER_BLOCK);
     }
 
     // Mark block as filled so next thread can process it
@@ -415,6 +416,8 @@ static void *run(hashpipe_thread_args_t * args) {
     uint64_t packet_count = 0;
 
     fprintf(stdout, "NET: Nm = %d\n", Nm);
+    fprintf(stdout, "NET: N_COR_MATRIX = %d\n", N_COR_MATRIX);
+    fprintf(stdout, "NET: N_INPUT_BLOCKS = %d\n", N_INPUT_BLOCKS);
     fprintf(stdout, "NET: Starting Thread!\n");
     
     while (run_threads()) {

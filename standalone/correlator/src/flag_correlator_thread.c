@@ -177,7 +177,7 @@ static void * run(hashpipe_thread_args_t * args) {
             }
         }
        
-        // xgpuCudaXengine(&context, doDump ? SYNCOP_DUMP : SYNCOP_SYNC_TRANSFER);
+        xgpuCudaXengine(&context, doDump ? SYNCOP_DUMP : SYNCOP_SYNC_TRANSFER);
         
         if (doDump) {
             xgpuClearDeviceIntegrationBuffer(&context);
