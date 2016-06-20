@@ -46,7 +46,6 @@ static void * run(hashpipe_thread_args_t * args) {
     // TODO: allow update of weights during runtime
     printf("RTB: Initializing beamformer weights...\n");
     update_weights("./weights.in");
-    
 
     // Indicate in shared memory buffer that this thread is ready to start
     hashpipe_status_lock_safe(&st);

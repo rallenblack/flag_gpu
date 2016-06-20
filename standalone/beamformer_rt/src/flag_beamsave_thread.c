@@ -60,10 +60,11 @@ static void * run(hashpipe_thread_args_t * args) {
 
 	// Open file and begin writing
         FILE * filePtr = fopen(filename, "w");
-	int j;
-        for (j = 0; j < N_OUTPUTS; j++) {
-            fprintf(filePtr, "%g\n", p[j]);
-        }
+        fwrite(p, sizeof(float), N_BEAM_SAMPS, filePtr);
+	//int j;
+        //for (j = 0; j < N_BEAM_SAMPS; j++) {
+        //    fprintf(filePtr, "%f\n", p[j]);
+        //}
         fclose(filePtr);
 
 	// Mark input block as free and wait for next block

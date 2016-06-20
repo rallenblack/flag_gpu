@@ -63,7 +63,8 @@ static void * run(hashpipe_thread_args_t * args) {
 		curblock_in = 0;
 	    }
         }
-
+        
+        
         // Wait for output buffer block to be freed
         while ((rv=flag_gpu_input_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
             if (rv == HASHPIPE_TIMEOUT) {
@@ -77,7 +78,9 @@ static void * run(hashpipe_thread_args_t * args) {
                 break;
             }
         }
+        
        
+        
         // Print out the header information for this block 
         flag_input_header_t tmp_header;
         memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_input_header_t));
@@ -99,16 +102,20 @@ static void * run(hashpipe_thread_args_t * args) {
                         in_p  = block_in_p + flag_input_databuf_idx(m,f,t,c);
                         out_p = block_out_p + flag_gpu_input_databuf_idx(m,f,t,c);
                         //fprintf(stderr, "(m,t,f,c) = (%d,%d,%d,%d), in_off = %lu, out_off = %lu\n", m, t, f, c, flag_input_databuf_idx(m,f,t,c), flag_gpu_input_databuf_idx(m,f,t,c));
+                        //fprintf(stderr, "(m,t,f,c) = (%d,%d,%d,%d) = 0x%llX\n", m,t,f,c,(long long unsigned int)block_in_p[flag_input_databuf_idx(m,f,t,c)]);
                         memcpy(out_p, in_p, 128/8);
                     }
                 }
             }
         }
         db_out->block[curblock_out].header.mcnt = mcnt;
+        
 
         flag_gpu_input_databuf_set_filled(db_out, curblock_out);
         curblock_out = (curblock_out + 1) % db_out->header.n_block;
+        
 
+        
         flag_input_databuf_set_free(db_in, curblock_in);
         curblock_in = (curblock_in + 1) % db_in->header.n_block;
 
