@@ -18,6 +18,7 @@ signed char * data_in(char * input_filename);
 void printUsage();
 
 int main(int argc, char * argv[]) {
+	printf("Starting up the main process!\n");
 	// Parse input
 	if (argc != 4) {
 		printUsage();

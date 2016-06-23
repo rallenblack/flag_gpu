@@ -91,8 +91,18 @@ void print_matrix2(const float *A, int nr_rows_A, int nr_cols_A) {
 	}
 }
 
+// Struct defintion for beamformer metadata
+typedef struct bf_metadata_struct {
+	float offsets[14];
+	char cal_filename[65];
+	char algorithm[65];
+	long long unsigned int xid;
+} bf_metadata;
+static bf_metadata my_metadata;
+
 static cuComplex * d_weights = NULL;
 void update_weights(char * filename){
+	printf("In update_weights()...\n");
 	char weight_filename[128];
 	strcpy(weight_filename, filename);
 	FILE * weights;
@@ -109,6 +119,20 @@ void update_weights(char * filename){
 	int j;
 	if (weights != NULL) {
 		fread(bf_weights, sizeof(float), 2*BN_WEIGHTS, weights);
+
+		fread(my_metadata.offsets, sizeof(float), 14, weights);
+		fread(my_metadata.cal_filename, sizeof(char), 64, weights);
+		my_metadata.cal_filename[64] = '\0';
+		fread(my_metadata.algorithm, sizeof(char), 64, weights);
+		my_metadata.algorithm[64] = '\0';
+		fread(&(my_metadata.xid), sizeof(long long unsigned int), 1, weights);
+
+		for (int i = 0; i < 7; i++) {
+			printf("Offset %d = (%f, %f)\n", i, my_metadata.offsets[2*i], my_metadata.offsets[2*i+1]);
+		}
+		printf("Calibration Filename = %s\n", my_metadata.cal_filename);
+		printf("Algorithm for Weights = %s\n", my_metadata.algorithm);
+		printf("XID = %llu\n", my_metadata.xid);
 
 		// Convert to complex numbers (do a conjugate at the same time)
 		for(j = 0; j < BN_WEIGHTS; j++){
@@ -131,6 +155,8 @@ void update_weights(char * filename){
 		fclose(weights);
 	}
 	free(bf_weights);
+
+
 
 	// Copy weights to device
 	cudaMemcpy(d_weights, weights_dc, BN_WEIGHTS*sizeof(cuComplex), cudaMemcpyHostToDevice); //r_weights instead of weights_dc //*BN_TIME
