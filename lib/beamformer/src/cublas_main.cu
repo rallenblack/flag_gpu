@@ -42,6 +42,26 @@ int main(int argc, char * argv[]) {
 	 *********************************************************/
 	update_weights(weight_filename);
 
+	float offsets[BN_BEAM];
+	char cal_filename[65];
+	char algorithm[65];
+	char weight_file[65];
+	long long unsigned int xid;
+
+	bf_get_offsets(offsets);
+	bf_get_cal_filename(cal_filename);
+	bf_get_algortihm(algorithm);
+	bf_get_weight_filename(weight_file);
+	xid = bf_get_xid();
+
+	for (int i = 0; i < 7; i++) {
+		printf("Offset %d = (%f, %f)\n", i, offsets[2*i], offsets[2*i+1]);
+	}
+	printf("Calibration Filename = %s\n", cal_filename);
+	printf("Algorithm for Weights = %s\n", algorithm);
+	printf("XID = %llu\n", xid);
+	printf("Weight filename = %s\n", weight_file);
+
 	/*********************************************************
 	 * Input data and restructure for cublasCgemmBatched()
 	 *********************************************************/

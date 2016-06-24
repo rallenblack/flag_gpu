@@ -96,6 +96,7 @@ typedef struct bf_metadata_struct {
 	float offsets[14];
 	char cal_filename[65];
 	char algorithm[65];
+	char weight_filename[65];
 	long long unsigned int xid;
 } bf_metadata;
 static bf_metadata my_metadata;
@@ -127,12 +128,16 @@ void update_weights(char * filename){
 		my_metadata.algorithm[64] = '\0';
 		fread(&(my_metadata.xid), sizeof(long long unsigned int), 1, weights);
 
-		for (int i = 0; i < 7; i++) {
-			printf("Offset %d = (%f, %f)\n", i, my_metadata.offsets[2*i], my_metadata.offsets[2*i+1]);
+		// Extract all path information from weight_filename for metadata
+		char * short_filename = strrchr(weight_filename, '/');
+		if (short_filename != NULL) {
+			strcpy(my_metadata.weight_filename, short_filename+1);
 		}
-		printf("Calibration Filename = %s\n", my_metadata.cal_filename);
-		printf("Algorithm for Weights = %s\n", my_metadata.algorithm);
-		printf("XID = %llu\n", my_metadata.xid);
+		else {
+			strcpy(my_metadata.weight_filename, weight_filename);
+		}
+
+
 
 		// Convert to complex numbers (do a conjugate at the same time)
 		for(j = 0; j < BN_WEIGHTS; j++){
@@ -162,6 +167,39 @@ void update_weights(char * filename){
 	cudaMemcpy(d_weights, weights_dc, BN_WEIGHTS*sizeof(cuComplex), cudaMemcpyHostToDevice); //r_weights instead of weights_dc //*BN_TIME
 
 	free(weights_dc);
+}
+
+void bf_get_offsets(float * offsets){
+	for(int i = 0; i<BN_BEAM; i++){
+		offsets[i] = my_metadata.offsets[i];
+	}
+}
+
+void bf_get_cal_filename(char * cal_filename){
+	for(int i = 0; i< 65; i++){
+		cal_filename[i] = my_metadata.cal_filename[i];
+	}
+}
+
+void bf_get_algortihm(char * algorithm){
+	for(int i = 0; i< 65; i++){
+		algorithm[i] = my_metadata.algorithm[i];
+	}
+}
+
+void bf_get_weight_filename(char * weight_filename){
+	int num_chars = strlen(my_metadata.weight_filename);
+	for (int i = 0; i < num_chars; i++) {
+		weight_filename[i] = my_metadata.weight_filename[i];
+	}
+	for (int i = num_chars; i < 64; i++) {
+		weight_filename[i] = ' ';
+	}
+	weight_filename[64] = '\0';
+}
+
+long long unsigned int bf_get_xid(){
+	return my_metadata.xid;
 }
 
 static cuComplex **d_arr_A = NULL; static cuComplex **d_arr_B = NULL; static cuComplex **d_arr_C = NULL;
