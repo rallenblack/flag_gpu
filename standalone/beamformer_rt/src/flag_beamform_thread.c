@@ -46,6 +46,40 @@ static void * run(hashpipe_thread_args_t * args) {
     // TODO: allow update of weights during runtime
     printf("RTB: Initializing beamformer weights...\n");
     update_weights("./weights.in");
+    // Put metadata into status shared memory
+    float offsets[BN_BEAM];
+    char cal_filename[65];
+    char algorithm[65];
+    char weight_filename[65];
+    long long unsigned int bf_xid;
+    int act_xid;
+
+    bf_get_offsets(offsets);
+    bf_get_cal_filename(cal_filename);
+    bf_get_algorithm(algorithm);
+    bf_get_weight_filename(weight_filename);
+    bf_xid = bf_get_xid();
+
+    int i;
+    hashpipe_status_lock_safe(&st);
+    for (i = 0; i < BN_BEAM/2; i++) {
+        char keyword1[9];
+        snprintf(keyword1,8,"ELOFF%d",i);
+        hputr4(st.buf, keyword1, offsets[2*i]);
+        char keyword2[9];
+        snprintf(keyword2,8,"AZOFF%d",i);
+        hputr4(st.buf, keyword2, offsets[2*i+1]);
+    }
+    hputs(st.buf, "BCALFILE", cal_filename);
+    hputs(st.buf, "BALGORIT", algorithm);
+    hputs(st.buf, "BWEIFILE", weight_filename);
+    hgeti4(st.buf, "XID", &act_xid);
+    hashpipe_status_unlock_safe(&st);
+
+    if ((long long unsigned int)act_xid != bf_xid) {
+        printf("RTB: WARNING! Weight file %s is meant for XID %lld, not %d\n", weight_filename, bf_xid, act_xid);
+    }
+
 
     // Indicate in shared memory buffer that this thread is ready to start
     hashpipe_status_lock_safe(&st);

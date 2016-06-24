@@ -181,7 +181,7 @@ void bf_get_cal_filename(char * cal_filename){
 	}
 }
 
-void bf_get_algortihm(char * algorithm){
+void bf_get_algorithm(char * algorithm){
 	for(int i = 0; i< 65; i++){
 		algorithm[i] = my_metadata.algorithm[i];
 	}

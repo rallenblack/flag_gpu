@@ -50,7 +50,7 @@ int main(int argc, char * argv[]) {
 
 	bf_get_offsets(offsets);
 	bf_get_cal_filename(cal_filename);
-	bf_get_algortihm(algorithm);
+	bf_get_algorithm(algorithm);
 	bf_get_weight_filename(weight_file);
 	xid = bf_get_xid();
 
