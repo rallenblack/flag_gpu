@@ -9,6 +9,7 @@ fclose(FILE);
 Nele = 40;
 Nele_tot = 64;
 Nbin = 25;
+Nsamp = 4000;
 
 Nbaselines_tot = (Nele_tot/2 + 1)*Nele_tot;
 Nbaselines     = (Nele + 1)*Nele/2;
@@ -44,6 +45,7 @@ for Nb = 1:1
     end
     
     Rb = Rb + (Rb' - diag(diag(Rb'))); % Exploit symmetry
+    Rb = Rb./Nsamp;
     figure(big);
     %subplot(5,5,Nb);
     imagesc(abs(Rb));

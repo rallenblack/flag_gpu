@@ -49,13 +49,13 @@ static void * run(hashpipe_thread_args_t * args) {
             }
         }
 
-        uint64_t start_mcnt = db_in->block[curblock_in].header.mcnt;
-        int64_t good_data = db_in->block[curblock_in].header.good_data;
+        //uint64_t start_mcnt = db_in->block[curblock_in].header.mcnt;
+        //int64_t good_data = db_in->block[curblock_in].header.good_data;
         //Complex * p = (Complex *)db_in->block[curblock_in].data;
-        char filename[128];
-        sprintf(filename, "cor_mcnt_%lld.out", (long long)start_mcnt);
-        fprintf(stderr, "SAV: Saving to %s\n", filename);
-        fprintf(stderr, "SAV: good_data = %lld\n", (long long int)good_data);
+        //char filename[128];
+        //sprintf(filename, "cor_mcnt_%lld.out", (long long)start_mcnt);
+        //fprintf(stderr, "SAV: Saving to %s\n", filename);
+        //fprintf(stderr, "SAV: good_data = %lld\n", (long long int)good_data);
         /*
         FILE * filePtr = fopen(filename, "w");
 

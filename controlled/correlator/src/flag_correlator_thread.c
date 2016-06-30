@@ -125,7 +125,7 @@ static void * run(hashpipe_thread_args_t * args) {
             // If the correlator integrator status is "off,"
             // Free the input block and continue
             if (strcmp(integ_status, "off") == 0) {
-                fprintf(stderr, "COR: Correlator is off...\n");
+                // fprintf(stderr, "COR: Correlator is off...\n");
                 flag_gpu_input_databuf_set_free(db_in, curblock_in);
                 curblock_in = (curblock_in + 1) % db_in->header.n_block;
                 good_data = 1;
@@ -147,7 +147,7 @@ static void * run(hashpipe_thread_args_t * args) {
 
 		    // If we get here, then there is a bug since the net thread shouldn't
 		    // mark blocks as filled that are before the starting mcnt
-                    fprintf(stderr, "COR: Unable to start yet... waiting for mcnt = %lld\n", (long long int)start_mcnt);
+                    // fprintf(stderr, "COR: Unable to start yet... waiting for mcnt = %lld\n", (long long int)start_mcnt);
 
                     // starting mcnt not yet reached
                     // free block and continue
@@ -157,7 +157,7 @@ static void * run(hashpipe_thread_args_t * args) {
                 }
                 else if (db_in->block[curblock_in].header.mcnt == start_mcnt) {
                     // set correlator integrator to "on"
-                    fprintf(stderr, "COR: Starting correlator!\n");
+                    // fprintf(stderr, "COR: Starting correlator!\n");
                     strcpy(integ_status, "on");
                     float requested_integration_time = 0.0;
                     float actual_integration_time = 0.0;
@@ -178,8 +178,8 @@ static void * run(hashpipe_thread_args_t * args) {
                     last_mcnt = start_mcnt + int_count*Nm - 1;
                 }
                 else {
-                    fprintf(stdout, "COR: We missed the start of the integration\n");
-		    fprintf(stdout, "COR: expected start_mcnt = %lld, got %lld\n", (long long int)start_mcnt, (long long int)db_in->block[curblock_in].header.mcnt);
+                    // fprintf(stdout, "COR: We missed the start of the integration\n");
+		    fprintf(stdout, "COR: Missed start. Expected start_mcnt = %lld, got %lld\n", (long long int)start_mcnt, (long long int)db_in->block[curblock_in].header.mcnt);
                     // we apparently missed the start of the integation... ouch...
                 }
             }
@@ -204,7 +204,7 @@ static void * run(hashpipe_thread_args_t * args) {
                         continue;
                     } else {
                         hashpipe_error(__FUNCTION__, "error waiting for free databuf");
-                        fprintf(stderr, "rv = %d\n", rv);
+                        // fprintf(stderr, "rv = %d\n", rv);
                         pthread_exit(NULL);
                         break;
                     }
@@ -218,7 +218,7 @@ static void * run(hashpipe_thread_args_t * args) {
                 //xgpuReorderMatrix((Complex *)db_out->block[curblock_out].data);
                 db_out->block[curblock_out].header.mcnt = start_mcnt;
                 db_out->block[curblock_out].header.good_data = good_data;
-                printf("COR: Dumping correlator output to block %d\n", curblock_out);
+                // printf("COR: Dumping correlator output to block %d\n", curblock_out);
             
 
                 // Mark output block as full and advance

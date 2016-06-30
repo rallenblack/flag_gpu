@@ -196,16 +196,17 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
 
     // Mark block as good if all packets are there
     if (binfo->packet_count[block_idx] == N_REAL_PACKETS_PER_BLOCK) {
-        // RACE CONDITION !!!!!!!!!
-        // We need to lock the buffer first before modifing it.
-        // Arguably, this data will not be accessed by the next thread until the
-        // block is marked as filled...
         db->block[block_idx].header.good_data = 1;
     }
+    int num_missed_packets = N_REAL_PACKETS_PER_BLOCK - binfo->packet_count[block_idx];
+    hashpipe_status_lock_safe(st_p);
+    hputi4(st_p->buf, "MISSPKTS", num_missed_packets);
+    hashpipe_status_unlock_safe(st_p);
+    
 
     // Mark block as filled so next thread can process it
     last_filled = block_idx;
-    printf("Filling block %d, starting mcnt = %lld\n", block_idx, (long long int)binfo->mcnt_start);
+    // printf("Filling block %d, starting mcnt = %lld\n", block_idx, (long long int)binfo->mcnt_start);
     flag_input_databuf_set_filled(db, block_idx);
 
     binfo->self_xid = -1;
@@ -275,12 +276,12 @@ static inline uint64_t process_packet(flag_input_databuf_t * db, struct hashpipe
         hputi4(st_p->buf, "NETMCNT", new_mcnt);
         hashpipe_status_unlock_safe(st_p);
         */
-        printf("Net: Late packet... mcnt = %lld\n", (long long int)pkt_mcnt);
+        // printf("Net: Late packet... mcnt = %lld\n", (long long int)pkt_mcnt);
         return -1;
     
     }
     else if (pkt_mcnt_dist < 0) {
-        fprintf(stderr, "Early packet, pkt_mcnt_dist = %lld\n", (long long int)pkt_mcnt_dist);
+        // fprintf(stderr, "Early packet, pkt_mcnt_dist = %lld\n", (long long int)pkt_mcnt_dist);
         return -1;
     }
     // Increment packet count for block

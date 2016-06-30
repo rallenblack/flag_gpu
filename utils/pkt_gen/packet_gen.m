@@ -93,6 +93,8 @@ kw_x_imag = int8(((imag(kw_x) - d_min)/(d_max - d_min) - 0.5) * 256);
 kw_x_quant = single(kw_x_real) + 1j*single(kw_x_imag);
 kw_Rhat = (kw_x_quant*kw_x_quant')/kwNs;
 
+save('matlab_corr.mat', 'kw_Rhat');
+
 
 % Create UDP sockets - 1 IP address per Xengine (xid)
 for xid = 1:Nxengines

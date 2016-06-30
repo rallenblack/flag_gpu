@@ -99,8 +99,8 @@ cmd_t check_cmd(int fifo_fd)
             }
         }
 
-        if (pfd[0].revents==POLLHUP)
-			fprintf(stderr, "POLLHUP :(\n");
+        //if (pfd[0].revents==POLLHUP)
+	//		fprintf(stderr, "POLLHUP :(\n");
 
 		if (rv==0)
         {
