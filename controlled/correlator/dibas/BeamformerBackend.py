@@ -257,6 +257,7 @@ class BeamformerBackend(VegasBackend):
 
         self.stop_hpc()
 
+
         # Get hashpipe command (specified by configuration file)
         hpc_program = self.mode.hpc_program
         if hpc_program is None:
@@ -294,15 +295,23 @@ class BeamformerBackend(VegasBackend):
         thread1 = "-c %d flag_net_thread" % (self.core[0])
         thread2 = "-c %d flag_transpose_thread" % (self.core[1])
         thread3 = "-c %d flag_correlator_thread" % (self.core[2])
-        # thread4 = "-c %d flag_corsave_thread" % (self.core[3])
+        thread4 = "-c %d flag_corsave_thread" % (self.core[3])
 
         process_list = process_list + thread1.split()
         process_list = process_list + thread2.split()
         process_list = process_list + thread3.split()
+        process_list = process_list + thread4.split()
         # process_list = process_list + "-c 3 flag_corsave_thread".split()
 
         print ' '.join(process_list)
         self.hpc_process = subprocess.Popen(process_list, stdin=subprocess.PIPE)
+
+        # Logic to ensure that the process is indeed finished starting
+        time.sleep(15)
+        isReady = False
+        while isReady == False:
+            isReady = self.get_status('NETREADY')
+        
 
     def start_fits_writer(self):
         """
@@ -323,7 +332,7 @@ class BeamformerBackend(VegasBackend):
         cmd += " -i %d" % self.instance_id
         cmd += " -m c" 
         process_list = shlex.split(cmd)
-        self.fits_writer_process = subprocess.Popen(process_list, stdin=subprocess.PIPE)
+        #self.fits_writer_process = subprocess.Popen(process_list, stdin=subprocess.PIPE)
 
     ######################################################
     # ROACH-specific functions

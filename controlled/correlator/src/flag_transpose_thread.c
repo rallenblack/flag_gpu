@@ -95,7 +95,7 @@ static void * run(hashpipe_thread_args_t * args) {
             flag_input_header_t tmp_header;
             memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_input_header_t));
             mcnt = tmp_header.mcnt_start;
-            //printf("TRA: Receiving block %d with starting mcnt = %lld\n", curblock_in, (long long int)mcnt);
+            // printf("TRA: Receiving block %d with starting mcnt = %lld\n", curblock_in, (long long int)mcnt);
 
             /**********************************************
              * Perform transpose

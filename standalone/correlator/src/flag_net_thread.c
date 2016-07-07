@@ -182,7 +182,7 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
     }
     else {
         printf("NET: Bad block - mcnt = %ld\n", binfo->mcnt_start);
-        printf("NET: Only received %d/%d packets!\n", binfo->packet_count[block_idx], N_REAL_PACKETS_PER_BLOCK);
+        // printf("NET: Only received %d/%d packets!\n", binfo->packet_count[block_idx], N_REAL_PACKETS_PER_BLOCK);
     }
 
     // Mark block as filled so next thread can process it

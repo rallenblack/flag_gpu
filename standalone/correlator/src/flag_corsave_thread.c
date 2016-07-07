@@ -49,12 +49,13 @@ static void * run(hashpipe_thread_args_t * args) {
             }
         }
 
-        uint64_t start_mcnt = db_in->block[curblock_in].header.mcnt;
-        Complex * p = (Complex *)(db_in->block[curblock_in].data);
-        char filename[128];
-        sprintf(filename, "cor_mcnt_%lld.out", (long long)start_mcnt);
-        fprintf(stderr, "Saving to %s (but not really) \n", filename);
+        //uint64_t start_mcnt = db_in->block[curblock_in].header.mcnt;
+        //Complex * p = (Complex *)(db_in->block[curblock_in].data);
+        //char filename[128];
+        //sprintf(filename, "cor_mcnt_%lld.out", (long long)start_mcnt);
+        //fprintf(stderr, "Saving to %s (but not really) \n", filename);
         
+        /*
         FILE * filePtr = fopen(filename, "w");
 
         int j;
@@ -67,6 +68,7 @@ static void * run(hashpipe_thread_args_t * args) {
         printf("File write complete!\n");
         fclose(filePtr);
         printf("File closed\n");
+        */
         
 
         flag_correlator_output_databuf_set_free(db_in, curblock_in);
