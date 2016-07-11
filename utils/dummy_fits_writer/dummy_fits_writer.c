@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <signal.h>
 #include "fifo.h"
+#include <unistd.h>
 
 static int quit = 0;
 
@@ -27,9 +28,8 @@ int main(int argc, char * argv[]) {
                 printf("dummy_fits_writer: QUIT\n");
                 quit = 1;
                 break;
-            default:
-                continue;
         }
+        sleep(0.2);
     }
     return 1;
 }
