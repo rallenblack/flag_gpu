@@ -20,3 +20,5 @@ autom4te.cache
 *.fig
 *.txt
 *.mat
+.deps/
+*.swp
