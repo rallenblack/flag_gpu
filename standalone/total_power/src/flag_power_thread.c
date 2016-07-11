@@ -60,7 +60,7 @@ static void * run(hashpipe_thread_args_t * args) {
         // Print out the header information for this block 
         flag_gpu_input_header_t tmp_header;
         memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_gpu_input_header_t));
-	printf("TOT: Received block %d, starting mcnt = %lld\n", curblock_in, (long long int)tmp_header.mcnt);
+	//printf("TOT: Received block %d, starting mcnt = %lld\n", curblock_in, (long long int)tmp_header.mcnt);
 
         while ((rv=flag_gpu_output_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
             if (rv==HASHPIPE_TIMEOUT) {
@@ -73,7 +73,7 @@ static void * run(hashpipe_thread_args_t * args) {
             }
         }
 
-        printf("TOT: Output block %d free\n", curblock_out);
+        //printf("TOT: Output block %d free\n", curblock_out);
         
        
         //xgpuCudaXengine(&context, doDump ? SYNCOP_DUMP : SYNCOP_SYNC_TRANSFER);

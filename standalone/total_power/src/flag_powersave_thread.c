@@ -29,7 +29,7 @@ static void * run(hashpipe_thread_args_t * args) {
 
     // Mark thread as ready to run
     hashpipe_status_lock_safe(&st);
-    hputi4(st.buf, "SAVEREADY", 1);
+    hputi4(st.buf, "SAVREADY", 1);
     hashpipe_status_unlock_safe(&st);
 
     int rv;
@@ -59,10 +59,7 @@ static void * run(hashpipe_thread_args_t * args) {
 
         int j;
         for (j = 0; j < NA; j++) {
-            // float p_re = p[j].real;
-            // float p_im = p[j].imag;
             fprintf(filePtr, "%g\n", p[j]);
-            // fprintf(filePtr, "%g\n", p_im);
         }
         fclose(filePtr);
 
