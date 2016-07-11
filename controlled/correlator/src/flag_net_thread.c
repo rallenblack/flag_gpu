@@ -238,6 +238,7 @@ static inline int64_t process_packet(flag_input_databuf_t * db, struct hashpipe_
     uint64_t pkt_mcnt  = pkt_header.mcnt;
     int64_t cur_mcnt  = binfo.mcnt_start;
     int dest_block_idx = get_block_idx(pkt_mcnt);
+    // int cur_block_idx = get_block_idx(cur_mcnt);
 
     // Check mcnt to see if packet belongs in current block, next, or the one after
     int64_t pkt_mcnt_dist = pkt_mcnt - cur_mcnt;
@@ -306,7 +307,26 @@ static inline int64_t process_packet(flag_input_databuf_t * db, struct hashpipe_
     // Copy data into buffer
     memcpy(dest_p, payload_p, N_BYTES_PER_PACKET-8); // Ignore header
 
+    // Check to see if current block is full
+    // Added by Richard B. July 7, 2016
+    /*
+    if (dest_block_idx == cur_block_idx) {
+       if (binfo.packet_count[cur_block_idx] == N_REAL_PACKETS_PER_BLOCK) {
+           set_block_filled(db, &binfo);
+            
+           // Advance mcnt_start to next block
+           cur_mcnt += Nm;
+           last_filled_mcnt = cur_mcnt;
+           binfo.mcnt_start += Nm;
+           binfo.block_i = (binfo.block_i + 1) % N_INPUT_BLOCKS;
+       } 
+    }
+    */
+    
+
     // print_pkt_header(&pkt_header);
+    
+    
 
     return last_filled_mcnt;
 }
@@ -446,7 +466,7 @@ static void *run(hashpipe_thread_args_t * args) {
 
 
     int n = 0;
-    int n_loop = 100;
+    int n_loop = 1000;
     fprintf(stdout, "NET: Starting Thread!\n");
     while (run_threads()) {
         
