@@ -196,16 +196,21 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
 
     // Mark block as good if all packets are there
     if (binfo->packet_count[block_idx] == N_REAL_PACKETS_PER_BLOCK) {
-        // RACE CONDITION !!!!!!!!!
-        // We need to lock the buffer first before modifing it.
-        // Arguably, this data will not be accessed by the next thread until the
-        // block is marked as filled...
         db->block[block_idx].header.good_data = 1;
+        // printf("NET: Good Block! mcnt = %lld\n", (long long int)db->block[block_idx].header.mcnt_start);
     }
+    else {
+        printf("NET: Bad Block! mcnt = %lld, %d/%d\n", (long long int)db->block[block_idx].header.mcnt_start, binfo->packet_count[block_idx], N_REAL_PACKETS_PER_BLOCK);
+    }
+    int num_missed_packets = N_REAL_PACKETS_PER_BLOCK - binfo->packet_count[block_idx];
+    hashpipe_status_lock_safe(st_p);
+    hputi4(st_p->buf, "MISSPKTS", num_missed_packets);
+    hashpipe_status_unlock_safe(st_p);
+    
 
     // Mark block as filled so next thread can process it
     last_filled = block_idx;
-    printf("Filling block %d, starting mcnt = %lld\n", block_idx, (long long int)binfo->mcnt_start);
+    // printf("Filling block %d, starting mcnt = %lld\n", block_idx, (long long int)binfo->mcnt_start);
     flag_input_databuf_set_filled(db, block_idx);
 
     binfo->self_xid = -1;
@@ -220,7 +225,7 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
 // (1) header extraction
 // (2) block population (output buffer data type is a block)
 // (3) buffer population (if block is filled)
-static inline uint64_t process_packet(flag_input_databuf_t * db, struct hashpipe_udp_packet *p) {
+static inline int64_t process_packet(flag_input_databuf_t * db, struct hashpipe_udp_packet *p) {
     packet_header_t     pkt_header;
 
     // Initialize block information data types
@@ -231,8 +236,9 @@ static inline uint64_t process_packet(flag_input_databuf_t * db, struct hashpipe
     // Parse packet header
     get_header(p, &pkt_header);
     uint64_t pkt_mcnt  = pkt_header.mcnt;
-    uint64_t cur_mcnt  = binfo.mcnt_start;
+    int64_t cur_mcnt  = binfo.mcnt_start;
     int dest_block_idx = get_block_idx(pkt_mcnt);
+    // int cur_block_idx = get_block_idx(cur_mcnt);
 
     // Check mcnt to see if packet belongs in current block, next, or the one after
     int64_t pkt_mcnt_dist = pkt_mcnt - cur_mcnt;
@@ -240,7 +246,7 @@ static inline uint64_t process_packet(flag_input_databuf_t * db, struct hashpipe
    
     // If packet is for the current block + 2, then mark current block as full
     // and increment current block
-    if (pkt_mcnt_dist >= 2*Nm && pkt_mcnt_dist < 3*Nm) { // 2nd next block (Current block + 2)
+    if (pkt_mcnt_dist >= (N_INPUT_BLOCKS-2)*Nm && pkt_mcnt_dist < (N_INPUT_BLOCKS-1)*Nm) { // 2nd next block (Current block + 2)
         set_block_filled(db, &binfo);
 
         // Advance mcnt_start to next block
@@ -256,7 +262,7 @@ static inline uint64_t process_packet(flag_input_databuf_t * db, struct hashpipe
         // Reset packet counter for this block
         binfo.packet_count[dest_block_idx] = 0;
     }
-    else if (pkt_mcnt_dist >= 3*Nm) { // > current block + 2
+    else if (pkt_mcnt_dist >= (N_INPUT_BLOCKS-1)*Nm) { // > current block + 2
         /*
         // The x-engine is lagging behind the f-engine, or the x-engine
         // has just started. Reinitialize the current block
@@ -275,12 +281,12 @@ static inline uint64_t process_packet(flag_input_databuf_t * db, struct hashpipe
         hputi4(st_p->buf, "NETMCNT", new_mcnt);
         hashpipe_status_unlock_safe(st_p);
         */
-        printf("Net: Late packet... mcnt = %lld\n", (long long int)pkt_mcnt);
+        // printf("Net: Late packet... mcnt = %lld\n", (long long int)pkt_mcnt);
         return -1;
     
     }
     else if (pkt_mcnt_dist < 0) {
-        fprintf(stderr, "Early packet, pkt_mcnt_dist = %lld\n", (long long int)pkt_mcnt_dist);
+        // fprintf(stderr, "Early packet, pkt_mcnt_dist = %lld\n", (long long int)pkt_mcnt_dist);
         return -1;
     }
     // Increment packet count for block
@@ -301,11 +307,29 @@ static inline uint64_t process_packet(flag_input_databuf_t * db, struct hashpipe
     // Copy data into buffer
     memcpy(dest_p, payload_p, N_BYTES_PER_PACKET-8); // Ignore header
 
-    //print_pkt_header(&pkt_header);
+    // Check to see if current block is full
+    // Added by Richard B. July 7, 2016
+    /*
+    if (dest_block_idx == cur_block_idx) {
+       if (binfo.packet_count[cur_block_idx] == N_REAL_PACKETS_PER_BLOCK) {
+           set_block_filled(db, &binfo);
+            
+           // Advance mcnt_start to next block
+           cur_mcnt += Nm;
+           last_filled_mcnt = cur_mcnt;
+           binfo.mcnt_start += Nm;
+           binfo.block_i = (binfo.block_i + 1) % N_INPUT_BLOCKS;
+       } 
+    }
+    */
+    
+
+    // print_pkt_header(&pkt_header);
+    
+    
 
     return last_filled_mcnt;
 }
-
 
 // Enumerated types for flag_net_thread state machine
 typedef enum {
@@ -332,6 +356,10 @@ static void *run(hashpipe_thread_args_t * args) {
     const char * status_key = args->thread_desc->skey;
 
     st_p = &st;	// allow global (this source file) access to the status buffer
+
+    hashpipe_status_lock_safe(&st);
+    hputl(st.buf, "NETREADY", 0);
+    hashpipe_status_unlock_safe(&st);
 
     int tmp = -1;
     hashpipe_status_lock_safe(&st);
@@ -402,7 +430,7 @@ static void *run(hashpipe_thread_args_t * args) {
 
     // Initialize first few blocks in the buffer
     int i;
-    for (i = 0; i < 2; i++) {
+    for (i = 0; i < N_INPUT_BLOCKS-1; i++) {
         // Wait until block semaphore is free
         if (flag_input_databuf_wait_free(db, i) != HASHPIPE_OK) {
             if (errno == EINTR) { // Interrupt occurred
@@ -418,10 +446,6 @@ static void *run(hashpipe_thread_args_t * args) {
     }
 
 
-    // Set correlator to "start" state
-    hashpipe_status_lock_safe(&st);
-    hputs(st.buf, "INTSTAT", "start");
-    hashpipe_status_unlock_safe(&st);
 
     // Set up FIFO controls
     int cmd = INVALID;
@@ -433,10 +457,17 @@ static void *run(hashpipe_thread_args_t * args) {
     uint64_t packet_count = 0;
     int64_t last_filled_mcnt = -1;
     int64_t scan_last_mcnt = -1;
+    
+    // Set correlator to "start" state
+    hashpipe_status_lock_safe(&st);
+    hputs(st.buf, "INTSTAT", "start");
+    hputl(st.buf, "NETREADY", 1);
+    hashpipe_status_unlock_safe(&st);
+
 
     int n = 0;
-    int n_loop = 100;
-    fprintf(stdout, "NET: Starting Thread!\n");
+    int n_loop = 1000;
+    fprintf(stdout, "NET: Starting Thread!!!\n");
     while (run_threads()) {
         
 	// Get command from Dealer/Player
@@ -502,10 +533,14 @@ static void *run(hashpipe_thread_args_t * args) {
             packet_count++;
             last_filled_mcnt = process_packet(db, &p);
 
+	    if(cmd == STOP){
+		printf("Stop2!\n");
+	    }		
             // Next state processing
-            if ((last_filled_mcnt != 1 && last_filled_mcnt >= scan_last_mcnt) || cmd == STOP) {
+            if ((last_filled_mcnt != -1 && last_filled_mcnt >= scan_last_mcnt) || cmd == STOP) {
                 int cleanA = 1;
                 int cleanB = 1;
+		printf("Clean up!\n");
                 while (cleanA != 0 && cleanB != 0) {
                     hashpipe_status_lock_safe(&st);
                     hputl(st.buf, "CLEANA", 0);

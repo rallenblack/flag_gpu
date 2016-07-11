@@ -486,7 +486,7 @@ void run_beamformer(signed char * data_in, float * data_out) {
 	// Restructure data for cublasCgemmBatched function.
 	data_restructure<<<dimGrid_d, dimBlock_d>>>(d_restruct_in, d_restruct_out);
 
-	printf("Starting beamformer\n");
+//	printf("Starting beamformer\n");
 
 	// Call beamformer function containing cublasCgemmBatched()
 	beamform();
@@ -498,12 +498,12 @@ void run_beamformer(signed char * data_in, float * data_out) {
 	cuComplex * d_sti_in = d_beamformed;
 	float * d_sti_out = d_outputs;
 
-	printf("Starting sti_reduction\n");
+//	printf("Starting sti_reduction\n");
 
 	// Call STI reduction kernel.
 	sti_reduction<<<dimGrid, dimBlock>>>(d_sti_in, d_sti_out);
 
-	printf("Finishing sti_reduction\n");
+//	printf("Finishing sti_reduction\n");
 
 	err_code = cudaGetLastError();
 	if (err_code != cudaSuccess) {
