@@ -7,11 +7,13 @@
 #define NF 5 		// Number of Fengines
 #define NI 8 		// Number of inputs per Fengine
 #define NA (NF*NI) 	// Number of total antennas
-#define NC 50 		// Number of frequency channels
-#define NT 10 		// Number of time samples per packet/mcnt
-#define NM 4  		// Number of packets/mcnts per block
-#define pow1 128 	// Next power of 2 >= Nm*Nt
-#define pow2 64 	// Next power of 2 >= Nc
+#define NC 25 		// Number of frequency channels
+#define NT 20 		// Number of time samples per packet/mcnt
+#define NM 200  	// Number of packets/mcnts per block
+#define pow1 4096 	// Next power of 2 >= Nm*Nt
+#define nblocks2 (pow1/1024) // Block size for second kernel
+#define nblocks1 (pow1/nblocks2) // Block size for first kernel
+#define pow2 32 	// Next power of 2 >= Nc
 
 #ifdef __cplusplus
 extern "C" {

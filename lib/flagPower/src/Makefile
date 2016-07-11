@@ -4,16 +4,16 @@ includedir ?= $(prefix)/include
 bindir ?= $(prefix)/bin
 
 all: libflagpower.so test_total_power.o
-	gcc -L /usr/local/cuda-7.0/lib64 -lstdc++ -lcudart -o flagpower libflagpower.so test_total_power.o
+	gcc -L /usr/local/cuda/lib64 -lstdc++ -lcudart -o flagpower libflagpower.so test_total_power.o
 
 total_power.o: total_power.cu total_power.h
 	nvcc -c -o total_power.o -Xcompiler -fPIC -Xcompiler -D_REENTRANT -O3 total_power.cu
 
 libflagpower.so: total_power.o
-	nvcc -Xcompiler -fPIC -Xcompiler -D_REENTRANT -O3 total_power.o -o libflagpower.so -L/usr/local/cuda-7.0/lib64 --shared
+	nvcc -Xcompiler -fPIC -Xcompiler -D_REENTRANT -O3 total_power.o -o libflagpower.so -L/usr/local/cuda/lib64 --shared
 
 test_total_power.o: test_total_power.c total_power.h
-	gcc -I /usr/local/cuda-7.0/include -c -o test_total_power.o test_total_power.c 
+	gcc -I /usr/local/cuda/include -c -o test_total_power.o test_total_power.c 
 
 clean:
 	rm -f *.o
