@@ -2,9 +2,9 @@
 #define _FLAG_DATABUF_H
 
 #include <stdint.h>
-#include "cublas_beamformer.h"
 #include "hashpipe_databuf.h"
 #include "config.h"
+#include "total_power.h"
 
 
 // Total number of antennas (nominally 40)
@@ -29,6 +29,9 @@
 
 // Number of time samples per packet
 #define N_TIME_PER_PACKET 20
+#define SAMP_RATE 155.52e6
+#define COARSE_SAMP_RATE (SAMP_RATE/512)
+#define N_MCNT_PER_SECOND (COARSE_SAMP_RATE/N_TIME_PER_PACKET)
 
 // Number of bits per I/Q sample
 // Determined by F engine packetizer
@@ -81,8 +84,9 @@
 
 // Number of entries in output correlation matrix
 // #define N_COR_MATRIX (N_INPUTS*(N_INPUTS + 1)/2*N_CHAN_PER_X)
-#define N_COR_MATRIX (N_INPUTS/2*(N_INPUTS/2 + 1)/2*N_CHAN_PER_X*4)
-#define N_BEAM_SAMPS (2*BN_OUTPUTS)
+// #define N_COR_MATRIX (N_INPUTS/2*(N_INPUTS/2 + 1)/2*N_CHAN_PER_X*4)
+// #define N_BEAM_SAMPS (2*BN_OUTPUTS)
+
 
 // Macros to maintain cache alignment
 #define CACHE_ALIGNMENT (128)
@@ -132,6 +136,7 @@ typedef struct flag_input_databuf {
 
 // A typedef for a GPU input block header
 typedef struct flag_gpu_input_header {
+    int64_t  good_data;
     uint64_t mcnt;
 } flag_gpu_input_header_t;
 
@@ -161,6 +166,7 @@ typedef struct flag_gpu_input_databuf {
 
 // A typedef for a correlator output block header
 typedef struct flag_gpu_output_header {
+    int64_t  good_data;
     uint64_t mcnt;
     uint64_t flags[(N_CHAN_PER_X+63)/64];
 } flag_gpu_output_header_t;
@@ -173,7 +179,7 @@ typedef uint8_t flag_gpu_output_header_cache_alignment[
 typedef struct flag_gpu_output_block {
     flag_gpu_output_header_t header;
     flag_gpu_output_header_cache_alignment padding;
-    float data[N_BEAM_SAMPS];
+    float data[NA];
 } flag_gpu_output_block_t;
 
 // A typedef for the data buffer structure
