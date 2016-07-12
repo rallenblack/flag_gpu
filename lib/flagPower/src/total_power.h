@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define NF 5 		// Number of Fengines
+#define NF 8 		// Number of Fengines
 #define NI 8 		// Number of inputs per Fengine
 #define NA (NF*NI) 	// Number of total antennas
 #define NC 25 		// Number of frequency channels
@@ -18,6 +18,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+void initTotalPower();
 void getTotalPower(unsigned char * input, float * output);
 #ifdef __cplusplus
 }

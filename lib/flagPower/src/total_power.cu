@@ -124,30 +124,38 @@ __global__ void total_power_kernel3(float * input, float * output) {
     }
 }
 
-void getTotalPower(unsigned char * input, float * output) {
-    unsigned char * d_input;
-    float * d_output1;
-    float * d_output2;
-    float * d_output3;
+static unsigned char * d_input;
+static float * d_output1;
+static float * d_output2;
+static float * d_output3;
 
+void initTotalPower() {
     cudaMalloc((void **) &d_input, 8*NF*NC*NT*NM*sizeof(unsigned char)*2);
     cudaMalloc((void **) &d_output1, 8*NF*NC*nblocks2*sizeof(float));
     cudaMalloc((void **) &d_output2, 8*NF*NC*sizeof(float));
     cudaMalloc((void **) &d_output3, 8*NF*sizeof(float));
-    cudaMemcpy(d_input, input, 8*NF*NC*NT*NM*2*sizeof(unsigned char), cudaMemcpyHostToDevice);
+}
 
+void getTotalPower(unsigned char * input, float * output) {
+
+    cudaMemcpy(d_input, input, 8*NF*NC*NT*NM*2*sizeof(unsigned char), cudaMemcpyHostToDevice);
 
     /**********************************************
      * Reduce over 1024 time samples
      **********************************************/
     dim3 gridSize1(NC,8*NF,1);
     dim3 blockSize1(nblocks1,1,1);
+    cudaStream_t s[nblocks2];
+    for (int i = 0; i < nblocks2; i++) {
+        cudaStreamCreate(&s[i]);
+    }
     
     for (int i = 0; i < nblocks2; i++) {
-        int in_off = 8*NF*NC*nblocks1*i;
-        int out_off = 8*NF*NC*i;
-        total_power_kernel1<<<gridSize1, blockSize1>>>(d_input+in_off, d_output1+out_off, nblocks1*i);
+        // int in_off = 8*NF*NC*nblocks1*i;
+        // int out_off = 8*NF*NC*i;
+        total_power_kernel1<<<gridSize1, blockSize1, 0, s[i]>>>(d_input+NA*NC*nblocks1*i, d_output1+NA*NC*i, nblocks1*i);
     }
+    cudaDeviceSynchronize();
     cudaError_t ret = cudaGetLastError();
     if (ret != cudaSuccess) {
         printf("ERROR: total_power_kernel1 - %s\n", cudaGetErrorString(ret));

@@ -10,18 +10,19 @@ int main() {
     for (f = 0; f < 8*NF; f++) {
     	for (c = 0; c < NC; c++) {
     		for (t = 0; t < NT*NM; t++) {
-    			if (f == 25 && c == 0) {
+                        if (f == 0 && c == 0) {
     				data[2*(f + c*8*NF + t*8*NF*NC)] = 1;
-    				data[2*(f + c*8*NF + t*8*NF*NC) + 1] = 0;
-    			}
-    			else {
+	    			data[2*(f + c*8*NF + t*8*NF*NC) + 1] = 0;
+			}
+			else {
     				data[2*(f + c*8*NF + t*8*NF*NC)] = 0;
-    				data[2*(f + c*8*NF + t*8*NF*NC) + 1] = 0;
-    			}
+	    			data[2*(f + c*8*NF + t*8*NF*NC) + 1] = 0;
+			}
     		}
     	}
     }
 
+    initTotalPower();
     getTotalPower(data, output);
     int a;
     for (a = 0; a < 8*NF; a++) {
