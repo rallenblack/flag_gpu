@@ -96,7 +96,7 @@ typedef uint8_t hashpipe_databuf_cache_alignment[
  * It is the output buffer of the flag_net_thread.
  * It is the input buffer of the flag_transpose_thread.
  */
-#define N_INPUT_BLOCKS 100
+#define N_INPUT_BLOCKS 4
 
 // A typedef for a block header
 typedef struct flag_input_header {
@@ -132,6 +132,7 @@ typedef struct flag_input_databuf {
 
 // A typedef for a GPU input block header
 typedef struct flag_gpu_input_header {
+    int64_t  good_data;
     uint64_t mcnt;
 } flag_gpu_input_header_t;
 
@@ -161,6 +162,7 @@ typedef struct flag_gpu_input_databuf {
 
 // A typedef for a correlator output block header
 typedef struct flag_gpu_output_header {
+    int64_t  good_data;
     uint64_t mcnt;
     uint64_t flags[(N_CHAN_PER_X+63)/64];
 } flag_gpu_output_header_t;

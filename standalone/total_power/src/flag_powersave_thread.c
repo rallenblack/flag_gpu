@@ -27,6 +27,8 @@ static void * run(hashpipe_thread_args_t * args) {
 
     st_p = &st; // allow global (this source file) access to the status buffer
 
+    int instance_id = args[0].instance_id;
+
     // Mark thread as ready to run
     hashpipe_status_lock_safe(&st);
     hputi4(st.buf, "SAVREADY", 1);
@@ -51,16 +53,15 @@ static void * run(hashpipe_thread_args_t * args) {
         }
 
         uint64_t start_mcnt = db_in->block[curblock_in].header.mcnt;
+        int good_data = (int)(db_in->block[curblock_in].header.good_data);
         float * p = (float *)db_in->block[curblock_in].data;
         char filename[128];
-        sprintf(filename, "power_mcnt_%lld.out", (long long)start_mcnt);
-        fprintf(stderr, "Saving to %s\n", filename);
+        sprintf(filename, "power_%d_mcnt_%lld.out", instance_id, (long long)start_mcnt);
+        // fprintf(stderr, "Saving to %s\n", filename);
+        
         FILE * filePtr = fopen(filename, "w");
-
-        int j;
-        for (j = 0; j < NA; j++) {
-            fprintf(filePtr, "%g\n", p[j]);
-        }
+        fwrite(&good_data, sizeof(int), 1, filePtr);
+        fwrite(p, sizeof(float), NA, filePtr);
         fclose(filePtr);
 
         flag_gpu_output_databuf_set_free(db_in, curblock_in);

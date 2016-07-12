@@ -84,6 +84,7 @@ static void * run(hashpipe_thread_args_t * args) {
         // Print out the header information for this block 
         flag_input_header_t tmp_header;
         memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_input_header_t));
+        int64_t good_data = tmp_header.good_data;
         mcnt = tmp_header.mcnt_start;
 	// printf("TRA: Receiving mcnt = %lld\n", (long long int)mcnt);
 
@@ -109,6 +110,7 @@ static void * run(hashpipe_thread_args_t * args) {
             }
         }
         db_out->block[curblock_out].header.mcnt = mcnt;
+        db_out->block[curblock_out].header.good_data = good_data;
         
 
         flag_gpu_input_databuf_set_filled(db_out, curblock_out);

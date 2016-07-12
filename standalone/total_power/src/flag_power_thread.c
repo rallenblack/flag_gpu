@@ -32,6 +32,8 @@ static void * run(hashpipe_thread_args_t * args) {
 
     st_p = &st; // allow global (this source file) access to the status buffer
 
+    initTotalPower();
+
     int rv;
     int curblock_in = 0;
     int curblock_out = 0;
@@ -60,6 +62,7 @@ static void * run(hashpipe_thread_args_t * args) {
         // Print out the header information for this block 
         flag_gpu_input_header_t tmp_header;
         memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_gpu_input_header_t));
+        int64_t good_data = tmp_header.good_data;
 	//printf("TOT: Received block %d, starting mcnt = %lld\n", curblock_in, (long long int)tmp_header.mcnt);
 
         while ((rv=flag_gpu_output_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
@@ -80,6 +83,7 @@ static void * run(hashpipe_thread_args_t * args) {
         getTotalPower((unsigned char *)&db_in->block[curblock_in].data, (float *)&db_out->block[curblock_out].data);
         
         db_out->block[curblock_out].header.mcnt = start_mcnt;
+        db_out->block[curblock_out].header.good_data = good_data;
             
         // Mark output block as full and advance
         flag_gpu_output_databuf_set_filled(db_out, curblock_out);
