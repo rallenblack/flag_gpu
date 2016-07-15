@@ -54,13 +54,13 @@ cmd_t check_cmd(int fifo_fd)
 
 	// fprintf(stderr, "fifo_fd: %d\n", fifo_fd);
 
-	struct pollfd pfd[2];
-        pfd[1].fd = fifo_fd;
-        pfd[1].events = POLLIN;
+	struct pollfd pfd[1];
+        //pfd[1].fd = fifo_fd;
+        //pfd[1].events = POLLIN;
         pfd[0].fd = fileno(stdin);
         pfd[0].events = POLLIN;
 		// ?, num file desc, timeout
-        int rv = poll(pfd, 2, 1000);
+        int rv = poll(pfd, 1, 0);
         if (rv==0)
         {
 // 			fprintf(stderr, "rv == 0 :(\n");
@@ -75,11 +75,12 @@ cmd_t check_cmd(int fifo_fd)
 //             fprintf(stderr, "rv < 0 :(\n");
             return INVALID; //????
         }
+        printf("NEW COMMAND!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 
         // clear the command
         memset(cmd, 0, MAX_CMD_LEN);
 		int i;
-        for (i=0; i<2; ++i)
+        for (i=0; i<1; ++i)
         {
             rv = 0;
             if (pfd[i].revents & POLLIN)

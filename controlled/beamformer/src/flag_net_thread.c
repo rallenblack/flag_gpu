@@ -202,10 +202,10 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
     else {
         printf("NET: Bad Block! mcnt = %lld, %d/%d\n", (long long int)db->block[block_idx].header.mcnt_start, binfo->packet_count[block_idx], N_REAL_PACKETS_PER_BLOCK);
     }
-    int num_missed_packets = N_REAL_PACKETS_PER_BLOCK - binfo->packet_count[block_idx];
-    hashpipe_status_lock_safe(st_p);
-    hputi4(st_p->buf, "MISSPKTS", num_missed_packets);
-    hashpipe_status_unlock_safe(st_p);
+    //int num_missed_packets = N_REAL_PACKETS_PER_BLOCK - binfo->packet_count[block_idx];
+    //hashpipe_status_lock_safe(st_p);
+    //hputi4(st_p->buf, "MISSPKTS", num_missed_packets);
+    //hashpipe_status_unlock_safe(st_p);
     
 
     // Mark block as filled so next thread can process it
@@ -213,10 +213,10 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
     // printf("Filling block %d, starting mcnt = %lld\n", block_idx, (long long int)binfo->mcnt_start);
     flag_input_databuf_set_filled(db, block_idx);
 
-    binfo->self_xid = -1;
-    hashpipe_status_lock_safe(st_p);
-    hgeti4(st_p->buf, "XID", &binfo->self_xid);
-    hashpipe_status_unlock_safe(st_p);
+    //binfo->self_xid = -1;
+    //hashpipe_status_lock_safe(st_p);
+    //hgeti4(st_p->buf, "XID", &binfo->self_xid);
+    //hashpipe_status_unlock_safe(st_p);
 }
 
 
@@ -473,11 +473,15 @@ static void *run(hashpipe_thread_args_t * args) {
 	// Get command from Dealer/Player
 	if (n++ >= n_loop) {
             cmd = check_cmd(gpu_fifo_id);
+            if(cmd != INVALID){
+            	printf("OOPS!!\n");
+	    }
             n = 0;
         }
-
+        
         // If command is QUIT, stop all processing
         if (cmd == QUIT) break;
+
 
         // If pipeline terminated somewhere else, stop processing
 	if(!run_threads()) break;
@@ -488,6 +492,9 @@ static void *run(hashpipe_thread_args_t * args) {
          ************************************************************/
         // If in IDLE state, look for START command
         if (cur_state == IDLE) {
+            // cmd = check_cmd(gpu_fifo_id);
+
+
             // If command is START, proceed to ACQUIRE state
             if (cmd == START) {
                 next_state = ACQUIRE;
@@ -533,10 +540,8 @@ static void *run(hashpipe_thread_args_t * args) {
             packet_count++;
             last_filled_mcnt = process_packet(db, &p);
 
-	    if(cmd == STOP){
-		printf("Stop2!\n");
-	    }		
             // Next state processing
+            next_state = ACQUIRE;
             if ((last_filled_mcnt != -1 && last_filled_mcnt >= scan_last_mcnt) || cmd == STOP) {
                 int cleanA = 1;
                 int cleanB = 1;
@@ -554,9 +559,6 @@ static void *run(hashpipe_thread_args_t * args) {
                     hashpipe_status_unlock_safe(&st);
                 }
                 next_state = CLEANUP;
-            }
-            else {
-                next_state = ACQUIRE;
             }
         }
 
@@ -586,14 +588,16 @@ static void *run(hashpipe_thread_args_t * args) {
         }
 
         // Update state variable if needed
-        hashpipe_status_lock_safe(&st);
-        switch (next_state) {
-            case IDLE: hputs(st.buf, status_key, "IDLE"); break;
-            case ACQUIRE: hputs(st.buf, status_key, "ACQUIRE"); break;
-            case CLEANUP: hputs(st.buf, status_key, "CLEANUP"); break;
+        if (next_state != cur_state) {
+            hashpipe_status_lock_safe(&st);
+            switch (next_state) {
+                case IDLE: hputs(st.buf, status_key, "IDLE"); break;
+                case ACQUIRE: hputs(st.buf, status_key, "ACQUIRE"); break;
+                case CLEANUP: hputs(st.buf, status_key, "CLEANUP"); break;
+            }
+            hashpipe_status_unlock_safe(&st);
+            cur_state = next_state;
         }
-        hashpipe_status_unlock_safe(&st);
-        cur_state = next_state;
 
         /* Will exit if thread has been cancelled */
         pthread_testcancel();

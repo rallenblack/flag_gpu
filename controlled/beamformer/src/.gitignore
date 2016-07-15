@@ -13,7 +13,6 @@ missing
 stamp-h1
 install-sh
 *.m
-*.m4
 *.in
 *.out
 *.sh
