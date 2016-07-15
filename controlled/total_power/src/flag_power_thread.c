@@ -37,6 +37,8 @@ static void * run(hashpipe_thread_args_t * args) {
 
     st_p = &st; // allow global (this source file) access to the status buffer
 
+    initTotalPower();
+
     int rv;
     int curblock_in = 0;
     int curblock_out = 0;
@@ -94,8 +96,8 @@ static void * run(hashpipe_thread_args_t * args) {
 
 		    getTotalPower((unsigned char *)&db_in->block[curblock_in].data, (float *)&db_out->block[curblock_out].data);
 		
-		    db_out->block[curblock_out].header.mcnt = start_mcnt;
-            db_out->block[curblock_out].header.good_data = good_data;
+                    db_out->block[curblock_out].header.mcnt = start_mcnt;
+                    db_out->block[curblock_out].header.good_data = good_data;
 		        
 		    // Mark output block as full and advance
 		    flag_gpu_output_databuf_set_filled(db_out, curblock_out);

@@ -9,7 +9,10 @@
 
 // Total number of antennas (nominally 40)
 // Determined by XGPU code
-#define N_INPUTS (2*XGPU_NSTATION)
+// #define N_INPUTS (2*XGPU_NSTATION)
+// Determined by flagPower library
+#define N_INPUTS NA
+
 // xGPU needs a multiple of 32 inputs. The real number is...
 #define N_REAL_INPUTS 40
 
@@ -50,10 +53,14 @@
 #define N_CHAN_PER_PACKET (N_CHAN/N_XENGINES)
 
 // Number of channels processed per XGPU instance?
-#define N_CHAN_PER_X XGPU_NFREQUENCY
+// #define N_CHAN_PER_X XGPU_NFREQUENCY
+// Number of channels processed per flagPower instance (total_power.h)
+#define N_CHAN_PER_X NC
 
 // Number of time samples processed per XGPU instance?
-#define N_TIME_PER_BLOCK XGPU_NTIME
+// #define N_TIME_PER_BLOCK XGPU_NTIME
+// Number of time samples processed per flagPower dump (total_power.h)
+#define N_TIME_PER_BLOCK (NM * NT)
 
 // Number of bytes per packet
 #define N_BYTES_PER_PACKET ((N_BITS_IQ * 2)*N_INPUTS_PER_FENGINE*N_CHAN_PER_PACKET/8*N_TIME_PER_PACKET + 8)
@@ -100,7 +107,7 @@ typedef uint8_t hashpipe_databuf_cache_alignment[
  * It is the output buffer of the flag_net_thread.
  * It is the input buffer of the flag_transpose_thread.
  */
-#define N_INPUT_BLOCKS 100
+#define N_INPUT_BLOCKS 25
 
 // A typedef for a block header
 typedef struct flag_input_header {
