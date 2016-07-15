@@ -28,7 +28,7 @@ static void * run(hashpipe_thread_args_t * args) {
 
     // Mark thread as ready to run
     hashpipe_status_lock_safe(&st);
-    hputi4(st.buf, "SAVEREADY", 1);
+    hputi4(st.buf, "SAVREADY", 1);
     hashpipe_status_unlock_safe(&st);
 
     int rv;
