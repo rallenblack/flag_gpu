@@ -65,7 +65,7 @@ static void * run(hashpipe_thread_args_t * args) {
         int good_data = (int)(db_in->block[curblock_in].header.good_data);
         float * p = (float *)db_in->block[curblock_in].data;
         char filename[256];
-        sprintf(filename, "%s/power_%d_mcnt_%lld.out", data_dir, instance_id, (long long)start_mcnt);
+        sprintf(filename, "%s/beamformer_%d_mcnt_%lld.out", data_dir, instance_id, (long long)start_mcnt);
         // fprintf(stderr, "Saving to %s\n", filename);
         FILE * filePtr = fopen(filename, "w");
         fwrite(&good_data, sizeof(int), 1, filePtr);
