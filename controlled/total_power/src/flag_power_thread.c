@@ -62,10 +62,10 @@ static void * run(hashpipe_thread_args_t * args) {
 		    while ((rv=flag_gpu_input_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
 		        if (rv==HASHPIPE_TIMEOUT) {
                     int cleanb;
-		            hashpipe_status_lock_safe(&st);
+                    hashpipe_status_lock_safe(&st);
                     hgetl(st.buf, "CLEANB", &cleanb);
                     hgets(st.buf, "NETSTAT", 16, netstat);
-		            hashpipe_status_unlock_safe(&st);
+                    hashpipe_status_unlock_safe(&st);
                     if (cleanb == 0 && strcmp(netstat, "CLEANUP") == 0) {
                         next_state = CLEANUP;
                         break;
@@ -82,6 +82,7 @@ static void * run(hashpipe_thread_args_t * args) {
 		    flag_gpu_input_header_t tmp_header;
 		    memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_gpu_input_header_t));
             good_data = tmp_header.good_data;
+                    //printf("TOT: Got block %d (mcnt = %lld)\n", curblock_in, (long long int)start_mcnt);
 
 		    while ((rv=flag_gpu_output_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
 		        if (rv==HASHPIPE_TIMEOUT) {
@@ -98,6 +99,8 @@ static void * run(hashpipe_thread_args_t * args) {
 		
                     db_out->block[curblock_out].header.mcnt = start_mcnt;
                     db_out->block[curblock_out].header.good_data = good_data;
+
+                    //printf("TOT: Marking block %d (mcnt = %lld) as filled\n", curblock_out, (long long int)start_mcnt);
 		        
 		    // Mark output block as full and advance
 		    flag_gpu_output_databuf_set_filled(db_out, curblock_out);

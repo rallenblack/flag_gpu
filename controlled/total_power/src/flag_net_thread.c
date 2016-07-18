@@ -210,7 +210,7 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
 
     // Mark block as filled so next thread can process it
     last_filled = block_idx;
-    // printf("Filling block %d, starting mcnt = %lld\n", block_idx, (long long int)binfo->mcnt_start);
+    printf("Filling block %d, starting mcnt = %lld\n", block_idx, (long long int)binfo->mcnt_start);
     flag_input_databuf_set_filled(db, block_idx);
 
     //binfo->self_xid = -1;
@@ -324,7 +324,7 @@ static inline int64_t process_packet(flag_input_databuf_t * db, struct hashpipe_
     */
     
 
-    // print_pkt_header(&pkt_header);
+    print_pkt_header(&pkt_header);
     
     
 
