@@ -18,7 +18,7 @@ data_destination_port = 60000    # Ditto, but the fabric port
 xid = 3           # The Xengine ID
 instance = 2      # The hashpipe instance ID
 gpudev = 0        # The GPU device ID
-cpus = 0, 1, 2, 3 # The CPU cores that the threads should run on (not fully implemented yet)
+cpus = 0, 1, 2, 3 # The CPU cores that the threads should run on
 
 
 [FLAG_BETA_MODE1]

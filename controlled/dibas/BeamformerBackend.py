@@ -62,9 +62,18 @@ class BeamformerBackend(VegasBackend):
         Creates an instance of BeamformerBackend
         """
 
+        # Read in the additional parameters from the configuration file
+        self.read_parameters(theBank, theMode)
+
+        # Clear shared memory segments
+        command = "hashpipe_clean_shmem -I %d" %(self.instance)
+        ps_clean = subprocess.Popen(command.split())
+        ps_clean.wait()
+
         VegasBackend.__init__(self, theBank, theMode, theRoach, theValon, hpc_macs, unit_test)
 
         # Create the ARP table from the mac addresses in dibas.conf under [HPCMACS]
+        self.name = theMode.backend_name.lower()
         self.hpc_macs = hpc_macs
         if self.roach:
             self.table = []
@@ -75,9 +84,6 @@ class BeamformerBackend(VegasBackend):
 
         # Add additional dealer-controlled parameters
         self.params["int_length"] = self.setIntegrationTime
-
-        # Read in the additional parameters from the configuration file
-        self.read_parameters(theBank, theMode)
 
         # Generate ROACH 10-GbE source mac addresses
         self.mac_base0 = 0x020200000000 + (2**8)*self.xid + 1
@@ -257,7 +263,6 @@ class BeamformerBackend(VegasBackend):
 
         self.stop_hpc()
 
-
         # Get hashpipe command (specified by configuration file)
         hpc_program = self.mode.hpc_program
         if hpc_program is None:
@@ -265,7 +270,9 @@ class BeamformerBackend(VegasBackend):
                             "MODE section of %s " % (self.current_mode))
 
         # Create command to start process
-        process_list = [hpc_program]
+        process_list = []
+        # process_list = "sudo nice -n -20 sudo -u rablack".split()
+        process_list = process_list + hpc_program.split()
 
         # Add flags specified by configuration file
         if self.mode.hpc_program_flags:
@@ -291,28 +298,84 @@ class BeamformerBackend(VegasBackend):
         gpu_str = "-o GPUDEV=" + str(self.gpudev)
         process_list = process_list + gpu_str.split()
 
-        # Add threads
-        thread1 = "-c %d flag_net_thread" % (self.core[0])
-        thread2 = "-c %d flag_transpose_thread" % (self.core[1])
-        thread3 = "-c %d flag_correlator_thread" % (self.core[2])
-        thread4 = "-c %d flag_corsave_thread" % (self.core[3])
+        # Add DATADIR
+        dir_str = "-o DATADIR=" + str(self.datadir)
+        process_list = process_list + dir_str.split()
 
-        process_list = process_list + thread1.split()
-        process_list = process_list + thread2.split()
-        process_list = process_list + thread3.split()
-        process_list = process_list + thread4.split()
-        # process_list = process_list + "-c 3 flag_corsave_thread".split()
+        # Mode-specific thread layout
+        if self.name == "hi_correlator":
+            # Add mode specifier for FITS writers
+            mode_str = "-o COVMODE=HI"
+            process_list = process_list + mode_str.split()
+            # Add threads
+            thread1 = "-c %d flag_net_thread" % (self.core[0])
+            thread2 = "-c %d flag_transpose_thread" % (self.core[1])
+            thread3 = "-c %d flag_correlator_thread" % (self.core[2])
+            thread4 = "-c %d flag_corsave_thread" % (self.core[3])
+            process_list = process_list + thread1.split()
+            process_list = process_list + thread2.split()
+            process_list = process_list + thread3.split()
+            process_list = process_list + thread4.split()
+        elif self.name == "cal_correlator":
+            # Add mode specifier for FITS writers
+            mode_str = "-o COVMODE=PAF_CAL"
+            process_list = process_list + mode_str.split()
+            # Add threads
+            thread1 = "-c %d flag_net_thread" % (self.core[0])
+            thread2 = "-c %d flag_transpose_thread" % (self.core[1])
+            thread3 = "-c %d flag_correlator_thread" % (self.core[2])
+            thread4 = "-c %d flag_corsave_thread" % (self.core[3])
+            process_list = process_list + thread1.split()
+            process_list = process_list + thread2.split()
+            process_list = process_list + thread3.split()
+            process_list = process_list + thread4.split()
+        if self.name == "frb_correlator":
+            # Add mode specifier for FITS writers
+            mode_str = "-o COVMODE=FRB"
+            process_list = process_list + mode_str.split()
+            # Add threads
+            thread1 = "-c %d flag_net_thread" % (self.core[0])
+            thread2 = "-c %d flag_transpose_thread" % (self.core[1])
+            thread3 = "-c %d flag_correlator_thread" % (self.core[2])
+            thread4 = "-c %d flag_corsave_thread" % (self.core[3])
+            process_list = process_list + thread1.split()
+            process_list = process_list + thread2.split()
+            process_list = process_list + thread3.split()
+            process_list = process_list + thread4.split()
+        elif self.name == "pulsar_beamformer":
+            # Add threads
+            thread1 = "-c %d flag_net_thread" % (self.core[0])
+            thread2 = "-c %d flag_transpose_thread" % (self.core[1])
+            thread3 = "-c %d flag_beamform_thread" % (self.core[2])
+            thread4 = "-c %d flag_beamsave_thread" % (self.core[3])
+            process_list = process_list + thread1.split()
+            process_list = process_list + thread2.split()
+            process_list = process_list + thread3.split()
+            process_list = process_list + thread4.split()
+        elif self.name == "flag_total_power":
+            # Add threads
+            thread1 = "-c %d flag_net_thread" % (self.core[0])
+            thread2 = "-c %d flag_transpose_thread" % (self.core[1])
+            thread3 = "-c %d flag_power_thread" % (self.core[2])
+            thread4 = "-c %d flag_powersave_thread" % (self.core[3])
+            process_list = process_list + thread1.split()
+            process_list = process_list + thread2.split()
+            process_list = process_list + thread3.split()
+            process_list = process_list + thread4.split()
+            
 
         print ' '.join(process_list)
         self.hpc_process = subprocess.Popen(process_list, stdin=subprocess.PIPE)
 
         # Logic to ensure that the process is indeed finished starting
         time.sleep(15)
-        isReady = False
-        while isReady == False:
-            isReady = self.get_status('NETREADY')
-        
-
+    
+    
+    ######################################################
+    # FITS writer functions
+    # Modified by Richard B. on July 18, 2016 with latest
+    # FITS writer requirements
+    ######################################################
     def start_fits_writer(self):
         """
         start_fits_writer()
@@ -324,21 +387,27 @@ class BeamformerBackend(VegasBackend):
             return
 
         self.stop_fits_writer()
-        #fits_writer_program = "dummy_fits_writer"
-        #fits_writer_program = "bfFitsWriter"
 
         cmd = self.dibas_dir + '/exec/x86_64-linux/' + self.fits_writer_program
-        #self.fits_writer_process = subprocess.Popen((sp_path, ), stdin=subprocess.PIPE)
         cmd += " -i %d" % self.instance_id
-        cmd += " -m c" 
+        if self.name == 'hi_correlator':
+            cmd += " -m s"
+        if self.name == 'cal_correlator':
+            cmd += " -m c"
+        if self.name == 'frb_correlator':
+            cmd += " -m f"
+        if self.name == 'pulsar_beamformer':
+            cmd += " -m p"
+        
+        print cmd
         process_list = shlex.split(cmd)
-        #self.fits_writer_process = subprocess.Popen(process_list, stdin=subprocess.PIPE)
+        self.fits_writer_process = subprocess.Popen(process_list, stdin=subprocess.PIPE)
+
 
     ######################################################
     # ROACH-specific functions
     # Added by Richard B. on June 21, 2016
     ######################################################
-    
     def progdev(self, bof = None):
         """progdev(self, bof):
         
