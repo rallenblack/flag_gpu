@@ -36,6 +36,7 @@ while 1
             good_data = fread(files(inst+1), 1, 'int32');
             if (good_data ~= 1)
                 fclose(files(inst+1));
+                tmp_data = NaN(Nant, 1);
                 break;
             end
             tmp_data = tmp_data + fread(files(inst+1), Nant, 'single');
