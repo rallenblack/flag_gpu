@@ -22,7 +22,7 @@ function varargout = beamformer_disp_gui(varargin)
 
 % Edit the above text to modify the response to help beamformer_disp_gui
 
-% Last Modified by GUIDE v2.5 15-Jul-2016 14:53:54
+% Last Modified by GUIDE v2.5 20-Jul-2016 14:53:19
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -58,8 +58,6 @@ handles.output = hObject;
 % Update handles structure
 guidata(hObject, handles);
 
-beamformer_display; % Call beamformer_display and only run gui, otherwise comment out "axes()"
-
 % UIWAIT makes beamformer_disp_gui wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
 
@@ -75,13 +73,24 @@ function varargout = beamformer_disp_gui_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
 
 
-% --- Executes during object creation, after setting all properties.
-function axes1_CreateFcn(hObject, eventdata, handles)
-    figure();
-        imagesc(1:N_beam1, 1:N_bin, 10*log10(abs(squeeze(power_acc_x))));
-
-% hObject    handle to axes1 (see GCBO)
+% --- Executes on button press in pushbutton1.
+function pushbutton1_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
+% handles    structure with handles and user data (see GUIDATA)
+beamformer_display; % Call beamformer_display and only run gui, otherwise comment out "axes()"
 
-% Hint: place code in OpeningFcn to populate axes1
+% --- Executes on button press in pushbutton2.
+function pushbutton2_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+display('Quit');
+close(gcf);
+
+% --- Executes on button press in pushbutton3.
+function pushbutton3_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+pause

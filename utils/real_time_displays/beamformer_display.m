@@ -12,6 +12,8 @@ window_size = 100;
 N_beam = 7;
 N_pol = 4;
 N_bin = 25;
+start_freq = 1;
+end_freq = 25;
 N_time = 100;
 N_beamformer_output = N_beam*N_pol*N_bin*N_time;
 
@@ -44,9 +46,7 @@ while 1
                 fclose(files(inst+1));
                 break;
             end
-            tmp2 = fread(files(inst+1), N_beamformer_output, 'single');
-            size(tmp2)
-            tmp_data = tmp_data + tmp2;
+            tmp_data = tmp_data + fread(files(inst+1), N_beamformer_output, 'single');
             fclose(files(inst+1));
         end
     end
@@ -74,38 +74,68 @@ while 1
     power_acc_xyi = sum(power_acc_xyi, 1)./N_time;      % Integrate time samples for GUI.
     power_acc_xyi = reshape(power_acc_xyi, N_bin, N_beam1);
     
-    figure();
-%         axes(handles.axes1);
-        imagesc(1:N_beam1, 1:N_bin, 10*log10(abs(squeeze(power_acc_x))));
-        set(gca, 'ydir', 'normal');
-        xlabel('Beam Index');
-        ylabel('Bin Index');
-        title('X polarization');
-        drawnow;
-    figure();
-%         axes(handles.axes2);
-        imagesc(1:N_beam1, 1:N_bin, 10*log10(abs(squeeze(power_acc_y))));
-        set(gca, 'ydir', 'normal');
-        xlabel('Beam Index');
-        ylabel('Bin Index');
-        title('Y polarization');
-        drawnow;
-    figure();
-%         axes(handles.axes3);
-        imagesc(1:N_beam1, 1:N_bin, 10*log10(abs(squeeze(power_acc_xyr))));
-        set(gca, 'ydir', 'normal');
-        xlabel('Beam Index');
-        ylabel('Bin Index');
-        title('XY Real polarization');
-        drawnow;
-    figure();
-%         axes(handles.axes4);
-        imagesc(1:N_beam1, 1:N_bin, 10*log10(abs(squeeze(power_acc_xyi))));
-        set(gca, 'ydir', 'normal');
-        xlabel('Beam Index');
-        ylabel('Bin Index');
-        title('XY Imaginary polarization');
-        drawnow;
+    tmp1(t+1, start_freq:end_freq) = 10*log10(abs(power_acc_x(start_freq:end_freq,1)));
+    axes(handles.axes1);
+    plot(0:t, tmp1(1:t+1, start_freq:end_freq));
+    set(gca, 'ydir', 'normal');
+    xlabel('Time');
+    ylabel('Power (dB)');
+    title('X pol Beam 1');
+    drawnow;
+   
+    tmp2(t+1, start_freq:end_freq) = 10*log10(abs(power_acc_x(start_freq:end_freq,2)));
+    axes(handles.axes2);
+    plot(0:t, tmp2(1:t+1, start_freq:end_freq));
+    set(gca, 'ydir', 'normal');
+    xlabel('Time');
+    ylabel('Power (dB)');
+    title('X pol Beam 2');
+    drawnow;
+   
+    tmp3(t+1, start_freq:end_freq) = 10*log10(abs(power_acc_x(start_freq:end_freq,3)));
+    axes(handles.axes3);
+    plot(0:t, tmp3(1:t+1, start_freq:end_freq));
+    set(gca, 'ydir', 'normal');
+    xlabel('Time');
+    ylabel('Power (dB)');
+    title('X pol Beam 3');
+    drawnow;
+   
+    tmp4(t+1, start_freq:end_freq) = 10*log10(abs(power_acc_x(start_freq:end_freq,4)));
+    axes(handles.axes4);
+    plot(0:t, tmp4(1:t+1, start_freq:end_freq));
+    set(gca, 'ydir', 'normal');
+    xlabel('Time');
+    ylabel('Power (dB)');
+    title('X pol Beam 4');
+    drawnow;
+   
+    tmp5(t+1, start_freq:end_freq) = 10*log10(abs(power_acc_x(start_freq:end_freq,5)));
+    axes(handles.axes5);
+    plot(0:t, tmp5(1:t+1, start_freq:end_freq));
+    set(gca, 'ydir', 'normal');
+    xlabel('Time');
+    ylabel('Power (dB)');
+    title('X pol Beam 5');
+    drawnow;
+   
+    tmp6(t+1, start_freq:end_freq) = 10*log10(abs(power_acc_x(start_freq:end_freq,6)));
+    axes(handles.axes6);
+    plot(0:t, tmp6(1:t+1, start_freq:end_freq));
+    set(gca, 'ydir', 'normal');
+    xlabel('Time');
+    ylabel('Power (dB)');
+    title('X pol Beam 6');
+    drawnow;
+   
+    tmp7(t+1, start_freq:end_freq) = 10*log10(abs(power_acc_x(start_freq:end_freq,7)));
+    axes(handles.axes7);
+    plot(0:t, tmp7(1:t+1, start_freq:end_freq));
+    set(gca, 'ydir', 'normal');
+    xlabel('Time');
+    ylabel('Power (dB)');
+    title('X pol Beam 7');
+    drawnow;
     %     figure(1);
     %     h = plot(data.');
     %     set(gca, 'NextPlot', 'replacechildren');
