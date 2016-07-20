@@ -75,7 +75,6 @@ cmd_t check_cmd(int fifo_fd)
 //             fprintf(stderr, "rv < 0 :(\n");
             return INVALID; //????
         }
-        printf("NEW COMMAND!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 
         // clear the command
         memset(cmd, 0, MAX_CMD_LEN);

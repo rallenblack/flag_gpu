@@ -197,7 +197,7 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
     // Mark block as good if all packets are there
     if (binfo->packet_count[block_idx] == N_REAL_PACKETS_PER_BLOCK) {
         db->block[block_idx].header.good_data = 1;
-        // printf("NET: Good Block! mcnt = %lld\n", (long long int)db->block[block_idx].header.mcnt_start);
+        //printf("NET: Good Block! mcnt = %lld\n", (long long int)db->block[block_idx].header.mcnt_start);
     }
     else {
         printf("NET: Bad Block! mcnt = %lld, %d/%d\n", (long long int)db->block[block_idx].header.mcnt_start, binfo->packet_count[block_idx], N_REAL_PACKETS_PER_BLOCK);
@@ -473,9 +473,6 @@ static void *run(hashpipe_thread_args_t * args) {
 	// Get command from Dealer/Player
 	if (n++ >= n_loop) {
             cmd = check_cmd(gpu_fifo_id);
-            if(cmd != INVALID){
-            	printf("OOPS!!\n");
-	    }
             n = 0;
         }
         
