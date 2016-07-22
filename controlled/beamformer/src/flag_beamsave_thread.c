@@ -69,7 +69,7 @@ static void * run(hashpipe_thread_args_t * args) {
         // fprintf(stderr, "Saving to %s\n", filename);
         FILE * filePtr = fopen(filename, "w");
         fwrite(&good_data, sizeof(int), 1, filePtr);
-        fwrite(p, sizeof(float), NA, filePtr);
+        fwrite(p, sizeof(float), N_BEAM_SAMPS, filePtr);
         fclose(filePtr);
                
         //uint64_t start_mcnt = db_in->block[curblock_in].header.mcnt;
