@@ -473,9 +473,9 @@ static void *run(hashpipe_thread_args_t * args) {
 	// Get command from Dealer/Player
 	if (n++ >= n_loop) {
             cmd = check_cmd(gpu_fifo_id);
-            if(cmd != INVALID){
-            	printf("OOPS!!\n");
-	    }
+           // if(cmd != INVALID){
+           //	printf("OOPS!!\n");
+	   // }
             n = 0;
         }
         

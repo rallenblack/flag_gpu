@@ -281,7 +281,7 @@ static inline int64_t process_packet(flag_input_databuf_t * db, struct hashpipe_
         hputi4(st_p->buf, "NETMCNT", new_mcnt);
         hashpipe_status_unlock_safe(st_p);
         */
-        // printf("Net: Late packet... mcnt = %lld\n", (long long int)pkt_mcnt);
+        //printf("Net: Late packet... mcnt = %lld\n", (long long int)pkt_mcnt);
         return -1;
     
     }
@@ -324,7 +324,7 @@ static inline int64_t process_packet(flag_input_databuf_t * db, struct hashpipe_
     */
     
 
-    // print_pkt_header(&pkt_header);
+    //print_pkt_header(&pkt_header);
     
     
 
@@ -500,7 +500,7 @@ static void *run(hashpipe_thread_args_t * args) {
                 hashpipe_status_lock_safe(st_p);
                 hgeti4(st.buf, "SCANLEN", &scanlen);
                 hashpipe_status_unlock_safe(st_p);
-                scan_last_mcnt = scanlen*N_MCNT_PER_SECOND;
+                scan_last_mcnt = (scanlen + 2)*N_MCNT_PER_SECOND;
                 printf("Net: Ending scan after mcnt = %lld\n", (long long int)scan_last_mcnt);
             }
         }
@@ -540,21 +540,22 @@ static void *run(hashpipe_thread_args_t * args) {
             // Next state processing
             next_state = ACQUIRE;
             if ((last_filled_mcnt != -1 && last_filled_mcnt >= scan_last_mcnt) || cmd == STOP) {
-                int cleanA = 1;
-                int cleanB = 1;
-		printf("Clean up!\n");
-                while (cleanA != 0 && cleanB != 0) {
+              //  int cleanA = 1;
+              //  int cleanB = 1;
+		printf("NET: Clean up condition met!\n");
+              //  while (cleanA != 0 && cleanB != 0) {
                     hashpipe_status_lock_safe(&st);
                     hputl(st.buf, "CLEANA", 0);
                     hputl(st.buf, "CLEANB", 0);
                     hashpipe_status_unlock_safe(&st);
 
-                    sleep(1);
-                    hashpipe_status_lock_safe(&st);
-                    hgetl(st.buf, "CLEANA", &cleanA);
-                    hgetl(st.buf, "CLEANB", &cleanB);
-                    hashpipe_status_unlock_safe(&st);
-                }
+                    sleep(5);
+                 //   hashpipe_status_lock_safe(&st);
+                 //   hgetl(st.buf, "CLEANA", &cleanA);
+                 //   hgetl(st.buf, "CLEANB", &cleanB);
+                 //   hashpipe_status_unlock_safe(&st);
+               // }
+                printf("NET: Entering cleanup state\n");
                 next_state = CLEANUP;
             }
         }
@@ -580,6 +581,7 @@ static void *run(hashpipe_thread_args_t * args) {
             }
             else {
                 next_state = CLEANUP;
+                printf("NET: Still waiting on other threads, TRA=%d, COR=%d\n", traclean, corclean);
                 sleep(1);
             }
         }

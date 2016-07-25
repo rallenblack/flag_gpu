@@ -100,6 +100,7 @@ static void * run(hashpipe_thread_args_t * args) {
                     hgets(st.buf, "NETSTAT", 16, netstat);
                     hashpipe_status_unlock_safe(&st);
                     if (cleanb == 0 && strcmp(netstat, "CLEANUP") == 0) {
+                       printf("COR: Cleanup condition met!\n");
                        next_state = CLEANUP;
                        break;
                     }
@@ -114,7 +115,7 @@ static void * run(hashpipe_thread_args_t * args) {
             // Print out the header information for this block 
             flag_gpu_input_header_t tmp_header;
             memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_gpu_input_header_t));
-	    // printf("COR: Received block %d, starting mcnt = %lld\n", curblock_in, (long long int)tmp_header.mcnt);
+	    //printf("COR: Received block %d, starting mcnt = %lld\n", curblock_in, (long long int)tmp_header.mcnt);
             good_data &= tmp_header.good_data;
 
             // Retrieve correlator integrator status
@@ -201,6 +202,16 @@ static void * run(hashpipe_thread_args_t * args) {
                 // Wait for new output block to be free
                 while ((rv=flag_correlator_output_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
                     if (rv==HASHPIPE_TIMEOUT) {
+                        int cleanb;
+                        hashpipe_status_lock_safe(&st);
+                        hgetl(st.buf, "CLEANB", &cleanb);
+                        hgets(st.buf, "NETSTAT", 16, netstat);
+                        hashpipe_status_unlock_safe(&st);
+                        if (cleanb == 0 && strcmp(netstat, "CLEANUP") == 0) {
+                           printf("COR: Cleanup condition met!\n");
+                           next_state = CLEANUP;
+                           break;
+                        }
                         continue;
                     } else {
                         hashpipe_error(__FUNCTION__, "error waiting for free databuf");
@@ -218,7 +229,7 @@ static void * run(hashpipe_thread_args_t * args) {
                 //xgpuReorderMatrix((Complex *)db_out->block[curblock_out].data);
                 db_out->block[curblock_out].header.mcnt = start_mcnt;
                 db_out->block[curblock_out].header.good_data = good_data;
-                printf("COR: Dumping correlator output with mcnt %lld\n", (long long int) start_mcnt);
+                //printf("COR: Dumping correlator output with mcnt %lld\n", (long long int) start_mcnt);
             
 
                 // Mark output block as full and advance
@@ -234,6 +245,7 @@ static void * run(hashpipe_thread_args_t * args) {
             curblock_in = (curblock_in + 1) % db_in->header.n_block;
         }
         else if (cur_state == CLEANUP) {
+            printf("COR: In Cleanup\n");
             next_state = ACQUIRE;
             // Set interntal integ_status to start
             strcpy(integ_status, "start");
@@ -262,7 +274,6 @@ static void * run(hashpipe_thread_args_t * args) {
     // Thread terminates after loop
     return NULL;
 }
-
 
 
 // Thread description

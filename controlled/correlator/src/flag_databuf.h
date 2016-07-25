@@ -97,7 +97,7 @@ typedef uint8_t hashpipe_databuf_cache_alignment[
  * It is the output buffer of the flag_net_thread.
  * It is the input buffer of the flag_transpose_thread.
  */
-#define N_INPUT_BLOCKS 100
+#define N_INPUT_BLOCKS 4
 
 // A typedef for a block header
 typedef struct flag_input_header {

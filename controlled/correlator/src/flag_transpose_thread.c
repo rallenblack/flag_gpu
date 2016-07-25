@@ -65,6 +65,7 @@ static void * run(hashpipe_thread_args_t * args) {
                     hgets(st.buf, "NETSTAT", 16, netstat);
                     hashpipe_status_unlock_safe(&st);
                     if (traclean == 0 && strcmp(netstat, "CLEANUP") == 0) {
+                        printf("TRA: Cleanup condition met!\n");
                         next_state = CLEANUP;
                         break;
                     }
@@ -79,7 +80,16 @@ static void * run(hashpipe_thread_args_t * args) {
             // Wait for output buffer block to be freed
             while ((rv=flag_gpu_input_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
                 if (rv == HASHPIPE_TIMEOUT) {
-                    //hashpipe_status_lock_safe(&st);
+                    hashpipe_status_lock_safe(&st);
+                    hgetl(st.buf, "CLEANA", &traclean);
+                    hgets(st.buf, "NETSTAT", 16, netstat);
+                    hashpipe_status_unlock_safe(&st);
+                    if (traclean == 0 && strcmp(netstat, "CLEANUP") == 0) {
+                        printf("TRA: Cleanup condition met!\n");
+                        next_state = CLEANUP;
+                        break;
+                    }
+                    //hashpipe_status_lock_safe(&st);       
                     //hputs(st.buf, status_key, "waiting for free block");
                     //hashpipe_status_unlock_safe(&st);
                     continue;
@@ -133,6 +143,7 @@ static void * run(hashpipe_thread_args_t * args) {
             curblock_in = (curblock_in + 1) % db_in->header.n_block;
         }
         else if (cur_state == CLEANUP) {
+            printf("TRA: In CLEANUP state!\n");
             curblock_in = 0;
             curblock_out = 0;
             next_state = ACQUIRE;

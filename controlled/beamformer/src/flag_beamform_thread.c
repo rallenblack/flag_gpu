@@ -90,7 +90,8 @@ static void * run(hashpipe_thread_args_t * args) {
     hashpipe_status_lock_safe(&st);
     hputi4(st.buf, "CORREADY", 1);
     hashpipe_status_unlock_safe(&st);
-
+    
+    int check_count = 0;
     // Main loop for thread
     while (run_threads()) {
         
@@ -135,7 +136,10 @@ static void * run(hashpipe_thread_args_t * args) {
            
             // Run the beamformer
             run_beamformer((signed char *)&db_in->block[curblock_in].data, (float *)&db_out->block[curblock_out].data);
-            
+            check_count++;
+           // if(check_count == 1000){
+                 printf("RTBF: dumping mcnt = %lld\n", (long long int)start_mcnt);
+           // }
 	        // Get block's starting mcnt for output block
             db_out->block[curblock_out].header.mcnt = start_mcnt;
             db_out->block[curblock_out].header.good_data = good_data;

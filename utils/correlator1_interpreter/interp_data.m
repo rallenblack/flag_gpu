@@ -2,15 +2,28 @@
 clearvars;
 close all;
 
-FILE = fopen('cor_mcnt_0.out', 'r');
-[R, count] = fscanf(FILE, '%g\n');
-fclose(FILE);
+% White noise
+%filename = '/lustre/pulsar/users/rprestag/FLAG/JUNK/JUNK/BF/2016_07_25_02:45:31A.fits';
+
+% Correlated data
+filename = '/lustre/pulsar/users/rprestag/FLAG/JUNK/JUNK/BF/2016_07_25_02:37:42A.fits';
+
+info = fitsinfo(filename);
+data = fitsread(filename, 'binarytable', 1);
+tmp = data{3};
+R = zeros(2*length(tmp), 1);
+R(1:2:end) = real(tmp(1,:));
+R(2:2:end) = imag(tmp(1,:));
+
+
+%FILE = fopen('cor_mcnt_0.out', 'r');
+%[R, count] = fscanf(FILE, '%g\n');
+%fclose(FILE);s
 
 Nele = 40;
 Nele_tot = 64;
 Nbin = 25;
 Nsamp = 4000;
-
 Nbaselines_tot = (Nele_tot/2 + 1)*Nele_tot;
 Nbaselines     = (Nele + 1)*Nele/2;
 Nblocks        = (Nele_tot/2 + 1)*Nele_tot/4;
