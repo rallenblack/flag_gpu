@@ -25,7 +25,7 @@ mat = {matA, matB, matC, matD};
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Reconstruct covariance matrices from FITS files
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-for i = 1:4
+for i = 1:1
     if ~exist(mat{i}, 'file')
         [R, data_dmjd] = extract_covariances(fits{i});
         save(mat{i}, 'R', 'data_dmjd', '-v7.3');
@@ -67,13 +67,27 @@ stamp = '2016_07_25_04:32:33';
 ant_fits_file = sprintf('%s/%s.fits', dir, stamp);
 
 % Extract offsets
-[ant_dmjd, az_off, el_off] = get_antenna_positions(ant_fits_file);
+[ant_dmjd, az_off, el_off, ra, dec] = get_antenna_positions(ant_fits_file);
 
 % Plot the trajectory
-figure();
-plot(az_off, el_off, '-b', az_off(1), el_off(1), 'rx');
-title('Grid Trajectory - Encoder Data');
-xlabel('Azimuth Angle (deg)');
-ylabel('Elevation Angle (deg)');
-axis equal;
+if 0
+    figure();
+    plot(az_off, el_off, '-b', az_off(1), el_off(1), 'rx');
+    title('Grid Trajectory - Encoder Data');
+    xlabel('Azimuth Angle (deg)');
+    ylabel('Elevation Angle (deg)');
+    axis equal;
+
+    figure();
+    plot(ra, dec, '-b', ra(1), dec(1), 'rx');
+    title('Grid Trajectory');
+    xlabel('Right Ascension (deg)');
+    ylabel('Declination (deg)');
+    axis equal;
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Associate offsets with correlation matrices
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
