@@ -29,10 +29,6 @@ function [ dmjd, az_off, el_off, ra, dec ] = get_antenna_positions( fits_file )
 
     az_off = mnt_az - obsc_az;
     el_off = mnt_el - obsc_el;
-
-    keyboard;
-    
-    
     
 end
 
