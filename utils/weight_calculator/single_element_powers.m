@@ -11,7 +11,7 @@ load(mat);
 
 Ntime = size(R,4);
 
-b = 1;
+b = 11;
 for i = 1:19
     x_pow = real(squeeze(R(x_idx(i), x_idx(i), b, 2:end-1)));
     y_pow = real(squeeze(R(y_idx(i), y_idx(i), b, 2:end-1)));

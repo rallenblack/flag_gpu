@@ -9,7 +9,8 @@ mat = sprintf('%s/%s%s.mat', dir, stamp, bank);
 load(mat);
 
 % Calculate off-pointing covariance matrix
-Roff = mean(R(:,:,:,end-10:end), 4);
+Roff1 = mean(R(:,:,:,end-10:end), 4);
+Roff = R_off;
 
 Ntime = size(R,4);
 Nbin = size(R,3);
@@ -36,7 +37,7 @@ sens_filename = sprintf('%s/%s%s_sens_map.mat', dir, stamp, bank);
 save(sens_filename, 'S', 'xid');
 
 % Time samples of interest
-idxs = 9:length(ANT.az_off)-22;
+% idxs = [13:105, 209:length(ANT.az_off)-22];
 
 % Convert frequency bin indices to sky frequencies
 xid_bins = [1:5, 101:105, 201:205, 301:305, 401:405] + 5*xid;
@@ -47,10 +48,17 @@ xid_freqs = freqs(xid_bins);
 
 % Interpolated map
 Npoints = 80;
-minX = min(ANT.az_off(idxs));
-maxX = max(ANT.az_off(idxs));
-minY = min(ANT.el_off(idxs));
-maxY = max(ANT.el_off(idxs));
+if use_radec
+    minX = max(min(ANT.az_off(idxs)), -0.45);
+    maxX = min(max(ANT.az_off(idxs)), 0.45);
+    minY = max(min(ANT.el_off(idxs)), -0.35);
+    maxY = min(max(ANT.el_off(idxs)), 0.35);
+else
+    minX = min(ANT.az_off(idxs));
+    maxX = max(ANT.az_off(idxs));
+    minY = min(ANT.el_off(idxs));
+    maxY = max(ANT.el_off(idxs));
+end
 xval = linspace(minX, maxX, Npoints);
 yval = linspace(minY, maxY, Npoints);
 [X,Y] = meshgrid(linspace(minX,maxX,Npoints), linspace(minY,maxY,Npoints));
@@ -65,18 +73,13 @@ for b = 1:Nbin
     ylabel('Elevation Offset (degrees)');
     title('Formed Beam Sensitivity Map');
     
-    filename = sprintf('figures/sens_map_3_11_missing_%.4fMHz.fig', xid_freqs(b)/1e6);
+    filename = sprintf('figures/sens_map_July30_daisy_%.4fMHz.fig', xid_freqs(b)/1e6);
     savefig(map_fig, filename);
 end
-
-% Convert frequency bin indices to sky frequencies
-bin_width = 303.75e3;
-bin_idx = -249:250;
-freqs = bin_idx*bin_width + center_freq;
 
 % Calculate minimum beamformed Tsys
 D = 100;
 Ap = pi*(D/2)^2;
-maxS = max(max(S));
+maxS = max(max(S(idxs,:)));
 Tsys_nap = Ap/maxS;
 disp(Tsys_nap);

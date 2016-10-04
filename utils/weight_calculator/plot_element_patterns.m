@@ -44,11 +44,17 @@ xid_freqs = freqs(xid_bins);
 
 % Interpolated map
 Npoints = 80;
-idxs = 9:length(ANT.az_off)-22;
-minX = min(ANT.az_off(idxs));
-maxX = max(ANT.az_off(idxs));
-minY = min(ANT.el_off(idxs));
-maxY = max(ANT.el_off(idxs));
+if use_radec
+    minX = max(min(ANT.az_off(idxs)), -0.45);
+    maxX = min(max(ANT.az_off(idxs)), 0.45);
+    minY = max(min(ANT.el_off(idxs)), -0.35);
+    maxY = min(max(ANT.el_off(idxs)), 0.35);
+else
+    minX = min(ANT.az_off(idxs));
+    maxX = max(ANT.az_off(idxs));
+    minY = min(ANT.el_off(idxs));
+    maxY = max(ANT.el_off(idxs));
+end
 xval = linspace(minX, maxX, Npoints);
 yval = linspace(minY, maxY, Npoints);
 [X,Y] = meshgrid(linspace(minX,maxX,Npoints), linspace(minY,maxY,Npoints));
@@ -60,11 +66,19 @@ for b = 1:Nbin
         subplot(4,5,e);
         Pq = griddata(ANT.az_off(idxs), ANT.el_off(idxs), pattern(e,idxs,b).', X, Y);
         imagesc(xval, yval, 10*log10(abs(Pq))); colorbar; hold on;
-        contour(gca, xval, yval, 10*log10(abs(Pq)), [-3 -3], '-k'); hold off;
+        [c,~] = contour(gca, xval, yval, 10*log10(abs(Pq)), [-3 -3], '-k'); hold off;
         set(gca, 'ydir', 'normal');
         title(sprintf('%dY', e));
         colormap('jet');
+        if (~isempty(c))
+            ellipse_t(b,e) = fit_ellipse(c(1,2:end), c(2,2:end));
+        end
     end
-    filename = sprintf('figures/elem_patterns_%.4fMHz.fig', xid_freqs(b)/1e6);
+    % Create wiki-compatible table of weights
+    
+    
+    filename = sprintf('figures/elem_patterns_July30_daisy_%.4fMHz.fig', xid_freqs(b)/1e6);
     savefig(beam_fig, filename);
 end
+
+
