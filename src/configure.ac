@@ -24,6 +24,7 @@ AC_PROG_CC
 AX_CHECK_HASHPIPE
 AX_CHECK_XGPUINFO
 AX_CHECK_FLAGBEAMFORM
+AX_CHECK_FLAGPOW
 
 # Checks for libraries.
 AC_CHECK_LIB([pthread], [pthread_create])

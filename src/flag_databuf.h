@@ -7,6 +7,7 @@
 #include "hashpipe_databuf.h"
 #include "config.h"
 
+#define VERBOSE 1
 
 // Total number of antennas (nominally 40)
 #define N_INPUTS 64
@@ -137,7 +138,7 @@ typedef uint8_t hashpipe_databuf_cache_alignment[
  * It is the output buffer of the flag_net_thread.
  * It is the input buffer of the flag_transpose_thread.
  */
-#define N_INPUT_BLOCKS 100
+#define N_INPUT_BLOCKS 4
 
 // A typedef for a block header
 typedef struct flag_input_header {
@@ -212,19 +213,60 @@ typedef uint8_t flag_gpu_output_header_cache_alignment[
     CACHE_ALIGNMENT - (sizeof(flag_gpu_output_header_t)%CACHE_ALIGNMENT)
 ];
 
-// A typedef for a block of data in the GPU output buffer
-typedef struct flag_gpu_output_block {
+
+
+
+/**********************************************************************************
+ * There are various different types of GPU output buffers that will all share
+ * the same header information.
+ * (1) flag_gpu_correlator_output_block
+ * (2) flag_gpu_beamformer_output_block
+ * (3) flag_gpu_power_output_block
+ **********************************************************************************/
+
+// flag_gpu_correlator_output_block
+typedef struct flag_gpu_correlator_output_block {
+    flag_gpu_output_header_t header;
+    flag_gpu_output_header_cache_alignment padding;
+    float data[2*N_COR_MATRIX]; // x2 for real/imaginary samples
+} flag_gpu_correlator_output_block_t;
+
+// flag_gpu_correlator_output_databuf
+typedef struct flag_gpu_correlator_output_databuf {
+    hashpipe_databuf_t header;
+    hashpipe_databuf_cache_alignment padding;
+    flag_gpu_correlator_output_block_t block[N_GPU_OUT_BLOCKS];
+} flag_gpu_correlator_output_databuf_t;
+
+// flag_gpu_beamformer_output_block
+typedef struct flag_gpu_beamformer_output_block {
     flag_gpu_output_header_t header;
     flag_gpu_output_header_cache_alignment padding;
     float data[N_BEAM_SAMPS];
-} flag_gpu_output_block_t;
+} flag_gpu_beamformer_output_block_t;
 
-// A typedef for the data buffer structure
-typedef struct flag_gpu_output_databuf {
+// flag_gpu_beamformer_output_databuf
+typedef struct flag_gpu_beamformer_output_databuf {
     hashpipe_databuf_t header;
     hashpipe_databuf_cache_alignment padding;
-    flag_gpu_output_block_t block[N_GPU_OUT_BLOCKS];
-} flag_gpu_output_databuf_t;
+    flag_gpu_beamformer_output_block_t block[N_GPU_OUT_BLOCKS];
+} flag_gpu_beamformer_output_databuf_t;
+
+// flag_gpu_power_output_block
+typedef struct flag_gpu_power_output_block {
+    flag_gpu_output_header_t header;
+    flag_gpu_output_header_cache_alignment padding;
+    float data[N_POWER_SAMPS];
+} flag_gpu_power_output_block_t;
+
+// flag_gpu_beamformer_output_databuf
+typedef struct flag_gpu_power_output_databuf {
+    hashpipe_databuf_t header;
+    hashpipe_databuf_cache_alignment padding;
+    flag_gpu_power_output_block_t block[N_GPU_OUT_BLOCKS];
+} flag_gpu_power_output_databuf_t;
+
+
 
 
 /*********************
@@ -249,13 +291,25 @@ int flag_gpu_input_databuf_set_filled  (flag_gpu_input_databuf_t * d, int block_
 /********************
  * GPU Output Buffer Functions
  ********************/
-hashpipe_databuf_t * flag_gpu_output_databuf_create(int instance_id, int databuf_id);
+hashpipe_databuf_t * flag_gpu_correlator_output_databuf_create(int instance_id, int databuf_id);
 
-int flag_gpu_output_databuf_wait_free   (flag_gpu_output_databuf_t * d, int block_id);
-int flag_gpu_output_databuf_wait_filled (flag_gpu_output_databuf_t * d, int block_id);
-int flag_gpu_output_databuf_set_free    (flag_gpu_output_databuf_t * d, int block_id);
-int flag_gpu_output_databuf_set_filled  (flag_gpu_output_databuf_t * d, int block_id);
+int flag_gpu_correlator_output_databuf_wait_free   (flag_gpu_correlator_output_databuf_t * d, int block_id);
+int flag_gpu_correlator_output_databuf_wait_filled (flag_gpu_correlator_output_databuf_t * d, int block_id);
+int flag_gpu_correlator_output_databuf_set_free    (flag_gpu_correlator_output_databuf_t * d, int block_id);
+int flag_gpu_correlator_output_databuf_set_filled  (flag_gpu_correlator_output_databuf_t * d, int block_id);
 
+hashpipe_databuf_t * flag_gpu_beamformer_output_databuf_create(int instance_id, int databuf_id);
 
+int flag_gpu_beamformer_output_databuf_wait_free   (flag_gpu_beamformer_output_databuf_t * d, int block_id);
+int flag_gpu_beamformer_output_databuf_wait_filled (flag_gpu_beamformer_output_databuf_t * d, int block_id);
+int flag_gpu_beamformer_output_databuf_set_free    (flag_gpu_beamformer_output_databuf_t * d, int block_id);
+int flag_gpu_beamformer_output_databuf_set_filled  (flag_gpu_beamformer_output_databuf_t * d, int block_id);
+
+hashpipe_databuf_t * flag_gpu_power_output_databuf_create(int instance_id, int databuf_id);
+
+int flag_gpu_power_output_databuf_wait_free   (flag_gpu_power_output_databuf_t * d, int block_id);
+int flag_gpu_power_output_databuf_wait_filled (flag_gpu_power_output_databuf_t * d, int block_id);
+int flag_gpu_power_output_databuf_set_free    (flag_gpu_power_output_databuf_t * d, int block_id);
+int flag_gpu_power_output_databuf_set_filled  (flag_gpu_power_output_databuf_t * d, int block_id);
 
 #endif

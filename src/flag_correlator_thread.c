@@ -32,7 +32,7 @@ typedef enum {
 static void * run(hashpipe_thread_args_t * args) {
     // Local aliases to shorten access to args fields
     flag_gpu_input_databuf_t * db_in = (flag_gpu_input_databuf_t *)args->ibuf;
-    flag_correlator_output_databuf_t * db_out = (flag_correlator_output_databuf_t *)args->obuf;
+    flag_gpu_correlator_output_databuf_t * db_out = (flag_gpu_correlator_output_databuf_t *)args->obuf;
     hashpipe_status_t st = args->st;
     const char * status_key = args->thread_desc->skey;
 
@@ -63,7 +63,7 @@ static void * run(hashpipe_thread_args_t * args) {
     context.matrix_h = (Complex *)db_out->block[0].data;
    
     context.array_len = (db_in->header.n_block * sizeof(flag_gpu_input_block_t) - sizeof(flag_gpu_input_header_t))/sizeof(ComplexInput);
-    context.matrix_len = (db_out->header.n_block * sizeof(flag_correlator_output_block_t) - sizeof(flag_correlator_output_header_t))/sizeof(Complex);
+    context.matrix_len = (db_out->header.n_block * sizeof(flag_gpu_correlator_output_block_t) - sizeof(flag_gpu_output_header_t))/sizeof(Complex);
 
     int xgpu_error = xgpuInit(&context, gpu_dev);
     if (XGPU_OK != xgpu_error) {
@@ -112,6 +112,7 @@ static void * run(hashpipe_thread_args_t * args) {
                 }
             }
 
+            if (next_state != CLEANUP) {
             // Print out the header information for this block 
             flag_gpu_input_header_t tmp_header;
             memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_gpu_input_header_t));
@@ -193,14 +194,14 @@ static void * run(hashpipe_thread_args_t * args) {
             // If we get here, then integ_status == "on"
             // Setup for current chunk
             context.input_offset  = curblock_in  * sizeof(flag_gpu_input_block_t) / sizeof(ComplexInput);
-            context.output_offset = curblock_out * sizeof(flag_correlator_output_block_t) / sizeof(Complex);
+            context.output_offset = curblock_out * sizeof(flag_gpu_correlator_output_block_t) / sizeof(Complex);
         
             int doDump = 0;
             if ((db_in->block[curblock_in].header.mcnt + int_count*Nm - 1) >= last_mcnt) {
                 doDump = 1;
 
                 // Wait for new output block to be free
-                while ((rv=flag_correlator_output_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
+                while ((rv=flag_gpu_correlator_output_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
                     if (rv==HASHPIPE_TIMEOUT) {
                         int cleanb;
                         hashpipe_status_lock_safe(&st);
@@ -223,7 +224,9 @@ static void * run(hashpipe_thread_args_t * args) {
             }
        
             xgpuCudaXengine(&context, doDump ? SYNCOP_DUMP : SYNCOP_SYNC_TRANSFER);
-        
+       
+            printf("COR: doDump = %d\n", doDump);
+            printf("COR: start_mcnt = %lld, last_mcnt = %lld\n", (long long int)start_mcnt, (long long int)last_mcnt);
             if (doDump) {
                 xgpuClearDeviceIntegrationBuffer(&context);
                 //xgpuReorderMatrix((Complex *)db_out->block[curblock_out].data);
@@ -233,7 +236,10 @@ static void * run(hashpipe_thread_args_t * args) {
             
 
                 // Mark output block as full and advance
-                flag_correlator_output_databuf_set_filled(db_out, curblock_out);
+                #if VERBOSE==1
+                printf("COR: Marking output block %d as filled, mcnt=%lld\n", curblock_out, (long long int)start_mcnt);
+                #endif
+                flag_gpu_correlator_output_databuf_set_filled(db_out, curblock_out);
                 curblock_out = (curblock_out + 1) % db_out->header.n_block;
                 start_mcnt = last_mcnt + 1;
                 last_mcnt = start_mcnt + int_count*Nm -1;
@@ -241,19 +247,28 @@ static void * run(hashpipe_thread_args_t * args) {
                 good_data = 1;
             }
 
+            #if VERBOSE==1
+            printf("COR: Marking input block %d as free\n", curblock_in);
+            #endif
             flag_gpu_input_databuf_set_free(db_in, curblock_in);
             curblock_in = (curblock_in + 1) % db_in->header.n_block;
+        }
         }
         else if (cur_state == CLEANUP) {
             printf("COR: In Cleanup\n");
             next_state = ACQUIRE;
             // Set interntal integ_status to start
+            hashpipe_status_lock_safe(&st);
+            hputs(st.buf, "INTSTAT", "start");
+            hashpipe_status_unlock_safe(&st);
             strcpy(integ_status, "start");
 
             // Clear out integration buffer on GPU
             xgpuClearDeviceIntegrationBuffer(&context);
             curblock_in = 0;
             curblock_out = 0;
+            //start_mcnt = 0;
+            //last_mcnt = 0;
             good_data = 1;
             hashpipe_status_lock_safe(&st);
             hputl(st.buf, "CLEANB", 1);
@@ -283,7 +298,7 @@ static hashpipe_thread_desc_t x_thread = {
     init: NULL,
     run:  run,
     ibuf_desc: {flag_gpu_input_databuf_create},
-    obuf_desc: {flag_correlator_output_databuf_create}
+    obuf_desc: {flag_gpu_correlator_output_databuf_create}
 };
 
 static __attribute__((constructor)) void ctor() {

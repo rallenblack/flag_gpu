@@ -21,7 +21,7 @@ static hashpipe_status_t * st_p;
 static void * run(hashpipe_thread_args_t * args) {
 
     // Local aliases to shorten access to args fields
-    flag_gpu_output_databuf_t * db_in = (flag_gpu_output_databuf_t  *)args->ibuf;
+    flag_gpu_power_output_databuf_t * db_in = (flag_gpu_power_output_databuf_t  *)args->ibuf;
     hashpipe_status_t st = args->st;
     const char * status_key = args->thread_desc->skey;
 
@@ -49,7 +49,7 @@ static void * run(hashpipe_thread_args_t * args) {
     while (run_threads()) {
         
         // Wait for input buffer block to be filled
-        while ((rv=flag_gpu_output_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
+        while ((rv=flag_gpu_power_output_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
             if (rv==HASHPIPE_TIMEOUT) {
                 hashpipe_status_lock_safe(&st);
                 hputs(st.buf, status_key, "waiting for free block");
@@ -73,7 +73,7 @@ static void * run(hashpipe_thread_args_t * args) {
         fwrite(p, sizeof(float), NA, filePtr);
         fclose(filePtr);
 
-        flag_gpu_output_databuf_set_free(db_in, curblock_in);
+        flag_gpu_power_output_databuf_set_free(db_in, curblock_in);
         curblock_in = (curblock_in + 1) % db_in->header.n_block;
         pthread_testcancel();
     }
@@ -83,15 +83,15 @@ static void * run(hashpipe_thread_args_t * args) {
 }
 
 // Thread description
-static hashpipe_thread_desc_t xsave_thread = {
+static hashpipe_thread_desc_t powsave_thread = {
     name: "flag_powersave_thread",
     skey: "CORSAVE",
     init: NULL,
     run:  run,
-    ibuf_desc: {flag_gpu_output_databuf_create},
+    ibuf_desc: {flag_gpu_power_output_databuf_create},
     obuf_desc: {NULL}
 };
 
 static __attribute__((constructor)) void ctor() {
-    register_hashpipe_thread(&xsave_thread);
+    register_hashpipe_thread(&powsave_thread);
 }

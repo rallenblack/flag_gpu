@@ -170,9 +170,13 @@ static inline void cleanup_blocks(flag_input_databuf_t * db) {
 
     int i;
     for (i = 0; i < N_INPUT_BLOCKS; i++) {
-        //printf("NET: Waiting for block %d to be free...\n", i);
+        #if VERBOSE==1
+        printf("NET: Waiting for block %d to be free...\n", i);
+        #endif
         flag_input_databuf_wait_free(db, i);
-        //printf("NET: Initializing block %d\n", i);
+        #if VERBOSE==1
+        printf("NET: Initializing block %d\n", i);
+        #endif
         initialize_block(db, i*Nm);
     }
 }
@@ -210,7 +214,9 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
 
     // Mark block as filled so next thread can process it
     last_filled = block_idx;
-    // printf("Filling block %d, starting mcnt = %lld\n", block_idx, (long long int)binfo->mcnt_start);
+    #if VERBOSE == 1
+    printf("NET: Filling block %d, starting mcnt = %lld\n", block_idx, (long long int)binfo->mcnt_start);
+    #endif
     flag_input_databuf_set_filled(db, block_idx);
 
     //binfo->self_xid = -1;
@@ -492,7 +498,7 @@ static void *run(hashpipe_thread_args_t * args) {
          ************************************************************/
         // If in IDLE state, look for START command
         if (cur_state == IDLE) {
-            // cmd = check_cmd(gpu_fifo_id);
+             // cmd = check_cmd(gpu_fifo_id);
 
 
             // If command is START, proceed to ACQUIRE state
@@ -516,10 +522,11 @@ static void *run(hashpipe_thread_args_t * args) {
             // Loop over (non-blocking) packet receive
             do {
                 p.packet_size = recv(up.sock, p.data, HASHPIPE_MAX_PACKET_SIZE, 0);
-            } while (p.packet_size == -1 && (errno == EAGAIN || errno == EWOULDBLOCK) && run_threads());
-            if (!run_threads()) break;
+                cmd = check_cmd(gpu_fifo_id);       
+            } while (p.packet_size == -1 && (errno == EAGAIN || errno == EWOULDBLOCK) && run_threads() && cmd==INVALID);
+            if (!run_threads() || cmd == QUIT) break;
             // Check packet size and report errors
-            if (up.packet_size != p.packet_size) {
+            if (up.packet_size != p.packet_size && cmd != STOP) {
                 // If an error was returned instead of a valid packet size
                 if (p.packet_size == -1) {
                     fprintf(stderr, "uh oh!\n");
@@ -592,7 +599,7 @@ static void *run(hashpipe_thread_args_t * args) {
             hashpipe_status_lock_safe(&st);
             switch (next_state) {
                 case IDLE: hputs(st.buf, status_key, "IDLE"); break;
-                case ACQUIRE: hputs(st.buf, status_key, "ACQUIRE"); break;
+                case ACQUIRE: hputs(st.buf, status_key, "ACQUIRE"); printf("NET: Moving back to ACQUIRE!\n"); break;
                 case CLEANUP: hputs(st.buf, status_key, "CLEANUP"); break;
             }
             hashpipe_status_unlock_safe(&st);

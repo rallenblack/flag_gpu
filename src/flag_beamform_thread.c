@@ -31,7 +31,7 @@ typedef enum {
 static void * run(hashpipe_thread_args_t * args) {
     // Local aliases to shorten access to args fields
     flag_gpu_input_databuf_t * db_in = (flag_gpu_input_databuf_t *)args->ibuf;
-    flag_gpu_output_databuf_t * db_out = (flag_gpu_output_databuf_t *)args->obuf;
+    flag_gpu_beamformer_output_databuf_t * db_out = (flag_gpu_beamformer_output_databuf_t *)args->obuf;
     hashpipe_status_t st = args->st;
     const char * status_key = args->thread_desc->skey;
 
@@ -123,7 +123,7 @@ static void * run(hashpipe_thread_args_t * args) {
             good_data = tmp_header.good_data;
 
             // Wait for output block to become free
-            while ((rv=flag_gpu_output_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
+            while ((rv=flag_gpu_beamformer_output_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
                 if (rv==HASHPIPE_TIMEOUT) {
                     continue;
                 } else {
@@ -145,7 +145,7 @@ static void * run(hashpipe_thread_args_t * args) {
             db_out->block[curblock_out].header.good_data = good_data;
                 
             // Mark output block as full and advance
-            flag_gpu_output_databuf_set_filled(db_out, curblock_out);
+            flag_gpu_beamformer_output_databuf_set_filled(db_out, curblock_out);
             curblock_out = (curblock_out + 1) % db_out->header.n_block;
             start_mcnt = last_mcnt + 1;
             last_mcnt = start_mcnt + Nm - 1;
@@ -181,16 +181,16 @@ static void * run(hashpipe_thread_args_t * args) {
 
 
 // Thread description
-static hashpipe_thread_desc_t x_thread = {
+static hashpipe_thread_desc_t b_thread = {
     name: "flag_beamform_thread",
     skey: "BEAMSTAT",
     init: NULL,
     run:  run,
     ibuf_desc: {flag_gpu_input_databuf_create},
-    obuf_desc: {flag_gpu_output_databuf_create}
+    obuf_desc: {flag_gpu_beamformer_output_databuf_create}
 };
 
 static __attribute__((constructor)) void ctor() {
-    register_hashpipe_thread(&x_thread);
+    register_hashpipe_thread(&b_thread);
 }
 
