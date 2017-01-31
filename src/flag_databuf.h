@@ -126,6 +126,12 @@
 #define N_BEAM_SAMPS (2*BN_OUTPUTS)
 #define N_POWER_SAMPS NA
 
+// Macros specific to the rapid-dump correlator (FRB correlator)
+#define N_TIME_PER_FRB_BLOCK 40
+#define N_CHAN_PER_FRB_BLOCK 5
+#define N_FRB_BLOCKS_PER_BLOCK (N_TIME_PER_BLOCK/N_TIME_PER_FRB_BLOCK)
+#define N_BYTES_PER_FRB_BLOCK (N_BYTES_PER_BLOCK/N_FRB_BLOCKS_PER_BLOCK)
+
 // Macros to maintain cache alignment
 #define CACHE_ALIGNMENT (128)
 typedef uint8_t hashpipe_databuf_cache_alignment[
@@ -195,6 +201,25 @@ typedef struct flag_gpu_input_databuf {
     hashpipe_databuf_cache_alignment padding;
     flag_gpu_input_block_t block[N_GPU_INPUT_BLOCKS];
 } flag_gpu_input_databuf_t;
+
+/*
+ * FRB GPU INPUT BUFFER STRUCTURES
+ */
+
+// A typedef for a block of data in the buffer
+typedef struct flag_frb_gpu_input_block {
+    flag_gpu_input_header_t header;
+    flag_gpu_input_header_cache_alignment padding;
+    uint64_t data[N_BYTES_PER_FRB_BLOCK/sizeof(uint64_t)];
+} flag_frb_gpu_input_block_t;
+
+// The data buffer structure
+typedef struct flag_frb_gpu_input_databuf {
+    hashpipe_databuf_t header;
+    hashpipe_databuf_cache_alignment padding;
+    flag_frb_gpu_input_block_t block[N_GPU_INPUT_BLOCKS*N_FRB_BLOCKS_PER_BLOCK];
+} flag_frb_gpu_input_databuf_t;
+
 
 
 /*
@@ -287,6 +312,12 @@ int flag_gpu_input_databuf_wait_free   (flag_gpu_input_databuf_t * d, int block_
 int flag_gpu_input_databuf_wait_filled (flag_gpu_input_databuf_t * d, int block_id);
 int flag_gpu_input_databuf_set_free    (flag_gpu_input_databuf_t * d, int block_id);
 int flag_gpu_input_databuf_set_filled  (flag_gpu_input_databuf_t * d, int block_id);
+
+hashpipe_databuf_t * flag_frb_gpu_input_databuf_create(int instance_id, int databuf_id);
+int flag_frb_gpu_input_databuf_wait_free   (flag_frb_gpu_input_databuf_t * d, int block_id);
+int flag_frb_gpu_input_databuf_wait_filled (flag_frb_gpu_input_databuf_t * d, int block_id);
+int flag_frb_gpu_input_databuf_set_free    (flag_frb_gpu_input_databuf_t * d, int block_id);
+int flag_frb_gpu_input_databuf_set_filled  (flag_frb_gpu_input_databuf_t * d, int block_id);
 
 /********************
  * GPU Output Buffer Functions
