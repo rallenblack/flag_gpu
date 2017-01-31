@@ -34,7 +34,6 @@ import shlex
 import subprocess
 import os
 from datetime import datetime, timedelta
-import arm
 
 from VegasBackend import VegasBackend
 import ConfigParser # We have additional parameters that are in the config file
@@ -63,14 +62,20 @@ class BeamformerBackend(VegasBackend):
         Creates an instance of BeamformerBackend
         """
 
-        # Read in the additional parameters from the configuration file
-        self.read_parameters(theBank, theMode)
+        # Get Instance ID
+        self.get_instance_id(theBank, theMode)
+        self.instance_id = self.instance
+
         # Clear shared memory segments
         command = "hashpipe_clean_shmem -I %d" %(self.instance)
         ps_clean = subprocess.Popen(command.split())
         ps_clean.wait()
 
         VegasBackend.__init__(self, theBank, theMode, theRoach, theValon, hpc_macs, unit_test)
+
+        # Read in the additional parameters from the configuration file
+        self.read_parameters(theBank, theMode)
+
         # Create the ARP table from the mac addresses in dibas.conf under [HPCMACS]
         self.name = theMode.backend_name.lower()
         self.hpc_macs = hpc_macs
@@ -81,8 +86,12 @@ class BeamformerBackend(VegasBackend):
             for mac in self.hpc_macs:
                 self.table[mac] = self.hpc_macs[mac]
 
+        # Set some default parameter values
+        self.requested_weight_file = ''
+        
         # Add additional dealer-controlled parameters
         self.params["int_length"] = self.setIntegrationTime
+	self.params["weight_file"] = self.setNewWeightFilename
 
         # Generate ROACH 10-GbE source mac addresses
         self.mac_base0 = 0x020200000000 + (2**8)*self.xid + 1
@@ -90,10 +99,10 @@ class BeamformerBackend(VegasBackend):
         self.mac_base2 = 0x020200000000 + (2**8)*self.xid + 3
         self.mac_base3 = 0x020200000000 + (2**8)*self.xid + 4
 
-        self.source_ip0 = 10*(2**24) + 17*(2**16) + 16*(2**8) + 230
-        self.source_ip1 = 10*(2**24) + 17*(2**16) + 16*(2**8) + 231
-        self.source_ip2 = 10*(2**24) + 17*(2**16) + 16*(2**8) + 232
-        self.source_ip3 = 10*(2**24) + 17*(2**16) + 16*(2**8) + 233
+        self.source_ip0 = 10*(2**24) + 10*(2**16) + 1*(2**8) + 101 + self.xid*4
+        self.source_ip1 = 10*(2**24) + 10*(2**16) + 1*(2**8) + 102 + self.xid*4
+        self.source_ip2 = 10*(2**24) + 10*(2**16) + 1*(2**8) + 103 + self.xid*4
+        self.source_ip3 = 10*(2**24) + 10*(2**16) + 1*(2**8) + 104 + self.xid*4
 
         # TODO: Add source port to configuration file
         self.source_port = 60000
@@ -106,6 +115,7 @@ class BeamformerBackend(VegasBackend):
 
         self.progdev()
         self.net_config()
+
         if self.mode.roach_kvpairs:
             self.write_registers(**self.mode.roach_kvpairs)
 
@@ -115,10 +125,28 @@ class BeamformerBackend(VegasBackend):
         self.add_switching_state(1.0, blank = False, cal = False, sig_ref_1 = False)
         self.start_hpc()
 
-        self.fits_writer_program = 'bfFitsWriter'
+        # self.fits_writer_program = 'bfFitsWriter'
         self.start_fits_writer()
 
 
+    def setNewWeightFilename(self, weights):
+        """
+        Sets the file containing the weights
+        """
+        self.requested_weight_file = weights
+
+    def get_instance_id(self, theBank, theMode):
+        bank = theBank.name
+        mode = theMode.name
+        dibas_dir = os.getenv('DIBAS_DIR') # Should always succeed since player started up
+
+        # Create a quick ConfigParser to parse the extra information in dibas.conf
+        config = ConfigParser.ConfigParser()
+        filename = dibas_dir + '/etc/config/dibas.conf'
+        config.readfp(open(filename))
+
+        # Extract the Hashpipe instance number
+        self.instance = config.getint(bank, 'instance')
 
 
     def read_parameters(self, theBank, theMode):
@@ -128,40 +156,159 @@ class BeamformerBackend(VegasBackend):
         bank = theBank.name
         mode = theMode.name
         dibas_dir = os.getenv('DIBAS_DIR') # Should always succeed since player started up
+
         # Create a quick ConfigParser to parse the extra information in dibas.conf
         config = ConfigParser.ConfigParser()
         filename = dibas_dir + '/etc/config/dibas.conf'
         config.readfp(open(filename))
+
         # Extract the XID
         self.xid = config.getint(bank, 'xid')
-        # Extract the Hashpipe instance number
-        self.instance = config.getint(bank, 'instance')
+
         # Extract the GPU device index
         self.gpudev = config.getint(bank, 'gpudev')
+
         # Extract the list of cpu cores on which to run the threads
         self.cpus = config.get(bank, 'cpus')
         self.core = [int(x) for x in self.cpus.split(',') if x.strip().isdigit()]
+
         # Get the 10 GbE BINDHOST and BINDPORT for this player
         self.bindhost = int2ip(theBank.dest_ip)
         self.bindport = theBank.dest_port
-        # Get the has_roaches flag
-        self.has_roaches = config.getint(bank, 'has_roaches')
+
         # Get the destination IP addresses
         macs = config.items('HPCMACS')
         idx = 0
         self.dest_ip = {}
         for i in macs:
             self.dest_ip[idx] = _ip_string_to_int(i[0])
-            print "dest_ip[%d] = %s" %(idx, _ip_string_to_int(i[0]))
             idx = idx + 1
-        print "about to get FITS writer names"
+
         # Get the FITS writer process name
         self.fits_writer_program = config.get(mode, 'fits_process')
-        # Get sim3 flag
-        self.sim3 = config.getint(mode, 'sim3')
 
-    
-    def start(self, inSecs, durSecs):
+
+    def start(self, starttime = None):
+        """
+        Method that arms the ROACH boards and starts the acquisition process in flag_gpu
+
+        Overloads the start method in VegasBackend.py
+        """
+
+        # Check to see if a scan is already running...
+        if self.scan_running:
+            print "Scan already running..."
+            return (False, "Scan already started.")
+
+        # Get the current time
+        now = datetime.utcnow()
+
+        # Add the needed arming time to get earliest possible start time
+        earliest_start = self.round_second_up(now) + self.mode.needed_arm_delay
+
+        # Process the starttime argument
+        if starttime == None: # No starttime specified-- shame on you! :P (RB)
+            starttime = earliest_start
+        else:
+            if type(starttime) == tuple or type(starttime) == list: # Type check
+                starttime = datetime(*starttime) # Convert to datetime object
+
+            if type(starttime) != datetime: # If not a datetime object by here, throw exception
+                raise Exception("starttime must be a datetime object or datetime compatible tuple or list.")
+
+            # Make the starttime be on the next 1-second boundary
+            starttime = self.round_second_up(starttime)
+
+            # Check to see if the required arming time puts us past the desired start time
+            if starttime < earliest_start: # BAD-- desired time too close to be ready in time
+                raise Exception("Not enough time to arm ROACHs. Start: %s, earliest possible start: %s" % (str(starttime), str(earliest_start)))
+
+
+        # Set the start time in the system
+        self.start_time = starttime
+        
+        # Write the start time/scan length to shared memory for the FITS writer
+        ###########################################################
+        # Create a simple helper function
+        def secs_2_dmjd(secs):
+            dmjd = (secs/86400) + 40587
+            return dmjd + ((secs % 86400)/86400.)
+
+        # Convert datetime to seconds from start of epoch
+        t = time.mktime(starttime.timetuple())
+
+        # Convert seconds to day-month julian date
+        startDMJD = secs_2_dmjd(t)
+
+        # Write day-month julian date and scan length to shared memory
+        # Note that self.scan_length can be modified, for example, by using
+        #     dealer.set_param(scan_length=2.0)
+        # If not set prior to running start(), this will default to 30.0
+        self.write_status(STRTDMJD=str(startDMJD),SCANLEN=str(self.scan_length))
+        ###########################################################
+
+        # Write the integration length to shared memory
+        self.write_status(REQSTI=str(self.requested_integration_time))
+
+        # Write the beamformer weight filename to shared memory
+        self.write_status(BWEIFILE=str(self.requested_weight_file))
+
+        # Print out this information
+        print now, starttime
+
+        # Check if everything is up and running
+        if self.hpc_process is None: # Shouldn't ever happen...
+            print "Player: Starting HPC process..."
+            self.start_hpc()
+        if self.fits_writer_process is None: # Also shouldn't happen...
+            print "Player: Starting FITS writer process..."
+            self.start_fits_writer()
+
+        # Send start commands to HPC and FITS writer processes
+        # NOTE: this does not start any timers or set any time stamps
+        #       this only forces the processes to move from IDLE states to ACQUIRE states
+        self.hpc_cmd('START')
+        self.fits_writer_cmd('START')
+
+        # Let arming time occur immediately after penultimate 1 PPS
+        arm_time = starttime - timedelta(microseconds = 900000) # starttime - 0.9 seconds
+        
+        # Get current time to compare against
+        now = datetime.utcnow()
+
+        # Check to see if we are too late to arm
+        if now > arm_time:
+            # If we're too late, stop everything and raise an exception
+            self.hpc_cmd('STOP') 
+            self.fits_writer_cmd('STOP')
+            raise Exception("start(): deadline missed, arm time is in the past.")
+
+        # Get amount of waiting time
+        tdelta = arm_time - now
+
+        # Set the sleep time
+        sleep_time = tdelta.seconds + tdelta.microseconds / 1e6
+
+        # Begin sleepi...zzzzzzzzzzzzzzz...
+        print "Sleeping for %f seconds..." %(sleep_time)
+        time.sleep(sleep_time)
+
+        # Wake up and get to work!
+        print "Starting now!"
+
+        # We should be within a second of the specified start time
+        # ARM the ROACHs
+        self.arm_roach()
+        # Begin watchdog timer countdown
+        self.scan_running = True
+        # Write... something to shared memory for some reason... (dunno, RB)
+        self.write_status(ACCBLKOU='-')
+
+        # End function so new commands can be processed if necessary
+        return (True, "Successfully started ROACH for starttime=%s" %(str(self.start_time)))
+        
+
+    def start_old(self, inSecs, durSecs):
         "Start a scan in inSecs for durSecs long"
 
         # our fake GPU simulator needs to know the start time of the scan
@@ -180,7 +327,9 @@ class BeamformerBackend(VegasBackend):
 
         # NOTE: SCANLEN can also be set w/ player.set_param(scan_length=#)
         self.write_status(STRTDMJD=str(startDMJD),SCANLEN=str(durSecs))
+        # self.write_status(REQSTI=str(self.write_status(REQSTI=str(self.requested_integration_time))))
         self.write_status(REQSTI=str(self.requested_integration_time))
+        self.write_status(BWEIFILE=str(self.requested_weight_file))
 
         dt = datetime.utcnow()
         dt.replace(second = 0)
@@ -188,8 +337,7 @@ class BeamformerBackend(VegasBackend):
         dt += timedelta(seconds = inSecs)
 
         VegasBackend.start(self, starttime = dt)
-     
-     
+
         #
     # prepare() for this class calls the base class prepare then does
     # the bare minimum required just for this backend, and then writes
@@ -299,10 +447,6 @@ class BeamformerBackend(VegasBackend):
         dir_str = "-o DATADIR=" + str(self.datadir)
         process_list = process_list + dir_str.split()
 
-        # Add PROJID
-        proj_str = "-o PROJID=TGBT16A_508_01"
-        process_list = process_list + proj_str.split()
-
         # Mode-specific thread layout
         if self.name == "hi_correlator":
             # Add mode specifier for FITS writers
@@ -312,11 +456,11 @@ class BeamformerBackend(VegasBackend):
             thread1 = "-c %d flag_net_thread" % (self.core[0])
             thread2 = "-c %d flag_transpose_thread" % (self.core[1])
             thread3 = "-c %d flag_correlator_thread" % (self.core[2])
-          #  thread4 = "-c %d flag_corsave_thread" % (self.core[3])
+            #thread4 = "-c %d flag_corsave_thread" % (self.core[3])
             process_list = process_list + thread1.split()
             process_list = process_list + thread2.split()
             process_list = process_list + thread3.split()
-           # process_list = process_list + thread4.split()
+            #process_list = process_list + thread4.split()
         elif self.name == "cal_correlator":
             # Add mode specifier for FITS writers
             mode_str = "-o COVMODE=PAF_CAL"
@@ -325,11 +469,11 @@ class BeamformerBackend(VegasBackend):
             thread1 = "-c %d flag_net_thread" % (self.core[0])
             thread2 = "-c %d flag_transpose_thread" % (self.core[1])
             thread3 = "-c %d flag_correlator_thread" % (self.core[2])
-           # thread4 = "-c %d flag_corsave_thread" % (self.core[3])
+            #thread4 = "-c %d flag_corsave_thread" % (self.core[3])
             process_list = process_list + thread1.split()
             process_list = process_list + thread2.split()
             process_list = process_list + thread3.split()
-           # process_list = process_list + thread4.split()
+            #process_list = process_list + thread4.split()
         if self.name == "frb_correlator":
             # Add mode specifier for FITS writers
             mode_str = "-o COVMODE=FRB"
@@ -338,11 +482,11 @@ class BeamformerBackend(VegasBackend):
             thread1 = "-c %d flag_net_thread" % (self.core[0])
             thread2 = "-c %d flag_transpose_thread" % (self.core[1])
             thread3 = "-c %d flag_correlator_thread" % (self.core[2])
-           # thread4 = "-c %d flag_corsave_thread" % (self.core[3])
+            #thread4 = "-c %d flag_corsave_thread" % (self.core[3])
             process_list = process_list + thread1.split()
             process_list = process_list + thread2.split()
             process_list = process_list + thread3.split()
-           # process_list = process_list + thread4.split()
+            #process_list = process_list + thread4.split()
         elif self.name == "pulsar_beamformer":
             # Add threads
             thread1 = "-c %d flag_net_thread" % (self.core[0])
@@ -352,13 +496,23 @@ class BeamformerBackend(VegasBackend):
             process_list = process_list + thread1.split()
             process_list = process_list + thread2.split()
             process_list = process_list + thread3.split()
-           # process_list = process_list + thread4.split()
+            #process_list = process_list + thread4.split()
         elif self.name == "flag_total_power":
             # Add threads
             thread1 = "-c %d flag_net_thread" % (self.core[0])
             thread2 = "-c %d flag_transpose_thread" % (self.core[1])
             thread3 = "-c %d flag_power_thread" % (self.core[2])
             thread4 = "-c %d flag_powersave_thread" % (self.core[3])
+            process_list = process_list + thread1.split()
+            process_list = process_list + thread2.split()
+            process_list = process_list + thread3.split()
+            process_list = process_list + thread4.split()
+        elif self.name == "flag_dual_mode":
+            # Add threads
+            thread1 = "-c %d flag_net_thread" % (self.core[0])
+            thread2 = "-c %d flag_transpose_thread" % (self.core[1])
+            thread3 = "-c %d flag_dual_thread" % (self.core[2])
+            thread4 = "-c %d flag_dualsave_thread" % (self.core[3])
             process_list = process_list + thread1.split()
             process_list = process_list + thread2.split()
             process_list = process_list + thread3.split()
@@ -371,7 +525,55 @@ class BeamformerBackend(VegasBackend):
         # Logic to ensure that the process is indeed finished starting
         time.sleep(15)
     
-    
+
+    def stop_fits_writer(self):
+        """
+        stop_fits_writer()
+        Stops the fits writer program and make it exit.
+        To stop an observation use 'stop()' instead.
+        """
+
+        if self.test_mode:
+            return
+
+        if self.fits_writer_process is None:
+            return False # Nothing to do
+
+        try:
+            # First ask nicely
+            self.fits_writer_process.communicate("quit\n")
+            time.sleep(1)
+            # Kill if necessary
+            if self.fits_writer_process.poll() == None:
+                # still running, try once more
+                self.fits_writer_process.terminate()
+                time.sleep(1)
+
+                if self.fits_writer_process.poll() is not None:
+                    killed = True
+                else:
+                    self.fits_writer_process.kill()
+                    killed = True
+            else:
+                killed = False
+           # self.fits_writer_process = None
+        except OSError, e:
+            print "While killing child process:", e
+            killed = False
+        finally:
+            del self.fits_writer_process
+            self.fits_writer_process = None
+
+        return killed
+   
+    def stop(self):
+       print "Hello there, little people"
+       val = VegasBackend.stop(self)
+       print val[0]
+       if (val[0] == True):
+           self.start_fits_writer() 
+
+ 
     ######################################################
     # FITS writer functions
     # Modified by Richard B. on July 18, 2016 with latest
@@ -425,34 +627,18 @@ class BeamformerBackend(VegasBackend):
         not use Valon for ROACH clocking.
         """
 
-        if not self.sim3:
-            self.configure_roach()
-            return
-
         if not bof:
             bof = self.mode.bof
 
         if self.roach:
-            # reply, informs = self.roach._request("progdev", 20.0) # Second argument is timeout
-            reply, informs = self.roach._request("progdev")
+            reply, informs = self.roach._request("progdev", 20.0) # Second argument is timeout
 
             if reply.arguments[0] != 'ok':
                 print "Warning! FPGA was not deprogrammed."
 
             print "progdev programming bof", str(bof)
             return self.roach.progdev(str(bof))
-
-    def configure_roach(self):
-        if not self.sim3 and self.has_roaches:
-            os.system('bash /users/rblack/bf/dibas/lib/python/config_roaches.sh')
         
-    def arm_roach(self):
-        # Anish's stuff here
-        if not self.sim3 and self.has_roaches:
-            os.system('/users/rblack/bf/dibas/lib/python/arm.py 1 2 3 4 5')
-        else:
-            super(BeamformerBackend, self).arm_roach()
-
 
     def net_config(self, data_ip = None, data_port = None, dest_ip = None, dest_port = None):
         """net_config(self)
@@ -465,75 +651,52 @@ class BeamformerBackend(VegasBackend):
         if self.roach:
             self.roach.listdev()
 
-            if not self.sim3:
-                # Write XIDs
-                self.roach.write_int('part2_x_id0', 0)
-                self.roach.write_int('part2_x_id1', 1)
-                self.roach.write_int('part2_x_id2', 2)
-                self.roach.write_int('part2_x_id3', 3)
-                self.roach.write_int('part2_x_id4', 4)
-                self.roach.write_int('part2_x_id5', 5)
-                self.roach.write_int('part2_x_id6', 6)
-                self.roach.write_int('part2_x_id7', 7)
-                self.roach.write_int('part2_x_id8', 8)
-                self.roach.write_int('part2_x_id9', 9)
-                self.roach.write_int('part2_x_id10', 10)
-                self.roach.write_int('part2_x_id11', 11)
-                self.roach.write_int('part2_x_id12', 12)
-                self.roach.write_int('part2_x_id13', 13)
-                self.roach.write_int('part2_x_id14', 14)
-                self.roach.write_int('part2_x_id15', 15)
-                self.roach.write_int('part2_x_id16', 16)
-                self.roach.write_int('part2_x_id17', 17)
-                self.roach.write_int('part2_x_id18', 18)
-                self.roach.write_int('part2_x_id19', 19)
-            else:
-                self.roach.write_int('part2_x_id0', 0)
-                self.roach.write_int('part2_x_id1', 1)
-                self.roach.write_int('part2_x_id2', 2)
-                self.roach.write_int('part2_x_id3', 3)
-                self.roach.write_int('part2_x_id4', 0)
-                self.roach.write_int('part2_x_id5', 1)
-                self.roach.write_int('part2_x_id6', 2)
-                self.roach.write_int('part2_x_id7', 3)
-                self.roach.write_int('part2_x_id8', 0)
-                self.roach.write_int('part2_x_id9', 1)
-                self.roach.write_int('part2_x_id10', 2)
-                self.roach.write_int('part2_x_id11', 3)
-                self.roach.write_int('part2_x_id12', 0)
-                self.roach.write_int('part2_x_id13', 1)
-                self.roach.write_int('part2_x_id14', 2)
-                self.roach.write_int('part2_x_id15', 3)
-                self.roach.write_int('part2_x_id16', 0)
-                self.roach.write_int('part2_x_id17', 1)
-                self.roach.write_int('part2_x_id18', 2)
-                self.roach.write_int('part2_x_id19', 3)
-                
+            # Write XIDs
+            self.roach.write_int('part2_x_id0', 12)
+            self.roach.write_int('part2_x_id1', 13)
+            self.roach.write_int('part2_x_id2', 14)
+            self.roach.write_int('part2_x_id3', 15)
+            self.roach.write_int('part2_x_id4', 12)
+            self.roach.write_int('part2_x_id5', 13)
+            self.roach.write_int('part2_x_id6', 14)
+            self.roach.write_int('part2_x_id7', 15)
+            self.roach.write_int('part2_x_id8', 12)
+            self.roach.write_int('part2_x_id9', 13)
+            self.roach.write_int('part2_x_id10', 14)
+            self.roach.write_int('part2_x_id11', 15)
+            self.roach.write_int('part2_x_id12', 12)
+            self.roach.write_int('part2_x_id13', 13)
+            self.roach.write_int('part2_x_id14', 14)
+            self.roach.write_int('part2_x_id15', 15)
+            self.roach.write_int('part2_x_id16', 12)
+            self.roach.write_int('part2_x_id17', 13)
+            self.roach.write_int('part2_x_id18', 14)
+            self.roach.write_int('part2_x_id19', 15)
 
             # Write fabric port
             self.roach.write_int('part2_x_port', self.bindport)
 
             # Write Destination IP addresses
-            self.roach.write_int('part2_x_ip0', int(self.dest_ip[0]))
-            self.roach.write_int('part2_x_ip1', int(self.dest_ip[1]))
-            self.roach.write_int('part2_x_ip2', int(self.dest_ip[2]))
-            self.roach.write_int('part2_x_ip3', int(self.dest_ip[3]))
-            self.roach.write_int('part2_x_ip4', int(self.dest_ip[0]))
-            self.roach.write_int('part2_x_ip5', int(self.dest_ip[1]))
-            self.roach.write_int('part2_x_ip6', int(self.dest_ip[2]))
-            self.roach.write_int('part2_x_ip7', int(self.dest_ip[3]))
-            self.roach.write_int('part2_x_ip8', int(self.dest_ip[0]))
-            self.roach.write_int('part2_x_ip9', int(self.dest_ip[1]))
-            self.roach.write_int('part2_x_ip10', int(self.dest_ip[2]))
-            self.roach.write_int('part2_x_ip11', int(self.dest_ip[3]))
-            self.roach.write_int('part2_x_ip12', int(self.dest_ip[0]))
-            self.roach.write_int('part2_x_ip13', int(self.dest_ip[1]))
-            self.roach.write_int('part2_x_ip14', int(self.dest_ip[2]))
-            self.roach.write_int('part2_x_ip15', int(self.dest_ip[3]))
-            self.roach.write_int('part2_x_ip16', int(self.dest_ip[0]))
-            self.roach.write_int('part2_x_ip17', int(self.dest_ip[1]))
-            self.roach.write_int('part2_x_ip18', int(self.dest_ip[2]))
-            self.roach.write_int('part2_x_ip19', int(self.dest_ip[3]))
+            self.roach.write_int('part2_x_ip0', int(self.dest_ip[12]))
+            self.roach.write_int('part2_x_ip1', int(self.dest_ip[13]))
+            self.roach.write_int('part2_x_ip2', int(self.dest_ip[14]))
+            self.roach.write_int('part2_x_ip3', int(self.dest_ip[15]))
+            self.roach.write_int('part2_x_ip4', int(self.dest_ip[12]))
+            self.roach.write_int('part2_x_ip5', int(self.dest_ip[13]))
+            self.roach.write_int('part2_x_ip6', int(self.dest_ip[14]))
+            self.roach.write_int('part2_x_ip7', int(self.dest_ip[15]))
+            self.roach.write_int('part2_x_ip8', int(self.dest_ip[12]))
+            self.roach.write_int('part2_x_ip9', int(self.dest_ip[13]))
+            self.roach.write_int('part2_x_ip10', int(self.dest_ip[14]))
+            self.roach.write_int('part2_x_ip11', int(self.dest_ip[15]))
+            self.roach.write_int('part2_x_ip12', int(self.dest_ip[12]))
+            self.roach.write_int('part2_x_ip13', int(self.dest_ip[13]))
+            self.roach.write_int('part2_x_ip14', int(self.dest_ip[14]))
+            self.roach.write_int('part2_x_ip15', int(self.dest_ip[15]))
+            self.roach.write_int('part2_x_ip16', int(self.dest_ip[12]))
+            self.roach.write_int('part2_x_ip17', int(self.dest_ip[13]))
+            self.roach.write_int('part2_x_ip18', int(self.dest_ip[14]))
+            self.roach.write_int('part2_x_ip19', int(self.dest_ip[15]))
             time.sleep(0.5)
 
             # Start the 10GbE cores and populate the ARP table
