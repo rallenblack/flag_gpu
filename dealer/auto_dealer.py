@@ -39,11 +39,13 @@ import sys
 from PBDataDescriptor_pb2 import PBDataField
 from DataStreamUtils import get_service_endpoints
 from DataStreamUtils import get_every_parameter
-from datetime import datetime
+from datetime import datetime, tzinfo, date, time
+import pytz
 
 auto_set = True
 ctx = None
 D = None
+starttime = None
 
 
 def state_callback(p):
@@ -55,12 +57,20 @@ def state_callback(p):
 
     """
     global D
+    global starttime
     val = p.val_struct[0].val_string[0]
 
+    if val == 'Activating':
+       print "Activating..."
+       if starttime.hour != 0 and starttime.minute != 0 and starttime.second != 0:
+           print "   We're doing this at ", starttime
+           D.start(starttime)
+    if val == 'Running':
+       print "Running..."
     if val == 'Committed':
        # D.set_status(OBS_MODE='RAW')
-       D.set_param(int_length=0.25)
-       D.startin(4,300)
+       #D.set_param(int_length=0.25)
+       #D.startin(2,1400)
        print "Committed"
     elif val == "Stopping":
         #D.stop()
@@ -70,24 +80,45 @@ def state_callback(p):
        print "Aborting"
     print datetime.now(), val
 
+def start_time_callback(val):
+    global D
+    global starttime
+    num_sec = val.val_struct[0].val_struct[0].val_double[0]
+
+    date = datetime.utcnow().date()
+    hour = int(num_sec/3600)
+    minute = int((num_sec - hour*3600)/60)
+    second = int(num_sec - hour*3600 - minute*60)
+    my_time = time(hour, minute, second)
+    starttime = datetime.combine(date, my_time)
+    starttime = starttime.replace(tzinfo=pytz.utc)
+    print starttime
+
+def scan_len_callback(p):
+    global D
+    scan_length = p.val_struct[0].val_struct[0].val_double[0]
+    print "scan length = ", scan_length
+    D.set_param(scan_length = scan_length)
+
 
 def main(url):
     global ctx, D, auto_set
 
-    keys = {"ScanCoordinator.ScanCoordinator:P:state": state_callback}
-
-#            "ScanCoordinator.ScanCoordinator:P:startTime": start_time_callback
+    keys = {"ScanCoordinator.ScanCoordinator:P:state": state_callback,
+          "ScanCoordinator.ScanCoordinator:P:startTime": start_time_callback,
+          "ScanCoordinator.ScanCoordinator:P:scanLength": scan_len_callback}
     ctx = zmq.Context()
 #    D = DealerProxy(ctx, url)
     D = dealer.Dealer()
-    D.add_active_player('BANKB', 'BANKC', 'BANKD')
+    # D.add_active_player('BANKB', 'BANKC', 'BANKD', 'BANKE', 'BANKF')
     # Real ScanCoordinator
     req_url = "tcp://gbtdata.gbt.nrao.edu:5559"
     # Simulator ScanCoordinator
     # req_url = "tcp://toe.gb.nrao.edu:5559"
     subscriber = ctx.socket(zmq.SUB)
     D.set_mode('FLAG_CALCORR_MODE')
-   # D.startin(5,5)
+    #D.startin(2,10)
+    #D.startin(5,5)
 
     for key in keys:
         print key
