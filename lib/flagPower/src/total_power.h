@@ -9,7 +9,7 @@
 #define NA (NF*NI) 	// Number of total antennas
 #define NC 25 		// Number of frequency channels
 #define NT 20 		// Number of time samples per packet/mcnt
-#define NM 800  	// Number of packets/mcnts per block
+#define NM 200  	// Number of packets/mcnts per block
 #define pow1 32768 	// Next power of 2 >= Nm*Nt
 #define nblocks2 (pow1/1024) // Block size for second kernel
 #define nblocks1 (pow1/nblocks2) // Block size for first kernel

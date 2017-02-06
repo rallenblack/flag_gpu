@@ -233,6 +233,7 @@ install: xgpuinfo $(LIBXGPU) xgpuinfo_frb $(LIBXGPU_FRB)
 	cp xgpu.h $(includedir)
 	mkdir -p $(libdir)
 	cp $(LIBXGPU) $(libdir)
+	cp $(LIBXGPU_FRB) $(libdir)
 
 uninstall:
 	rm -f $(bindir)/xgpuinfo
