@@ -1,8 +1,8 @@
 # serial 1 xgpu_frb.m4
 AC_DEFUN([AX_CHECK_XGPU_FRB],
 [AC_PREREQ([2.65])dnl
-AC_ARG_WITH([xgpu],
-            AC_HELP_STRING([--with-xgpu_frb=DIR],
+AC_ARG_WITH([xgpufrb],
+            AC_HELP_STRING([--with-xgpufrb=DIR],
                            [Location of xGPU_frb headers/libs (/usr/local)]),
             [XGPU_FRB_DIR="$withval"],
             [XGPU_FRB_DIR=/usr/local])
