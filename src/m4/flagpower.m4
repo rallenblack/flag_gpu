@@ -9,17 +9,17 @@ AC_ARG_WITH([flagpower],
 
 orig_LDFLAGS="${LDFLAGS}"
 LDFLAGS="${orig_LDFLAGS} -L${FLAGPOWDIR}/lib"
-dnl AC_SEARCH_LIBS([getTotalPower], [flagpower],
-dnl              # Found
+AC_SEARCH_LIBS([getTotalPower], [flagpower],
+             # Found
              AC_SUBST(FLAGPOW_LIBDIR,${FLAGPOWERDIR}/lib),
-dnl              # Not found there, check FLAGPOWERDIR
-dnl              AS_UNSET(ac_cv_lib_flagpower_getTotalPower)
-dnl              LDFLAGS="${orig_LDFLAGS} -L${FLAGPOWERDIR}"
-dnl              AC_CHECK_LIB([FLAGPOWER], [getTotalPower],
-dnl                           # Found
-dnl                           AC_SUBST(FLAGPOWER_LIBDIR,${FLAGPOWERDIR}),
-dnl                           # Not found there, error
-dnl                           AC_MSG_ERROR([flagpower library not found])))
+             # Not found there, check FLAGPOWERDIR
+             AS_UNSET(ac_cv_lib_flagpower_getTotalPower)
+             LDFLAGS="${orig_LDFLAGS} -L${FLAGPOWERDIR}"
+             AC_CHECK_LIB([FLAGPOWER], [getTotalPower],
+                          # Found
+                          AC_SUBST(FLAGPOWER_LIBDIR,${FLAGPOWERDIR}),
+                          # Not found there, error
+                          AC_MSG_ERROR([flagpower library not found])))
 LDFLAGS="${orig_LDFLAGS}"
 
 AC_CHECK_FILE([${FLAGPOWDIR}/include/total_power.h],
