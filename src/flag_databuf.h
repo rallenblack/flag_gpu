@@ -246,6 +246,7 @@ typedef uint8_t flag_gpu_output_header_cache_alignment[
  * There are various different types of GPU output buffers that will all share
  * the same header information.
  * (1) flag_gpu_correlator_output_block
+ * (1a) flag_frb_gpu_correlator_output_block
  * (2) flag_gpu_beamformer_output_block
  * (3) flag_gpu_power_output_block
  **********************************************************************************/
@@ -263,6 +264,20 @@ typedef struct flag_gpu_correlator_output_databuf {
     hashpipe_databuf_cache_alignment padding;
     flag_gpu_correlator_output_block_t block[N_GPU_OUT_BLOCKS];
 } flag_gpu_correlator_output_databuf_t;
+
+// flag_frb_gpu_correlator_output_block
+typedef struct flag_frb_gpu_correlator_output_block {
+    flag_gpu_output_header_t header;
+    flag_gpu_output_header_cache_alignment padding;
+    float data[2*N_COR_MATRIX]; // x2 for real/imaginary samples
+} flag_frb_gpu_correlator_output_block_t;
+
+// flag_frb_gpu_correlator_output_databuf
+typedef struct flag_frb_gpu_correlator_output_databuf {
+    hashpipe_databuf_t header;
+    hashpipe_databuf_cache_alignment padding;
+    flag_frb_gpu_correlator_output_block_t block[N_GPU_OUT_BLOCKS];
+} flag_frb_gpu_correlator_output_databuf_t;
 
 // flag_gpu_beamformer_output_block
 typedef struct flag_gpu_beamformer_output_block {
@@ -329,6 +344,13 @@ int flag_gpu_correlator_output_databuf_wait_free   (flag_gpu_correlator_output_d
 int flag_gpu_correlator_output_databuf_wait_filled (flag_gpu_correlator_output_databuf_t * d, int block_id);
 int flag_gpu_correlator_output_databuf_set_free    (flag_gpu_correlator_output_databuf_t * d, int block_id);
 int flag_gpu_correlator_output_databuf_set_filled  (flag_gpu_correlator_output_databuf_t * d, int block_id);
+
+hashpipe_databuf_t * flag_frb_gpu_correlator_output_databuf_create(int instance_id, int databuf_id);
+
+int flag_frb_gpu_correlator_output_databuf_wait_free   (flag_frb_gpu_correlator_output_databuf_t * d, int block_id);
+int flag_frb_gpu_correlator_output_databuf_wait_filled (flag_frb_gpu_correlator_output_databuf_t * d, int block_id);
+int flag_frb_gpu_correlator_output_databuf_set_free    (flag_frb_gpu_correlator_output_databuf_t * d, int block_id);
+int flag_frb_gpu_correlator_output_databuf_set_filled  (flag_frb_gpu_correlator_output_databuf_t * d, int block_id);
 
 hashpipe_databuf_t * flag_gpu_beamformer_output_databuf_create(int instance_id, int databuf_id);
 
