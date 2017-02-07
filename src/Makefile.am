@@ -34,6 +34,7 @@ flag_databuf = flag_databuf.h \
 
 flag_threads = flag_net_thread.c \
                flag_transpose_thread.c \
+               flag_frb_transpose_thread.c \
                flag_correlator_thread.c \
                flag_corsave_thread.c \
                flag_beamform_thread.c \

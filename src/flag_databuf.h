@@ -131,6 +131,7 @@
 #define N_CHAN_PER_FRB_BLOCK XGPU_FRB_NFREQUENCY
 #define N_FRB_BLOCKS_PER_BLOCK (N_TIME_PER_BLOCK/N_TIME_PER_FRB_BLOCK)
 #define N_BYTES_PER_FRB_BLOCK (N_BYTES_PER_BLOCK/N_FRB_BLOCKS_PER_BLOCK)
+#define N_GRU_FRB_INPUT_BLOCKS (N_GPU_INPUT_BLOCKS*N_FRB_BLOCKS_PER_BLOCK)
 
 // Macros to maintain cache alignment
 #define CACHE_ALIGNMENT (128)
@@ -217,7 +218,7 @@ typedef struct flag_frb_gpu_input_block {
 typedef struct flag_frb_gpu_input_databuf {
     hashpipe_databuf_t header;
     hashpipe_databuf_cache_alignment padding;
-    flag_frb_gpu_input_block_t block[N_GPU_INPUT_BLOCKS*N_FRB_BLOCKS_PER_BLOCK];
+    flag_frb_gpu_input_block_t block[N_GRU_FRB_INPUT_BLOCKS];
 } flag_frb_gpu_input_databuf_t;
 
 
