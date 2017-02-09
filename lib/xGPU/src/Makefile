@@ -66,6 +66,9 @@ $(shell $(SHELL) gen_xgpu_version.sh)
 # Sizing variable handlers
 ##########################
 
+# Force the output format to be triangular always! (RB 2/17)
+NVCCFLAGS += -DMATRIX_ORDER_TRIANGULAR
+
 ifdef NPOL
 NVCCFLAGS += -DNPOL=$(NPOL)
 endif
@@ -103,10 +106,6 @@ endif
 ifdef COMPLEX_BLOCK_SIZE
 NVCCFLAGS += -DCOMPLEX_BLOCK_SIZE=$(COMPLEX_BLOCK_SIZE)
 endif
-
-ifdef TRIANGULAR_ORDER
-NVCCFLAGS += -DMATRIX_ORDER_TRIANGULAR
-endif 
 
 ifdef REAL_IMAG_TRIANGULAR_ORDER
 NVCCFLAGS += -DMATRIX_ORDER_REAL_IMAG

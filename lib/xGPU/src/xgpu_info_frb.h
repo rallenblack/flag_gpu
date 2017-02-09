@@ -47,7 +47,7 @@
 //
 // TRIANGULAR_ORDER
 // REAL_IMAG_TRIANGULAR_ORDER
-// REGISTER_TILE_TRIANGULAR_ORDER (default)
+// REGISTER_TILE_TRIANGULAR_ORDER (default) (not anymore, RB 2/17)
 //
 // To specify the matrix ordering scheme at library compile time, use one of
 // these options to the compiler:
@@ -58,13 +58,14 @@
 //
 // Note that -DMATRIX_ORDER_REGISTER_TILE is assumed if neither of the other
 // two are specified.
+// (Not if I can help it-- RB 2/17)
 
-#if defined MATRIX_ORDER_TRIANGULAR
-#define MATRIX_ORDER TRIANGULAR_ORDER
+#if defined MATRIX_ORDER_REGISTER_TILE
+#define MATRIX_ORDER REGISTER_TILE
 #elif defined MATRIX_ORDER_REAL_IMAG
 #define MATRIX_ORDER REAL_IMAG_TRIANGULAR_ORDER
 #else
-#define MATRIX_ORDER REGISTER_TILE_TRIANGULAR_ORDER
+#define MATRIX_ORDER TRIANGULAR_ORDER
 #endif
 
 // Set the number bytes transferred per shared memory transaction
