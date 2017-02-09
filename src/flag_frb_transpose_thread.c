@@ -120,11 +120,6 @@ static void * run(hashpipe_thread_args_t * args) {
                     }
                 }
 
-                /***********************************************
-                 * Add header information to output block
-                 ***********************************************/
-                db_out->block[curblock_out].header.mcnt = mcnt;
-                db_out->block[curblock_out].header.good_data = db_in->block[curblock_in].header.good_data;
     
                 // Set output block to filled
                 #if VERBOSE==1
@@ -132,6 +127,11 @@ static void * run(hashpipe_thread_args_t * args) {
                 #endif
                 int j;
                 for (j = 0; j < N_FRB_BLOCKS_PER_BLOCK; j++) {
+                    // Add header information to output block
+                    db_out->block[curblock_out + j].header.mcnt = mcnt + j*N_MCNT_PER_FRB_BLOCK;
+                    db_out->block[curblock_out + j].header.good_data = db_in->block[curblock_in].header.good_data;
+
+                    // Mark block as filled
                     flag_gpu_input_databuf_set_filled(db_out, curblock_out + j);
                 }
                 curblock_out = (curblock_out + N_FRB_BLOCKS_PER_BLOCK) % db_out->header.n_block;
