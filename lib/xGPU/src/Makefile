@@ -238,6 +238,8 @@ uninstall:
 	rm -f $(bindir)/xgpuinfo
 	rm -f $(includedir)/xgpu.h
 	rm -f $(libdir)/$(LIBXGPU)
+	rm -f $(bindir)/xgpuinfo_frb
+	rm -f $(libdir)/$(LIBXGPU_FRB)
 
 tags:
 	ctags -R .
@@ -253,7 +255,7 @@ show:
 
 clean:
 	rm -f cuda_correlator cuda_correlator_frb libxgpu.so xgpuinfo xgpuinfo_frb libxgpufrb.so
-	rm -f $(BINXGPU_OBJS) $(LIBXGPU_OBJS) cube/cube.o
+	rm -f $(BINXGPU_FRB_OBJS) $(BINXGPU_OBJS) $(LIBXGPU_OBJS) $(LIBXGPU_FRB_OBJS) cube/cube.o
 	rm -f $(DEPS) $(FRB_DEPS)
 	rm -f tags
 

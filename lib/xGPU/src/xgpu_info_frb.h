@@ -13,7 +13,7 @@
 #endif
 
 #ifndef NFREQUENCY
-#define NFREQUENCY 5
+#define NFREQUENCY 25
 #endif
 
 #ifndef NTIME
