@@ -130,9 +130,10 @@
 #define N_TIME_PER_FRB_BLOCK XGPU_FRB_NTIME
 #define N_CHAN_PER_FRB_BLOCK XGPU_FRB_NFREQUENCY
 #define N_FRB_BLOCKS_PER_BLOCK (N_TIME_PER_BLOCK/N_TIME_PER_FRB_BLOCK)
-#define N_BYTES_PER_FRB_BLOCK (N_BYTES_PER_BLOCK/N_FRB_BLOCKS_PER_BLOCK)
-#define N_GRU_FRB_INPUT_BLOCKS (N_GPU_INPUT_BLOCKS*N_FRB_BLOCKS_PER_BLOCK)
+#define N_BYTES_PER_FRB_BLOCK (N_TIME_PER_FRB_BLOCK * N_CHAN_PER_FRB_BLOCK * N_INPUTS * N_BITS_IQ * 2 / 8)
+#define N_GPU_FRB_INPUT_BLOCKS (N_GPU_INPUT_BLOCKS*N_FRB_BLOCKS_PER_BLOCK)
 #define N_MCNT_PER_FRB_BLOCK (Nm/N_FRB_BLOCKS_PER_BLOCK)
+#define N_FRB_COR_MATRIX (N_INPUTS/2*(N_INPUTS/2 + 1)/2*N_CHAN_PER_FRB_BLOCK*4)
 
 // Macros to maintain cache alignment
 #define CACHE_ALIGNMENT (128)
@@ -219,7 +220,7 @@ typedef struct flag_frb_gpu_input_block {
 typedef struct flag_frb_gpu_input_databuf {
     hashpipe_databuf_t header;
     hashpipe_databuf_cache_alignment padding;
-    flag_frb_gpu_input_block_t block[N_GRU_FRB_INPUT_BLOCKS];
+    flag_frb_gpu_input_block_t block[N_GPU_FRB_INPUT_BLOCKS];
 } flag_frb_gpu_input_databuf_t;
 
 
@@ -233,7 +234,7 @@ typedef struct flag_frb_gpu_input_databuf {
 typedef struct flag_gpu_output_header {
     int64_t  good_data;
     uint64_t mcnt;
-    uint64_t flags[(N_CHAN_PER_X+63)/64];
+    // uint64_t flags[(N_CHAN_PER_X+63)/64];
 } flag_gpu_output_header_t;
 
 typedef uint8_t flag_gpu_output_header_cache_alignment[
@@ -270,7 +271,7 @@ typedef struct flag_gpu_correlator_output_databuf {
 typedef struct flag_frb_gpu_correlator_output_block {
     flag_gpu_output_header_t header;
     flag_gpu_output_header_cache_alignment padding;
-    float data[2*N_COR_MATRIX]; // x2 for real/imaginary samples
+    float data[2*N_FRB_COR_MATRIX]; // x2 for real/imaginary samples
 } flag_frb_gpu_correlator_output_block_t;
 
 // flag_frb_gpu_correlator_output_databuf

@@ -32,29 +32,60 @@ fifo_codes = fifo.h \
 flag_databuf = flag_databuf.h \
                flag_databuf.c
 
-flag_threads = flag_net_thread.c \
-               flag_transpose_thread.c \
-               flag_frb_transpose_thread.c \
-               flag_correlator_thread.c \
-               flag_frb_correlator_thread.c \
-               flag_corsave_thread.c \
-               flag_frb_corsave_thread.c \
-               flag_beamform_thread.c \
-               flag_beamsave_thread.c \
-               flag_power_thread.c \
-               flag_powersave_thread.c \
-               flag_dual_thread.c \
-               flag_dualsave_thread.c
+flag_x_threads = flag_net_thread.c \
+                 flag_transpose_thread.c \
+                 flag_correlator_thread.c \
+                 flag_corsave_thread.c
 
-# This is the flag_gpu plugin itself
-lib_LTLIBRARIES = flag_gpu.la
-flag_gpu_la_SOURCES  = $(flag_databuf) $(flag_threads) $(fifo_codes)
-flag_gpu_la_LIBADD   = -lrt -lxgpu -lflagbeamformer -lcublas -L/usr/local/cuda/lib64 -lcfitsio -lflagpower
-flag_gpu_la_LDFLAGS  = -avoid-version -module -shared -export-dynamic --enable-shared
-flag_gpu_la_LDFLAGS += -L"@XGPU_LIBDIR@" -Wl,-rpath,"@XGPU_LIBDIR@"
-flag_gpu_la_LDFLAGS += -L"@XGPU_FRB_LIBDIR@" -Wl,-rpath,"@XGPU_FRB_LIBDIR@"
-flag_gpu_la_LDFLAGS += -L"@HASHPIPE_LIBDIR@" -Wl,-rpath,"@HASHPIPE_LIBDIR@"
-flag_gpu_la_LDFLAGS += -L"@FLAGBEAM_LIBDIR@" -Wl, -rpath, "@FLAGBEAM_LIBDIR@"
+flag_b_threads = flag_net_thread.c \
+                 flag_transpose_thread.c \
+                 flag_beamform_thread.c \
+                 flag_beamsave_thread.c
+
+flag_bx_threads = flag_net_thread.c \
+                  flag_transpose_thread.c \
+                  flag_dual_thread.c \
+                  flag_dualsave_thread.c
+
+flag_x_frb_threads = flag_net_thread.c \
+                     flag_frb_transpose_thread.c \
+                     flag_frb_correlator_thread.c \
+                     flag_frb_corsave_thread.c
+
+
+
+# This lists all of the plugins that will be created
+lib_LTLIBRARIES = flag_x.la flag_b.la flag_x_frb.la flag_bx.la
+
+# flag_x.la sources and libraries
+flag_x_la_SOURCES  = $(flag_databuf) $(flag_x_threads) $(fifo_codes)
+flag_x_la_LIBADD   = -lrt -lxgpu -L/usr/local/cuda/lib64 -lcfitsio
+flag_x_la_LDFLAGS  = -avoid-version -module -shared -export-dynamic --enable-shared
+flag_x_la_LDFLAGS += -L"@XGPU_LIBDIR@" -Wl,-rpath,"@XGPU_LIBDIR@"
+flag_x_la_LDFLAGS += -L"@HASHPIPE_LIBDIR@" -Wl,-rpath,"@HASHPIPE_LIBDIR@"
+
+# flag_b.la sources and libraries
+flag_b_la_SOURCES  = $(flag_databuf) $(flag_b_threads) $(fifo_codes)
+flag_b_la_LIBADD   = -lrt -lxgpu -lflagbeamformer -lcublas -L/usr/local/cuda/lib64 -lcfitsio
+flag_b_la_LDFLAGS  = -avoid-version -module -shared -export-dynamic --enable-shared
+flag_b_la_LDFLAGS += -L"@XGPU_LIBDIR@" -Wl,-rpath,"@XGPU_LIBDIR@"
+flag_b_la_LDFLAGS += -L"@HASHPIPE_LIBDIR@" -Wl,-rpath,"@HASHPIPE_LIBDIR@"
+flag_b_la_LDFLAGS += -L"@FLAGBEAM_LIBDIR@" -Wl, -rpath, "@FLAGBEAM_LIBDIR@"
+
+# flag_bx.la sources and libraries
+flag_bx_la_SOURCES = $(flag_databuf) $(flag_bx_threads) $(fifo_codes)
+flag_bx_la_LIBADD   = -lrt -lxgpu -lflagbeamformer -lcublas -L/usr/local/cuda/lib64 -lcfitsio
+flag_bx_la_LDFLAGS  = -avoid-version -module -shared -export-dynamic --enable-shared
+flag_bx_la_LDFLAGS += -L"@XGPU_LIBDIR@" -Wl,-rpath,"@XGPU_LIBDIR@"
+flag_bx_la_LDFLAGS += -L"@HASHPIPE_LIBDIR@" -Wl,-rpath,"@HASHPIPE_LIBDIR@"
+flag_bx_la_LDFLAGS += -L"@FLAGBEAM_LIBDIR@" -Wl, -rpath, "@FLAGBEAM_LIBDIR@"
+
+# flag_x_frb.la sources and libraries
+flag_x_frb_la_SOURCES = $(flag_databuf) $(flag_x_frb_threads) $(fifo_codes)
+flag_x_frb_la_LIBADD   = -lrt -lxgpufrb -lflagbeamformer -lcublas -L/usr/local/cuda/lib64 -lcfitsio
+flag_x_frb_la_LDFLAGS  = -avoid-version -module -shared -export-dynamic --enable-shared
+flag_x_frb_la_LDFLAGS += -L"@XGPU_FRB_LIBDIR@" -Wl,-rpath,"@XGPU_FRB_LIBDIR@"
+flag_x_frb_la_LDFLAGS += -L"@HASHPIPE_LIBDIR@" -Wl,-rpath,"@HASHPIPE_LIBDIR@"
 
 # Installed scripts
 # dist_bin_SCRIPTS = paper_init.sh \

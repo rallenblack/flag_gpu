@@ -70,6 +70,29 @@ static void * run(hashpipe_thread_args_t * args) {
         fprintf(stderr, "ERROR: xGPU initialization failed (error code %d)\n", xgpu_error);
         return THREAD_ERROR;
     }
+
+    #if VERBOSE==1
+        printf("XGPU CONTEXT\n");
+        printf("############################################################\n");
+        printf("header.n_block = %lld\n", (long long int)(db_in->header.n_block));
+        printf("sizeof(flag_frb_gpu_input_block_t) = %lld\n", (long long int)(sizeof(flag_frb_gpu_input_block_t)));
+        printf("sizeof(flag_gpu_input_header_t) = %lld\n", (long long int)(sizeof(flag_gpu_input_header_t)));
+        printf("sizeof(flag_frb_gpu_correlator_output_block_t) = %d\n", (int)(sizeof(flag_gpu_correlator_output_block_t)));
+        printf("sizeof(flag_gpu_output_header_t) = %lld\n", (long long int)(sizeof(flag_gpu_output_header_t)));
+        printf("sizeof(ComplexInput) = %d\n", (int)(sizeof(ComplexInput)));
+        printf("sizeof(Complex) = %d\n", (int)(sizeof(Complex)));
+        printf("context.array_len  = %lld\n", (long long int)(context.array_len));
+        printf("context.matrix_len = %lld\n", (long long int)(context.matrix_len));
+        printf("###########################################################\n");
+    #endif
+
+    #if VERBOSE==1
+        printf("N_TIME_PER_FRB_BLOCK = %d\n", N_TIME_PER_FRB_BLOCK);
+        printf("N_CHAN_PER_FRB_BLOCK = %d\n", N_CHAN_PER_FRB_BLOCK);
+        printf("N_GPU_FRB_INPUT_BLOCKS = %d\n", N_GPU_FRB_INPUT_BLOCKS);
+        printf("N_FRB_COR_MATRIX = %d\n", N_FRB_COR_MATRIX);
+        printf("N_BYTES_PER_FRB_BLOCK = %lld\n", (long long int) N_BYTES_PER_FRB_BLOCK);
+    #endif
     
 
     // Mark thread as ready to run
@@ -116,7 +139,9 @@ static void * run(hashpipe_thread_args_t * args) {
             // Print out the header information for this block 
             flag_gpu_input_header_t tmp_header;
             memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_gpu_input_header_t));
-	    //printf("COR: Received block %d, starting mcnt = %lld\n", curblock_in, (long long int)tmp_header.mcnt);
+            #if VERBOSE==1
+    	        printf("COR: Received block %d, starting mcnt = %lld\n", curblock_in, (long long int)tmp_header.mcnt);
+	    #endif
             good_data &= tmp_header.good_data;
 
             // Retrieve correlator integrator status
@@ -127,7 +152,9 @@ static void * run(hashpipe_thread_args_t * args) {
             // If the correlator integrator status is "off,"
             // Free the input block and continue
             if (strcmp(integ_status, "off") == 0) {
-                // fprintf(stderr, "COR: Correlator is off...\n");
+                #if VERBOSE==1
+                    fprintf(stderr, "COR: Correlator is off...\n");
+                #endif
                 flag_frb_gpu_input_databuf_set_free(db_in, curblock_in);
                 curblock_in = (curblock_in + 1) % db_in->header.n_block;
                 good_data = 1;
@@ -159,7 +186,9 @@ static void * run(hashpipe_thread_args_t * args) {
                 }
                 else if (db_in->block[curblock_in].header.mcnt == start_mcnt) {
                     // set correlator integrator to "on"
-                    // fprintf(stderr, "COR: Starting correlator!\n");
+                    #if VERBOSE==1
+                        fprintf(stderr, "COR: Starting correlator!\n");
+                    #endif
                     strcpy(integ_status, "on");
                     float requested_integration_time = 0.0;
                     float actual_integration_time = 0.0;
@@ -223,10 +252,19 @@ static void * run(hashpipe_thread_args_t * args) {
                 }
             }
        
+            #if VERBOSE==1
+                printf("COR: Running xgpuCudaXengine now...\n");
+            #endif
             xgpuCudaXengine(&context, doDump ? SYNCOP_DUMP : SYNCOP_SYNC_TRANSFER);
+            #if VERBOSE==1
+                printf("COR: Done!\n");
+            #endif
        
-            printf("COR: doDump = %d\n", doDump);
-            printf("COR: start_mcnt = %lld, last_mcnt = %lld\n", (long long int)start_mcnt, (long long int)last_mcnt);
+            #if VERBOSE==1 
+                printf("COR: doDump = %d\n", doDump);
+                printf("COR: start_mcnt = %lld, last_mcnt = %lld\n", (long long int)start_mcnt, (long long int)last_mcnt);
+            #endif
+
             if (doDump) {
                 xgpuClearDeviceIntegrationBuffer(&context);
                 //xgpuReorderMatrix((Complex *)db_out->block[curblock_out].data);
