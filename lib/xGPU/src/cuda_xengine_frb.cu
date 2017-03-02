@@ -831,6 +831,11 @@ void xgpuFree(XGPUContext *context)
 
 int xgpuCudaXengine(XGPUContext *context, int syncOp)
 {
+
+  #ifdef VERBOSE
+     printf("xGPU: Starting xgpuCudaXengine for FRB mode\n");
+  #endif
+
   XGPUInternalContext *internal = (XGPUInternalContext *)context->internal;
   if(!internal) {
     return XGPU_NOT_INITIALIZED;
@@ -843,6 +848,10 @@ int xgpuCudaXengine(XGPUContext *context, int syncOp)
 
   //assign the device
   cudaSetDevice(internal->device);
+
+  #ifdef VERBOSE
+     printf("xGPU: Device assigned\n");
+  #endif
 
   ComplexInput **array_d = internal->array_d;
   cudaStream_t *streams = internal->streams;
@@ -862,7 +871,13 @@ int xgpuCudaXengine(XGPUContext *context, int syncOp)
   //allocated exactly as many thread blocks as are needed
   dim3 dimGrid(((Nblock/2+1)*(Nblock/2))/2, compiletime_info.nfrequency);
 
+  #ifdef VERBOSE
+     printf("xGPU: CUBE_ASYNC_START(ENTIRE_PIPELINE)\n");
+  #endif
   CUBE_ASYNC_START(ENTIRE_PIPELINE);
+  #ifdef VERBOSE
+     printf("xGPU: DONE!\n");
+  #endif
 
   // Need to fill pipeline before loop
   long long unsigned int vecLengthPipe = compiletime_info.vecLengthPipe;

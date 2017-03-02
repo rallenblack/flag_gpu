@@ -831,6 +831,11 @@ void xgpuFree(XGPUContext *context)
 
 int xgpuCudaXengine(XGPUContext *context, int syncOp)
 {
+
+  #ifdef VERBOSE
+      printf("xGPU: Starting xgpuCudaXengine (normal version)\n");
+  #endif
+
   XGPUInternalContext *internal = (XGPUInternalContext *)context->internal;
   if(!internal) {
     return XGPU_NOT_INITIALIZED;
