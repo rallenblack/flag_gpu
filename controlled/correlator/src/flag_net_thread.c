@@ -281,12 +281,12 @@ static inline int64_t process_packet(flag_input_databuf_t * db, struct hashpipe_
         hputi4(st_p->buf, "NETMCNT", new_mcnt);
         hashpipe_status_unlock_safe(st_p);
         */
-        //printf("Net: Late packet... mcnt = %lld\n", (long long int)pkt_mcnt);
+        printf("Net: Late packet... mcnt = %lld, fid = %d\n", (long long int)pkt_mcnt, pkt_header.fid);
         return -1;
     
     }
     else if (pkt_mcnt_dist < 0) {
-        // fprintf(stderr, "Early packet, pkt_mcnt_dist = %lld\n", (long long int)pkt_mcnt_dist);
+        //fprintf(stderr, "Early packet, pkt_mcnt_dist = %lld\n", (long long int)pkt_mcnt_dist);
         return -1;
     }
     // Increment packet count for block
