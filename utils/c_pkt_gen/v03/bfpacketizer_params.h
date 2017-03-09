@@ -10,7 +10,7 @@
 #define Nbin_per_x() Nbins/Nxengines;   // Number of freq channels processed in a GPU	
 
 // Ip address of the GPUs 
-const char *ipaddr[] = {"10.10.1.13",
+const char *ipaddr[] = {"10.18.0.152",
                         "10.40.5.1",
                         "10.40.5.1",
                         "10.40.5.1",

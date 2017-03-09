@@ -136,7 +136,7 @@ void payload_gen(char *data, unsigned char K,
         int nbins = Nbins;
         int ntime_per_packet = Ntime_per_packet;
         int ContChan = 5; /* Contiguous channels to be packed */
-        int ChanInc=50; /* Contiguous channels are incremented in this step */ 
+        int ChanInc=100; /* Contiguous channels are incremented in this step */ 
         int SetOfChan, DatIndx, DatSizeForAtime, PaylSize, 
             DatSizeForNin,chan,DatSizeForContChan;
 
