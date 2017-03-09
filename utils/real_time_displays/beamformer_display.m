@@ -74,6 +74,7 @@ while 1
     power_acc_xyi = sum(power_acc_xyi, 1)./N_time;      % Integrate time samples for GUI.
     power_acc_xyi = reshape(power_acc_xyi, N_bin, N_beam1);
     
+%     X - Polarization
     tmp1(t+1, start_freq:end_freq) = 10*log10(abs(power_acc_x(start_freq:end_freq,1)));
     axes(handles.axes1);
     plot(0:t, tmp1(1:t+1, start_freq:end_freq));
