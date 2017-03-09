@@ -3,34 +3,32 @@ clearvars;
 close all;
 
 % White noise
-%filename = '/lustre/pulsar/users/rprestag/FLAG/JUNK/JUNK/BF/2016_07_25_02:45:31A.fits';
+% filename = '/lustre/pulsar/users/rprestag/FLAG/JUNK/JUNK/BF/2016_07_25_02:45:31A.fits';
 
 % Correlated data
-filename = '/lustre/pulsar/users/rprestag/FLAG/JUNK/JUNK/BF/2016_07_25_02:37:42A.fits';
+% filename = '/lustre/pulsar/users/rprestag/FLAG/JUNK/JUNK/BF/2016_07_25_02:37:42A.fits';
 
-info = fitsinfo(filename);
-data = fitsread(filename, 'binarytable', 1);
-tmp = data{3};
-R = zeros(2*length(tmp), 1);
-R(1:2:end) = real(tmp(1,:));
-R(2:2:end) = imag(tmp(1,:));
+% Grid data
+% filename = '/lustre/gbtdata/TGBT16A_508_01/BF/2016_07_26_23:45:30A.fits';
 
-
-%FILE = fopen('cor_mcnt_0.out', 'r');
-%[R, count] = fscanf(FILE, '%g\n');
-%fclose(FILE);s
+% info = fitsinfo(filename);
+% data = fitsread(filename, 'binarytable', 1);
+% tmp = data{3};
+% R = zeros(2*length(tmp), 1);
+% R(1:2:end) = real(tmp(1,:));
+% R(2:2:end) = imag(tmp(1,:));
 
 Nele = 40;
 Nele_tot = 64;
 Nbin = 25;
-Nsamp = 4000;
+Nsamp = 40;
 Nbaselines_tot = (Nele_tot/2 + 1)*Nele_tot;
 Nbaselines     = (Nele + 1)*Nele/2;
 Nblocks        = (Nele_tot/2 + 1)*Nele_tot/4;
 
-big = figure();
-big2 = figure();
-small = figure();
+%big = figure();
+%big2 = figure();
+%small = figure();
 tmp_idx = 1;
 tmp = [1 6 11 17 22];
 
@@ -39,40 +37,47 @@ for i = 1:Nele_tot/2
     blk_rows(i,1:i) = (i-1)*i/2+1:(i-1)*i/2+i;
 end
 
-for Nb = 1:1
-    
-    rb_real = R(2*Nbaselines_tot*(Nb - 1)+1:2:2*Nbaselines_tot*Nb);
-    rb_imag = R(2*Nbaselines_tot*(Nb - 1)+2:2:2*Nbaselines_tot*Nb);
-    rb = rb_real + 1j*rb_imag;
-    
-    Rb = zeros(Nele_tot, Nele_tot);
-    for Nblk = 1:Nblocks
-        block_r = rb(4*(Nblk-1)+1:4*Nblk);
-        [row, col] = find(blk_rows == Nblk);
-        Rb(2*row - 1, 2*col - 1) = block_r(1);
-        if sum(diag(blk_rows) == Nblk) == 0
-            Rb(2*row - 1, 2*col) = block_r(2);
-        end
-        Rb(2*row    , 2*col - 1) = block_r(3);
-        Rb(2*row    , 2*col    ) = block_r(4);
-    end
-    
-    Rb = Rb + (Rb' - diag(diag(Rb'))); % Exploit symmetry
-    Rb = Rb./Nsamp;
-    figure(big);
-    %subplot(5,5,Nb);
-    imagesc(abs(Rb));
-    title(['Bin ', num2str(Nb)]);
-    
-    figure(big2);
-    %subplot(5,5,Nb);
-    imagesc(abs(Rb(1:Nele, 1:Nele)));
-    title(['Bin ', num2str(Nb)]);
-    
-    pow1(Nb) = Rb(1,1);
-end
+Rtot = zeros(Nele_tot, Nele_tot, Nbin);
 
-figure(small);
-plot(pow1);
+for mcnt = 0:2:198
+    FILE = fopen(sprintf('~/cor_mcnt_%d.out', mcnt), 'r');
+    [R, count] = fscanf(FILE, '%g\n');
+    fclose(FILE);
+
+    for Nb = 1:Nbin
+
+        rb_real = R(2*Nbaselines_tot*(Nb - 1)+1:2:2*Nbaselines_tot*Nb);
+        rb_imag = R(2*Nbaselines_tot*(Nb - 1)+2:2:2*Nbaselines_tot*Nb);
+        rb = rb_real + 1j*rb_imag;
+
+        Rb = zeros(Nele_tot, Nele_tot);
+        for Nblk = 1:Nblocks
+            block_r = rb(4*(Nblk-1)+1:4*Nblk);
+            [row, col] = find(blk_rows == Nblk);
+            Rb(2*row - 1, 2*col - 1) = block_r(1);
+            if sum(diag(blk_rows) == Nblk) == 0
+                Rb(2*row - 1, 2*col) = block_r(2);
+            end
+            Rb(2*row    , 2*col - 1) = block_r(3);
+            Rb(2*row    , 2*col    ) = block_r(4);
+        end
+
+        Rb = Rb + (Rb' - diag(diag(Rb'))); % Exploit symmetry
+        Rb = Rb./Nsamp;
+
+        Rtot(:,:,Nb) = Rtot(:,:,Nb) + Rb.*Nsamp;
+
+        figure(1);
+        subplot(5,5,Nb);
+        imagesc(abs(Rtot(1:Nele, 1:Nele, Nb)));
+        title(['Bin ', num2str(Nb)]);
+        
+        figure(2);
+        subplot(5,5,Nb);
+        imagesc(abs(Rb(1:Nele, 1:Nele)));
+        title(['Bin ', num2str(Nb), ' mcnt = ', num2str(mcnt)]);
+        drawnow;
+    end
+end
 
 
