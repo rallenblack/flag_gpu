@@ -7,10 +7,10 @@
 % 4 => July 29, 2016, Daisy Scan, 3C123
 % 5 => July 31, 2016, Grid Scan, 3C295
 % 6 => July 30, 2016, Daisy Scan, 3C295
-data_set = 5;
+data_set = 1;
 
 % Specify if output files should be overwritten
-overwrite = 0;
+overwrite = 1;
 
 % Specify bank ID (only single-bank scripts use this)
 bank = 'D';
