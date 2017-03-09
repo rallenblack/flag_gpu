@@ -1,0 +1,75 @@
+#! /bin/bash
+
+# Change this to match your root directory of the flag_gpu repo
+if [ $# -eq 0 ] # No arguments provided
+then
+    FLAG_DIR=$PWD
+else
+    FLAG_DIR=$1
+fi
+
+# Change this to match your destination directory
+prefix=/users/$USER/fresh_hash
+
+# Set library source directories
+HASHPIPE_SRC=$FLAG_DIR/lib/hashpipe/src
+XGPU_SRC=$FLAG_DIR/lib/xGPU/src
+BEAM_SRC=$FLAG_DIR/lib/beamformer/src
+POWER_SRC=$FLAG_DIR/lib/flagPower/src
+
+# Compile the hashpipe library
+echo "Installing HASHPIPE"
+echo "========================================"
+echo "Navigating to $HASHPIPE_SRC"
+cd $HASHPIPE_SRC
+autoreconf -is
+./configure --prefix=$HASH_DIR --silent
+make
+make install
+echo "========================================"
+echo 
+
+# Compile the xGPU library
+echo "Installing xGPU"
+echo "========================================"
+echo "Navigating to $XGPU_SRC"
+cd $XGPU_SRC
+make
+make install prefix=$HASH_DIR
+echo "========================================"
+echo 
+
+# Compile the beamformer library
+echo "Installing flagbeamformer"
+echo "========================================"
+echo "Navigating to $BEAM_SRC"
+cd $BEAM_SRC
+make
+make install prefix=$HASH_DIR
+echo "========================================"
+echo 
+
+# Compile the flagPower library
+echo "Installing flagPower"
+echo "========================================"
+echo "Navigating to $POWER_SRC"
+cd $POWER_SRC
+make
+make install prefix=$HASH_DIR
+echo "========================================"
+echo 
+
+# Compile the flag HASHPIPE plugins
+echo "Installing the FLAG plugins"
+echo "========================================"
+echo "Navigating to $FLAG_DIR/src"
+cd $FLAG_DIR/src
+autoreconf -is
+./configure --prefix=$HASH_DIR --with-hashpipe=$HASH_DIR --with-xgpu=$HASH_DIR --with-xgpufrb=$HASH_DIR --with-flagbeamformer=$HASH_DIR --with-flagpower=$HASH_DIR --silent
+make
+make install
+echo "========================================"
+echo 
+
+echo "DONE!"
+echo "The FLAG plugins have been installed to $HASH_DIR"
