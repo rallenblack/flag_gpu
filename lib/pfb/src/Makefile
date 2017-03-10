@@ -1,39 +1,53 @@
 -include Makefile.local
 
-prefix ?= /usr/local
+#prefix ?= /usr/local
+#libdir ?= $(prefix)/lib
+#includedir ?= $(prefix)/include
+#bindir ?= $(prefix)/bin
+#CUDA_DIR ?= $(prefix)/cuda
+
+prefix ?= tmp
 libdir ?= $(prefix)/lib
 includedir ?= $(prefix)/include
 bindir ?= $(prefix)/bin
-CUDA_DIR ?= $(prefix)/cuda
-ifneq ($(strip $(OSTYPE)),osx)
-CUDA_LIBDIR ?= $(CUDA_DIR)/lib64
-else
-CUDA_LIBDIR ?= $(CUDA_DIR)/lib
-endif
+CUDA_DIR ?= /Developer/NVIDIA/CUDA-6.5
+
+INCLUDES = -I/Developer/NVIDIA/CUDA-6.5/include
+CUDA_LIBDIR = -L/Developer/NVIDIA/CUDA-6.5/lib
+
+CU_LIB  = -lcufft -lcudart
+C_LIB = -lstdc++ -lPython
+
+#ifneq ($(strip $(OSTYPE)),osx)
+#CUDA_LIBDIR ?= $(CUDA_DIR)/lib64
+#else
+#CUDA_LIBDIR ?= $(CUDA_DIR)/lib
+#endif
 
 NVCC = $(CUDA_DIR)/bin/nvcc
 
-all: libflagbeamformer.so cublas_main.o
-	gcc -L $(CUDA_LIBDIR) -lstdc++ -lcudart -lcublas -o cublas_main libflagbeamformer.so cublas_main.o
 
-cublas_beamformer.o: cublas_beamformer.cu cublas_beamformer.h
-	$(NVCC) -c -o cublas_beamformer.o -Xcompiler -fPIC -Xcompiler -D_REENTRANT -O3 cublas_beamformer.cu
 
-libflagbeamformer.so: cublas_beamformer.o
-	$(NVCC) -Xcompiler -fPIC -Xcompiler -D_REENTRANT -O3 cublas_beamformer.o -o libflagbeamformer.so -L$(CUDA_LIBDIR) --shared
+all: libflagpfb.so
 
-cublas_main.o: cublas_main.cu cublas_beamformer.h
-	$(NVCC) -I $(CUDA_DIR)/include -c -o cublas_main.o cublas_main.cu
+libflagpfb.so: pfb.o kernels.o
+	$(NVCC) -Xcompiler -fPIC -Xcompiler -D_REENTRANT -O3 pfb.o kernels.o -o libflagpfb.so $(CUDA_LIBDIR) $(CU_LIB) $(C_LIB) --shared
+
+pfb.o: kernels.cu kernels.h
+	$(NVCC) $(INCLUDES) $(CUDA_LIBDIR) $(CU_LIB) -c -o pfb.o -Xcompiler -fPIC -Xcompiler -D_REENTRANT -O3 pfb.cu
+
+kernels.o: kernels.cu kernels.h
+	$(NVCC) $(INCLUDES) $(CUDA_LIBDIR) $(CU_LIB) -c -o kernels.o kernels.cu
 
 clean:
 	rm -f *.o
 	rm -f *.so
-	rm -f cublas_main
 
-install: cublas_main cublas_beamformer.h libflagbeamformer.so
+install: kernels.o pfb.o libflagpfb.so
 	mkdir -p $(includedir)
-	cp cublas_beamformer.h $(includedir)
+	cp pfb.h $(includedir)
+	cp kernels.h $(includedir)
 	mkdir -p $(libdir)
-	cp libflagbeamformer.so $(libdir)
-	mkdir -p $(bindir)
-	cp cublas_main $(bindir)
+	cp libflagpfb.so $(libdir)
+	#mkdir -p $(bindir)
+	#cp cublas_main $(bindir)
