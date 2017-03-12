@@ -1,28 +1,30 @@
 -include Makefile.local
 
-#prefix ?= /usr/local
+prefix ?= /usr/local
 #libdir ?= $(prefix)/lib
 #includedir ?= $(prefix)/include
 #bindir ?= $(prefix)/bin
-#CUDA_DIR ?= $(prefix)/cuda
+CUDA_DIR ?= $(prefix)/cuda
 
-prefix ?= tmp
+#prefix ?= tmp
 libdir ?= $(prefix)/lib
 includedir ?= $(prefix)/include
 bindir ?= $(prefix)/bin
-CUDA_DIR ?= /Developer/NVIDIA/CUDA-6.5
+#CUDA_DIR ?= /Developer/NVIDIA/CUDA-6.5
 
-INCLUDES = -I/Developer/NVIDIA/CUDA-6.5/include
-CUDA_LIBDIR = -L/Developer/NVIDIA/CUDA-6.5/lib
+INCLUDES = -I$(CUDA_DIR)/include
+CUDA_LIBDIR = -L$(CUDA_DIR)/lib
+#INCLUDES = -I/Developer/NVIDIA/CUDA-6.5/include
+#CUDA_LIBDIR = -L/Developer/NVIDIA/CUDA-6.5/lib
 
 CU_LIB  = -lcufft -lcudart
 C_LIB = -lstdc++ -lPython
 
-#ifneq ($(strip $(OSTYPE)),osx)
-#CUDA_LIBDIR ?= $(CUDA_DIR)/lib64
-#else
-#CUDA_LIBDIR ?= $(CUDA_DIR)/lib
-#endif
+ifneq ($(strip $(OSTYPE)),osx)
+CUDA_LIBDIR ?= $(CUDA_DIR)/lib64
+else
+CUDA_LIBDIR ?= $(CUDA_DIR)/lib
+endif
 
 NVCC = $(CUDA_DIR)/bin/nvcc
 

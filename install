@@ -15,6 +15,7 @@ prefix=/users/$USER/fresh_hash
 HASHPIPE_SRC=$FLAG_DIR/lib/hashpipe/src
 XGPU_SRC=$FLAG_DIR/lib/xGPU/src
 BEAM_SRC=$FLAG_DIR/lib/beamformer/src
+PFB_SRC=$FLAG_DIR/lib/pfb/src
 POWER_SRC=$FLAG_DIR/lib/flagPower/src
 
 # Compile the hashpipe library
