@@ -26,8 +26,6 @@ C_LIB = -lstdc++ -lPython
 
 NVCC = $(CUDA_DIR)/bin/nvcc
 
-
-
 all: libflagpfb.so
 
 libflagpfb.so: pfb.o kernels.o

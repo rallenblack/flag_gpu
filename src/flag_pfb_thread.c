@@ -9,9 +9,9 @@
 #include <pthread.h>
 #include <string.h>
 
-#include "pfb.h"
 #include "hashpipe.h"
 #include "flag_databuf.h"
+#include "pfb.h"
 
 // Create thread status buffer
 static hashpipe_status_t * st_p;
@@ -31,7 +31,7 @@ typedef enum {
 static void * run(hashpipe_thread_args_t * args) {
     // Local aliases to shorten access to args fields
     flag_gpu_input_databuf_t * db_in = (flag_gpu_input_databuf_t *)args->ibuf;
-    flag_gpu_beamformer_output_databuf_t * db_out = (flag_gpu_beamformer_output_databuf_t *)args->obuf;
+    flag_gpu_pfb_output_databuf_t * db_out = (flag_gpu_pfb_output_databuf_t *)args->obuf;
     hashpipe_status_t st = args->st;
     const char * status_key = args->thread_desc->skey;
 
@@ -46,7 +46,7 @@ static void * run(hashpipe_thread_args_t * args) {
     // Setup polyphase filter bank
     int pfb_flag = 0;
     int cudaDevice = DEF_CUDA_DEVICE;
-    params pfbParams = DEFAULT_PFB_PARAMS;
+    params pfbParams = DEFAULT_PFB_PARAMS; //databuf.h?
 
     // Initialize prototype filter
     char* processName = "flag_pfb_thread\0"
@@ -57,32 +57,12 @@ static void * run(hashpipe_thread_args_t * args) {
     printf("PFB: Initializing the polyphase filter bank...\n");
     pfb_flag = initPFB(cudaDevice, pfbParams);
 
-    // ************************************
-    // Put metadata into status shared memory
-    float offsets[BN_BEAM];
-    char cal_filename[65];
-    char algorithm[65];
-    char weight_filename[65];
-    long long unsigned int bf_xid;
-    int act_xid;
-
-    bf_xid = bf_get_xid();
-    // ************************************
-
-    int i;
+    // write pfb params to smem buffer
     hashpipe_status_lock_safe(&st);
-    for (i = 0; i < BN_BEAM/2; i++) {
-        char keyword1[9];
-        snprintf(keyword1,8,"ELOFF%d",i);
-        hputr4(st.buf, keyword1, offsets[2*i]);
-        char keyword2[9];
-        snprintf(keyword2,8,"AZOFF%d",i);
-        hputr4(st.buf, keyword2, offsets[2*i+1]);
-    }
-    //hputs(st.buf, "BCALFILE", cal_filename);
-    //hputs(st.buf, "BALGORIT", algorithm);
-    //hputs(st.buf, "BWEIFILE", weight_filename);
-    hgeti4(st.buf, "XID", &act_xid);
+    hputi4(st.buff, "NTAPS",  pfbParams.taps);
+    hputi4(st.buff, "NFFT",   pfbParams.nfft);
+    hputi4(st.buff, "SELECT", pfbParams.select);
+    hputs(st.buff,  "WINDOW", pfbParams.window);
     hashpipe_status_unlock_safe(&st);
 
     state cur_state = ACQUIRE;
@@ -98,7 +78,6 @@ static void * run(hashpipe_thread_args_t * args) {
     int check_count = 0;
     // Main loop for thread
     while (run_threads()) {
-        
         if(cur_state == ACQUIRE){
             next_state = ACQUIRE;
 	        // Wait for input buffer block to be filled
@@ -127,7 +106,7 @@ static void * run(hashpipe_thread_args_t * args) {
             good_data = tmp_header.good_data;
 
             // Wait for output block to become free
-            while ((rv=flag_gpu_beamformer_output_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
+            while ((rv=flag_gpu_pfb_output_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
                 if (rv==HASHPIPE_TIMEOUT) {
                     continue;
                 } else {
@@ -139,17 +118,17 @@ static void * run(hashpipe_thread_args_t * args) {
             }
            
             // Run the beamformer
-            run_beamformer((signed char *)&db_in->block[curblock_in].data, (float *)&db_out->block[curblock_out].data);
+            runPFB((signed char *)&db_in->block[curblock_in].data, (float *)&db_out->block[curblock_out].data, params);
             check_count++;
-           // if(check_count == 1000){
-                 printf("RTBF: dumping mcnt = %lld\n", (long long int)start_mcnt);
-           // }
+            // if(check_count == 1000){
+                printf("PFB: dumping mcnt = %lld\n", (long long int)start_mcnt);
+            // }
 	        // Get block's starting mcnt for output block
             db_out->block[curblock_out].header.mcnt = start_mcnt;
             db_out->block[curblock_out].header.good_data = good_data;
                 
             // Mark output block as full and advance
-            flag_gpu_beamformer_output_databuf_set_filled(db_out, curblock_out);
+            flag_gpu_pfb_output_databuf_set_filled(db_out, curblock_out);
             curblock_out = (curblock_out + 1) % db_out->header.n_block;
             start_mcnt = last_mcnt + 1;
             last_mcnt = start_mcnt + Nm - 1;
@@ -181,8 +160,6 @@ static void * run(hashpipe_thread_args_t * args) {
     // Thread terminates after loop
     return NULL;
 }
-
-
 
 // Thread description
 static hashpipe_thread_desc_t b_thread = {

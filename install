@@ -59,6 +59,16 @@ make install prefix=$HASH_DIR
 echo "========================================"
 echo 
 
+# Compile the pfb library
+echo "Installing flagpfb"
+echo "========================================"
+echo "Navigating to $PFB_SRC"
+cd $PFB_SRC
+make
+make install prefix=$PFB_DIR
+echo "========================================"
+echo
+
 # Compile the flag HASHPIPE plugins
 echo "Installing the FLAG plugins"
 echo "========================================"

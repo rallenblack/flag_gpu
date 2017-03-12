@@ -23,6 +23,8 @@
 #define DEF_NUM_ELEMENTS		64  // System spec for number of elements
 #define SAMPLES					4000// Time samples.
 
+#define PFB_OUTPUT_BLOCK_SIZE	SAMPLES*PFB_CHANNELS*2
+
 // FFT Plan configuration
 #define FFTPLAN_RANK 			1				 // dimension of the transform
 #define FFTPLAN_ISTRIDE			(g_iNumSubBands) // The distance between two successive input time elements. - (polarization*numsubbands).
