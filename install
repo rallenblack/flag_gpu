@@ -9,7 +9,7 @@ else
 fi
 
 # Change this to match your destination directory
-prefix=/users/$USER/fresh_hash
+prefix=~/fresh_hash
 
 # Set library source directories
 HASHPIPE_SRC=$FLAG_DIR/lib/hashpipe/src
@@ -66,7 +66,7 @@ echo "========================================"
 echo "Navigating to $PFB_SRC"
 cd $PFB_SRC
 make
-make install prefix=$PFB_DIR
+make install prefix=$prefix
 echo "========================================"
 echo
 
