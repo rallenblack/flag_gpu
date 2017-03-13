@@ -17,11 +17,11 @@
 #endif
 
 #ifndef NTIME
-#define NTIME 4000
+#define NTIME 128
 #endif
 
 #ifndef NTIME_PIPE
-#define NTIME_PIPE 40
+#define NTIME_PIPE 128
 #endif
 
 // Ensure that NTIME_PIPE is a multiple of 4
