@@ -25,6 +25,7 @@ LFLAGS = -L"c:\Program Files\Microsoft SDKs\Windows\v7.1\Lib" -L.
 RPATH =
 LIBXGPU = libxgpu.dll
 LIBXGPU_FRB = libxgpufrb.dll
+LIBXGPU_PFB = libxgpupfb.dll
 else
 
 NVCCFLAGS = -Xcompiler -D_REENTRANT -Xcompiler -Wall -Xcompiler -Wno-unused-function
@@ -44,6 +45,7 @@ endif
 RPATH = -Xlinker -rpath,'$${ORIGIN}:$${ORIGIN}/../lib'
 LIBXGPU = libxgpu.so
 LIBXGPU_FRB = libxgpufrb.so
+LIBXGPU_PFB = libxgpupfb.so
 endif
 
 NVCCFLAGS += $(DEBUG) -arch=$(CUDA_ARCH) -Xptxas -abi=no --ptxas-options=-v -prec-sqrt=false -Xcompiler -fPIC 
@@ -154,10 +156,12 @@ CUDA_CORRELATOR_OBJS  = cuda_correlator.o
 
 XGPUINFO_OBJS  = xgpuinfo.o
 XGPUINFO_FRB_OBJS  = xgpuinfo_frb.o
+XGPUINFO_PFB_OBJS = xgpuinfo_pfb.o
 
 # Objects for executables
 BINXGPU_OBJS = $(CUDA_CORRELATOR_OBJS) $(XGPUINFO_OBJS)
 BINXGPU_FRB_OBJS = $(CUDA_CORRELATOR_OBJS) $(XGPUINFO_FRB_OBJS)
+BINXGPU_PFB_OBJS = $(CUDA_CORRELATOR_OBJS) $(XGPUINFO_PFB_OBJS)
 
 # Objects for library
 LIBXGPU_OBJS  = cuda_xengine.o
@@ -169,13 +173,21 @@ LIBXGPU_OBJS += $(CUBE_OBJS)
 LIBXGPU_FRB_OBJS  = cuda_xengine_frb.o
 LIBXGPU_FRB_OBJS += omp_xengine_frb.o
 LIBXGPU_FRB_OBJS += cpu_util_frb.o
+LIBXGPU_FRB_OBJS += $(CUBE_OBJS)
 
+# Objects for pfb library
+LIBXGPU_PFB_OBJS  = cuda_xengine_pfb.o
+LIBXGPU_PFB_OBJS += omp_xengine_pfb.o
+LIBXGPU_PFB_OBJS += cpu_util_pfb.o
+LIBXGPU_PFB_OBJS += $(CUBE_OBJS)
 
 # Each object file has a corresponding dependency file
 DEPS = $(BINXGPU_OBJS:.o=.d) $(LIBXGPU_OBJS:.o=.d)
 FRB_DEPS = $(BINXGPU_FRB_OBJS:.o=.d) $(LIBXGPU_FRB_OBJS:.o=.d)
+PFB_DEPS = $(BINXGPU_PFB_OBJS:.o=.d) $(LIBXGPU_PFB_OBJS:.o=.d)
 
-all: cuda_correlator cuda_correlator_frb xgpuinfo xgpuinfo_frb $(LIBXGPU) $(LIBXGPU_FRB)
+
+all: cuda_correlator cuda_correlator_frb cuda_correlator_pfb xgpuinfo xgpuinfo_frb xgpuinfo_pfb $(LIBXGPU) $(LIBXGPU_FRB) $(LIBXGPU_PFB)
 
 cuda_correlator: $(CUDA_CORRELATOR_OBJS) $(LIBXGPU)
 	$(NVCC) $(NVCCFLAGS) $(CUDA_CORRELATOR_OBJS) -o $@ $(LFLAGS) $(RPATH) -lxgpu
@@ -183,11 +195,17 @@ cuda_correlator: $(CUDA_CORRELATOR_OBJS) $(LIBXGPU)
 cuda_correlator_frb: $(CUDA_CORRELATOR_OBJS) $(LIBXGPU_FRB)
 	$(NVCC) $(NVCCFLAGS) $(CUDA_CORRELATOR_OBJS) -o $@ $(LFLAGS) $(RPATH) -lxgpufrb
 
+cuda_correlator_pfb: $(CUDA_CORRELATOR_OBJS) $(LIBXGPU_PFB)
+	$(NVCC) $(NVCCFLAGS) $(CUDA_CORRELATOR_OBJS) -o $@ $(LFLAGS) $(RPATH) -lxgpupfb
+
 xgpuinfo: $(XGPUINFO_OBJS) $(LIBXGPU)
 	$(NVCC) $(NVCCFLAGS) $(XGPUINFO_OBJS) -o $@ $(LFLAGS) $(RPATH) -lxgpu
 
 xgpuinfo_frb: $(XGPUINFO_FRB_OBJS) $(LIBXGPU_FRB)
 	$(NVCC) $(NVCCFLAGS) $(XGPUINFO_FRB_OBJS) -o $@ $(LFLAGS) $(RPATH) -lxgpufrb
+
+xgpuinfo_pfb: $(XGPUINFO_PFB_OBJS) $(LIBXGPU_PFB)
+	$(NVCC) $(NVCCFLAGS) $(XGPUINFO_PFB_OBJS) -o $@ $(LFLAGS) $(RPATH) -lxgpupfb
 
 $(LIBXGPU): $(LIBXGPU_OBJS)
 	$(NVCC) $(NVCCFLAGS) $^ -o $@ $(LFLAGS) --shared
@@ -195,12 +213,15 @@ $(LIBXGPU): $(LIBXGPU_OBJS)
 $(LIBXGPU_FRB): $(LIBXGPU_FRB_OBJS)
 	$(NVCC) $(NVCCFLAGS) $^ -o $@ $(LFLAGS) --shared
 
+$(LIBXGPU_PFB): $(LIBXGPU_PFB_OBJS)
+	$(NVCC) $(NVCCFLAGS) $^ -o $@ $(LFLAGS) --shared
+
 # A target to make all object files, but not link them
-objs: $(BINXGPU_OBJS) $(LIBXGPU_OBJS) $(LIBXGPU_FRB_OBJS)
+objs: $(BINXGPU_OBJS) $(LIBXGPU_OBJS) $(LIBXGPU_FRB_OBJS) $(LIBXGPU_PFB_OBJS)
 
 # Include dependencies after explicit rules (really anywhere after first
 # explicit rule) so that they do not provide default target.
--include $(DEPS) $(FRB_DEPS)
+-include $(DEPS) $(FRB_DEPS) $(PFB_DEPS)
 
 # These .{c,cc,cu} -> .o rules will generate dependency files as a side effect
 # of the compilation.  These files are included elsewhere in this Makefile.
@@ -224,15 +245,17 @@ objs: $(BINXGPU_OBJS) $(LIBXGPU_OBJS) $(LIBXGPU_FRB_OBJS)
 	rm -f $*.P
 	$(NVCC) $(NVCCFLAGS) $(CFLAGS) -c -o $@ $<
 
-install: xgpuinfo $(LIBXGPU) xgpuinfo_frb $(LIBXGPU_FRB)
+install: xgpuinfo $(LIBXGPU) xgpuinfo_frb $(LIBXGPU_FRB) xgpuinfo_pfb $(LIBXGPU_PFB)
 	mkdir -p $(bindir)
 	cp xgpuinfo $(bindir)
 	cp xgpuinfo_frb $(bindir)
+	cp xgpuinfo_pfb $(bindir)
 	mkdir -p $(includedir)
 	cp xgpu.h $(includedir)
 	mkdir -p $(libdir)
 	cp $(LIBXGPU) $(libdir)
 	cp $(LIBXGPU_FRB) $(libdir)
+	cp $(LIBXGPU_PFB) $(libdir)
 
 uninstall:
 	rm -f $(bindir)/xgpuinfo
@@ -240,6 +263,8 @@ uninstall:
 	rm -f $(libdir)/$(LIBXGPU)
 	rm -f $(bindir)/xgpuinfo_frb
 	rm -f $(libdir)/$(LIBXGPU_FRB)
+	rm -f $(bindir)/xgpuinfo_pfb
+	rm -f $(libdir)/$(LIBXGPU_PFB)
 
 tags:
 	ctags -R .
@@ -254,9 +279,9 @@ show:
 	@echo COMPLEX_BLOCK_SIZE=$(COMPLEX_BLOCK_SIZE)
 
 clean:
-	rm -f cuda_correlator cuda_correlator_frb libxgpu.so xgpuinfo xgpuinfo_frb libxgpufrb.so
-	rm -f $(BINXGPU_FRB_OBJS) $(BINXGPU_OBJS) $(LIBXGPU_OBJS) $(LIBXGPU_FRB_OBJS) cube/cube.o
-	rm -f $(DEPS) $(FRB_DEPS)
+	rm -f cuda_correlator cuda_correlator_frb cuda_correlator_pfb libxgpu.so xgpuinfo xgpuinfo_frb xgpuinfo_pfb libxgpufrb.so libxgpupfb.so
+	rm -f $(BINXGPU_FRB_OBJS) $(BINXGPU_OBJS) $(BINXGPU_PFB_OBJS) $(LIBXGPU_OBJS) $(LIBXGPU_FRB_OBJS) $(LIBXGPU_PFB_OBJS) cube/cube.o
+	rm -f $(DEPS) $(FRB_DEPS) $(PFB_DEPS)
 	rm -f tags
 
 .PHONY : all objs tags clean install uninstall show
