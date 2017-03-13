@@ -1,4 +1,4 @@
-#serial 1 flagbeamform.m4
+#serial 1 flagbeamformer.m4
 AC_DEFUN([AX_CHECK_FLAGBEAMFORM],
 [AC_PREREQ([2.63])dnl
 AC_ARG_WITH([flagbeamformer],
