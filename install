@@ -23,7 +23,7 @@ echo "========================================"
 echo "Navigating to $HASHPIPE_SRC"
 cd $HASHPIPE_SRC
 autoreconf -is
-./configure --prefix=$HASH_DIR --silent
+./configure --prefix=$prefix --silent
 make
 make install
 echo "========================================"
@@ -35,7 +35,7 @@ echo "========================================"
 echo "Navigating to $XGPU_SRC"
 cd $XGPU_SRC
 make
-make install prefix=$HASH_DIR
+make install prefix=$prefix
 echo "========================================"
 echo 
 
@@ -45,7 +45,7 @@ echo "========================================"
 echo "Navigating to $BEAM_SRC"
 cd $BEAM_SRC
 make
-make install prefix=$HASH_DIR
+make install prefix=$prefix
 echo "========================================"
 echo 
 
@@ -55,7 +55,7 @@ echo "========================================"
 echo "Navigating to $POWER_SRC"
 cd $POWER_SRC
 make
-make install prefix=$HASH_DIR
+make install prefix=$prefix
 echo "========================================"
 echo 
 
@@ -65,11 +65,11 @@ echo "========================================"
 echo "Navigating to $FLAG_DIR/src"
 cd $FLAG_DIR/src
 autoreconf -is
-./configure --prefix=$HASH_DIR --with-hashpipe=$HASH_DIR --with-xgpu=$HASH_DIR --with-xgpufrb=$HASH_DIR --with-flagbeamformer=$HASH_DIR --with-flagpower=$HASH_DIR --silent
+./configure --prefix=$prefix --with-hashpipe=$prefix --with-xgpu=$prefix --with-xgpufrb=$prefix --with-flagbeamformer=$prefix --with-flagpower=$prefix --silent
 make
 make install
 echo "========================================"
 echo 
 
 echo "DONE!"
-echo "The FLAG plugins have been installed to $HASH_DIR"
+echo "The FLAG plugins have been installed to $prefix"
