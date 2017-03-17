@@ -45,9 +45,9 @@ typedef unsigned char BYTE;
 #define CUDASafeCallWithCleanUp(iRet) __CUDASafeCallWithCleanUp(iRet, __FILE__, __LINE__, &cleanUp)
 void __CUDASafeCallWithCleanUp(cudaError_t iRet, const char* pcFile, const int iLine, void (*pcleanUp)(void));
 
-void genCoeff(int argc, char* argv[], params pfbParams);
+void genCoeff(char* procName, params pfbParams);
 int initPFB(int iCudaDevice, params pfbParams);
-int runPFB(char* inputData_h, float2* outputData_h, params pfbParams);
+int runPFB(signed char* inputData_h, float* outputData_h, params pfbParams);
 int doFFT();
 int resetDevice(void);
 void cleanUp(void);

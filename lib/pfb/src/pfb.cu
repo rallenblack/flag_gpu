@@ -48,7 +48,7 @@ cufftHandle g_stPlan = {0};
 int g_iMaxThreadsPerBlock = 0;
 int g_iMaxPhysThreads = 0;
 
-int runPFB(char* inputData_h, float2* outputData_h, params pfbParams) {
+int runPFB(signed char* inputData_h, float* outputData_h, params pfbParams) {
 
 	//process variables
 	int iRet = EXIT_SUCCESS;
@@ -361,7 +361,7 @@ int initPFB(int iCudaDevice, params pfbParams){
 }
 
 // make a call to execute a ptyhon program.
-void genCoeff(int argc, char* argv[], params pfbParams) {
+void genCoeff(char* procName, params pfbParams) {
 
 	FILE* file;
 	char fname[256] = {"../python/grating_gencoeff.py"};
@@ -373,7 +373,7 @@ void genCoeff(int argc, char* argv[], params pfbParams) {
 		arguments[i] = (char*) malloc(256*sizeof(char*));
 	}
 
-	arguments[0] = argv[0];
+	arguments[0] = procName;
 
 	arguments[1] = (char*) "-n\0"; // (char*) acknowledges that I am assigning a const literal to a mutable and removes compile warnings for now.
 	sprintf(arguments[2], "%d", pfbParams.nfft);
@@ -401,7 +401,7 @@ void genCoeff(int argc, char* argv[], params pfbParams) {
 	fprintf(stdout, "\n");
 
 	// initalize and run python script
-	Py_SetProgramName(argv[0]);
+	Py_SetProgramName(procName);
 	Py_Initialize();
 	PySys_SetArgv(argCount, arguments);
 	file = fopen(fname, "r");

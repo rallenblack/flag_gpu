@@ -49,9 +49,9 @@ static void * run(hashpipe_thread_args_t * args) {
     params pfbParams = DEFAULT_PFB_PARAMS; //databuf.h?
 
     // Initialize prototype filter
-    char* processName = "flag_pfb_thread\0"
+    char* processName = "flag_pfb_thread\0";
     printf("PFB: Generating filter coefficients...\n");
-    genCoeff(processName, pfbParams)
+    genCoeff(processName, pfbParams);
 
     // Initialize polyphase filter bank
     printf("PFB: Initializing the polyphase filter bank...\n");
@@ -59,10 +59,10 @@ static void * run(hashpipe_thread_args_t * args) {
 
     // write pfb params to smem buffer
     hashpipe_status_lock_safe(&st);
-    hputi4(st.buff, "NTAPS",  pfbParams.taps);
-    hputi4(st.buff, "NFFT",   pfbParams.nfft);
-    hputi4(st.buff, "SELECT", pfbParams.select);
-    hputs(st.buff,  "WINDOW", pfbParams.window);
+    hputi4(st.buf, "NTAPS",  pfbParams.taps);
+    hputi4(st.buf, "NFFT",   pfbParams.nfft);
+    hputi4(st.buf, "SELECT", pfbParams.select);
+    hputs(st.buf,  "WINDOW", pfbParams.window);
     hashpipe_status_unlock_safe(&st);
 
     state cur_state = ACQUIRE;
@@ -118,7 +118,7 @@ static void * run(hashpipe_thread_args_t * args) {
             }
            
             // Run the beamformer
-            runPFB((signed char *)&db_in->block[curblock_in].data, (float *)&db_out->block[curblock_out].data, params);
+            runPFB((signed char *)&db_in->block[curblock_in].data, (float *)&db_out->block[curblock_out].data, pfbParams);
             check_count++;
             // if(check_count == 1000){
                 printf("PFB: dumping mcnt = %lld\n", (long long int)start_mcnt);
