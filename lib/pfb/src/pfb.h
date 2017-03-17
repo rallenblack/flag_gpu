@@ -1,3 +1,6 @@
+#ifndef __PFB_H__
+#define __PFB_H__
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -51,3 +54,5 @@ int runPFB(signed char* inputData_h, float* outputData_h, params pfbParams);
 int doFFT();
 int resetDevice(void);
 void cleanUp(void);
+
+#endif
