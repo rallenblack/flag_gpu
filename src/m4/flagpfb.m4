@@ -9,7 +9,7 @@ AC_ARG_WITH([flagpfb],
 
 orig_LDFLAGS="${LDFLAGS}"
 LDFLAGS="${orig_LDFLAGS} -L${FLAGPFBDIR}/lib -L/usr/local/cuda/lib64"
-AC_CHECK_LIB([flagpfb],
+AC_CHECK_LIB([flagpfb],[runPFB],
 dnl              # Found
              AC_SUBST(FLAGPFB_LIBDIR,${FLAGPFBDIR}/lib),
 dnl              # Not found there, check FLAGPFBDIR

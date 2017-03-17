@@ -35,7 +35,7 @@ AC_CHECK_LIB([rt], [clock_gettime])
 AC_CHECK_LIB([z], [crc32])
 
 # Checks for header files.
-AC_CHECK_HEADERS([netdb.h stdint.h stdlib.h string.h sys/socket.h sys/time.h unistd.h zlib.h])
+AC_CHECK_HEADERS([cuda.h netdb.h stdint.h stdlib.h string.h sys/socket.h sys/time.h unistd.h zlib.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
