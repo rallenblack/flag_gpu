@@ -46,8 +46,8 @@ flag_b_threads = flag_net_thread.c \
                  flag_beamsave_thread.c
 
 flag_f_threads = flag_net_thread.c \
-		 flag_transpose_thread.c \
-		 flag_pfb_thread.c
+                 flag_transpose_thread.c \
+                 flag_pfb_thread.c
 
 flag_bx_threads = flag_net_thread.c \
                   flag_transpose_thread.c \
@@ -58,8 +58,6 @@ flag_x_frb_threads = flag_net_thread.c \
                      flag_frb_transpose_thread.c \
                      flag_frb_correlator_thread.c \
                      flag_frb_corsave_thread.c
-
-
 
 # This lists all of the plugins that will be created
 lib_LTLIBRARIES = flag_x.la flag_b.la flag_f.la flag_x_frb.la flag_bx.la
