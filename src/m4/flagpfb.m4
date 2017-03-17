@@ -15,7 +15,7 @@ dnl              # Found
 dnl              # Not found there, check FLAGPFBDIR
              AS_UNSET(ac_cv_lib_flagpfb_runPFB)
              LDFLAGS="${orig_LDFLAGS} -L${FLAGPFBDIR}"
-             AC_CHECK_LIB([flagpfb],
+             AC_CHECK_LIB([flagpfb], [runPFB],
                           # Found
                           AC_SUBST(FLAGPFB_LIBDIR,${FLAGPFBDIR}),
                           # Not found there, error

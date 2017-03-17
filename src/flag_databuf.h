@@ -305,7 +305,7 @@ typedef struct flag_gpu_pfb_output_block {
 typedef struct flag_gpu_pfb_output_databuf {
     hashpipe_databuf_t header;
     hashpipe_databuf_cache_alignment padding;
-    flag_gpu_pfb_output_block t block[N_GPU_OUT_BLOCKS];
+    flag_gpu_pfb_output_block_t block[N_GPU_OUT_BLOCKS];
 } flag_gpu_pfb_output_databuf_t;
 
 // flag_gpu_power_output_block

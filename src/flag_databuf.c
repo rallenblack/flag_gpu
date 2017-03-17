@@ -160,19 +160,19 @@ hashpipe_databuf_t * flag_gpu_pfb_output_databuf_create(int instance_id, int dat
         instance_id, databuf_id, header_size, block_size, n_block);
 }
 
-int flag_gpu_pfb_output_databuf_wait_free(flag_gpu_pfb_output_databuf_t * d, int block_id) {
+int flag_gpu_pfb_output_databuf_wait_free(flag_gpu_pfb_output_databuf_t* d, int block_id) {
     return hashpipe_databuf_wait_free((hashpipe_databuf_t *)d, block_id);
 }
 
-int flag_gpu_pfb_output_databuf_wait_filled(flag_pfb_output_databuf_t *d, int block_id) {
-    return haspipe_databuf_wait_filled((haspipe_databuf_t *)d, block_id);
+int flag_gpu_pfb_output_databuf_wait_filled(flag_gpu_pfb_output_databuf_t* d, int block_id) {
+    return hashpipe_databuf_wait_filled((hashpipe_databuf_t *)d, block_id);
 }
 
-int flag_gpu_pfb_output_databuf_set_free(flag_gpu_pfb_output_databuf_t * d, int block_id) {
+int flag_gpu_pfb_output_databuf_set_free(flag_gpu_pfb_output_databuf_t* d, int block_id) {
     return hashpipe_databuf_set_free((hashpipe_databuf_t *)d, block_id);
 }
 
-int flag_gpu_pfb_output_databuf_set_filled(flag_gpu_pfb_output_databuf_t * d, int block_id) {
+int flag_gpu_pfb_output_databuf_set_filled(flag_gpu_pfb_output_databuf_t* d, int block_id) {
     return hashpipe_databuf_set_filled((hashpipe_databuf_t *)d, block_id);
 }
 

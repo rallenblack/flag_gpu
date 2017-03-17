@@ -29,6 +29,9 @@ AX_CHECK_FLAGBEAMFORM
 AX_CHECK_FLAGPOW
 AX_CHECK_FLAGPFB
 
+# Check for CUDA
+AX_CHECK_CUDA
+
 # Checks for libraries.
 AC_CHECK_LIB([pthread], [pthread_create])
 AC_CHECK_LIB([rt], [clock_gettime])
