@@ -97,6 +97,7 @@ class BeamformerBackend(VegasBackend):
         # Add additional dealer-controlled parameters
         self.params["int_length"] = self.setIntegrationTime
         self.params["weight_file"] = self.setNewWeightFilename
+        self.params["nchunk"] = self.setFrequencyChunk
 
         # Generate ROACH 10-GbE source mac addresses
         self.mac_base0 = 0x020200000000 + (2**8)*self.xid + 1
@@ -140,6 +141,19 @@ class BeamformerBackend(VegasBackend):
         @author Mark Ruzindana
         """
         self.requested_weight_file = weights
+
+    def setFrequencyChunk(self, nchunk):
+        """
+        Sets the channel chunk index
+        nchunk = 0 => channels 0-4
+        nchunk = 1 => channels 5-9
+        nchunk = 2 => channels 10-14
+        nchunk = 3 => channels 15-19
+        nchunk = 4 => channels 20-24
+        @author Richard Black
+        """
+        self.nchunk = nchunk
+
 
     def read_parameters(self, theBank, theMode):
         # Quick little process to convert IP addresses from raw integer values
@@ -246,6 +260,10 @@ class BeamformerBackend(VegasBackend):
         # Write the beamformer weight filename to shared memory
         self.write_status(BWEIFILE=str(self.requested_weight_file))
 
+        # Write the nchunk to shared memory
+        print "Player: Writing NCHUNK=%d" %(self.nchunk)
+        self.write_status(NCHUNK=str(self.nchunk))
+
         # Print out this information
         print now, starttime
 
@@ -334,6 +352,10 @@ class BeamformerBackend(VegasBackend):
         dt.replace(second = 0)
         dt.replace(microsecond = 0)
         dt += timedelta(seconds = inSecs)
+
+        # Write the nchunk to shared memory
+        print "Player: Writing NCHUNK=%d" %(self.nchunk)
+        self.write_status(NCHUNK=self.nchunk)
 
         print "In Vegas Backend!!!!!!!!!!!!!!!!!!!!!!!!!!!"   
         print "Vegas self.scan_length after = %f" %  (self.scan_length)
@@ -499,13 +521,13 @@ class BeamformerBackend(VegasBackend):
             process_list = process_list + mode_str.split()
             # Add threads
             thread1 = "-c %d flag_net_thread" % (self.core[0])
-            thread2 = "-c %d flag_transpose_thread" % (self.core[1])
-            thread3 = "-c %d flag_correlator_thread" % (self.core[2])
-           # thread4 = "-c %d flag_corsave_thread" % (self.core[3])
+            thread2 = "-c %d flag_frb_transpose_thread" % (self.core[1])
+            thread3 = "-c %d flag_frb_correlator_thread" % (self.core[2])
+            thread4 = "-c %d flag_frb_corsave_thread" % (self.core[3])
             process_list = process_list + thread1.split()
             process_list = process_list + thread2.split()
             process_list = process_list + thread3.split()
-           # process_list = process_list + thread4.split()
+            process_list = process_list + thread4.split()
         elif self.name == "pulsar_beamformer":
             # Add threads
             thread1 = "-c %d flag_net_thread" % (self.core[0])
