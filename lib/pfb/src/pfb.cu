@@ -364,7 +364,7 @@ int initPFB(int iCudaDevice, params pfbParams){
 void genCoeff(char* procName, params pfbParams) {
 
 	FILE* file;
-	char fname[256] = {"../python/grating_gencoeff.py"};
+	char fname[256] = {"../python/flag_gen_coeff.py"};
 
 	int argCount = 11;
 	char* arguments[32] = {}; // come back and create a dynamic structure, i.e definetly do not need 32, always 10 or 11.
