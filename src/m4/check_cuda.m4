@@ -24,15 +24,15 @@ fi
 
 # add CUDA to search dir for header and lib searches
 
-#ax_save_CFLAGS="${CFLAGS}"
-#ax_save_LDFLAGS="${LDFLAGS}"
+# ax_save_CFLAGS="${CFLAGS}"
+# ax_save_LDFLAGS="${LDFLAGS}"
 
 # Declare the new variable
 AC_SUBST([CUDA_INCDIR])
 AC_SUBST([CUDA_LIBDIR)
 
 CUDA_INCDIR="-I$cuda_prefix/include"
-#CFLAGS="$CUDA_INCDIR $CFLAGS"
+# CFLAGS="$CUDA_INCDIR $CFLAGS"
 CUDA_LIBDIR="-L$cuda_prefix/lib"
 #LDFLAGS="$CUDA_LIBDIR $LDFLAGS"
 
@@ -41,8 +41,8 @@ AC_CHECK_HEADER([cuda.h], [], AC_MSG_FAILURE([Couldn't find cuda.h]), [#include 
 AC_CHECK_LIB([cuda], [cuInit], [], AC_MSG_FAILURE([Couldn't find libcuda]))
 
 # Return to original flags?
-#CFLAGS=${ax_save_CFLAGS}
-#LDFLAGS=${ax_save_LDFLAGS}
+# CFLAGS=${ax_save_CFLAGS}
+# LDFLAGS=${ax_save_LDFLAGS}
 
 
 ])
