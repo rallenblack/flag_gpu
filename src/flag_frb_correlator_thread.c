@@ -117,6 +117,10 @@ static void * run(hashpipe_thread_args_t * args) {
 	    // Wait for input buffer block to be filled
             while ((rv=flag_frb_gpu_input_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
                 if (rv==HASHPIPE_TIMEOUT) {
+                    hashpipe_status_lock_safe(&st);
+                    hputs(st.buf, "FRB", "stuck waiting for data");
+                    hashpipe_status_unlock_safe(&st);
+
                     int cleanb;
                     hashpipe_status_lock_safe(&st);
                     hgetl(st.buf, "CLEANB", &cleanb);

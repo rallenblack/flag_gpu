@@ -52,24 +52,24 @@ static void * run(hashpipe_thread_args_t * args) {
         uint64_t start_mcnt = db_in->block[curblock_in].header.mcnt;
         //int64_t good_data = db_in->block[curblock_in].header.good_data;
         char filename[128];
-        if (start_mcnt % 100 == 0) {
+        //if (start_mcnt % 100 == 0) {
             sprintf(filename, "cor_mcnt_%lld.out", (long long)start_mcnt);
             fprintf(stderr, "SAV: Saving to %s\n", filename);
-        }
+        //}
         
-        /*
+        
         FILE * filePtr = fopen(filename, "w");
         Complex * p = (Complex *)db_in->block[curblock_in].data;
 
         int j;
-        for (j = 0; j < N_COR_MATRIX; j++) {
+        for (j = 0; j < N_FRB_COR_MATRIX; j++) {
             float p_re = p[j].real;
             float p_im = p[j].imag;
             fprintf(filePtr, "%g\n", p_re);
             fprintf(filePtr, "%g\n", p_im);
         }
         fclose(filePtr);
-        */
+        
         
 
         flag_frb_gpu_correlator_output_databuf_set_free(db_in, curblock_in);

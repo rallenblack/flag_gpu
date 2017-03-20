@@ -7,7 +7,7 @@
 #include "hashpipe_databuf.h"
 #include "config.h"
 
-#define VERBOSE 0
+#define VERBOSE 1
 
 // Total number of antennas (nominally 40)
 #define N_INPUTS 64
@@ -134,6 +134,9 @@
 #define N_GPU_FRB_INPUT_BLOCKS (N_GPU_INPUT_BLOCKS*N_FRB_BLOCKS_PER_BLOCK)
 #define N_MCNT_PER_FRB_BLOCK (Nm/N_FRB_BLOCKS_PER_BLOCK)
 #define N_FRB_COR_MATRIX (N_INPUTS/2*(N_INPUTS/2 + 1)/2*N_CHAN_PER_FRB_BLOCK*4)
+
+// Macro to comput data word offset for tranposed matrix in FRB mode
+#define flag_frb_gpu_input_databuf_idx(m,f,t,c) ((2*N_INPUTS_PER_FENGINE/sizeof(uint64_t))*(f+Nf*(c+N_CHAN_PER_FRB_BLOCK*(t+Nt*m))))
 
 // Macros to maintain cache alignment
 #define CACHE_ALIGNMENT (128)
