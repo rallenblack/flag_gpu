@@ -8,7 +8,7 @@ AM_CPPFLAGS += -I"@FLAGPFB_INCDIR@"
 AM_CPPFLAGS += -I"@FLAGPOW_INCDIR@"
 AM_CPPFLAGS += -I"@XGPU_FRB_INCDIR@"
 
-AM_CPPFLAGS += "@CUDA_CFLAGS@"
+AM_CPPFLAGS += "@CUDA_INCDIR@"
 
 # AM_CFLAGS is used for all C compiles
 AM_CFLAGS = -fPIC -O3 -Wall -Werror -fno-strict-aliasing -mavx
@@ -79,7 +79,7 @@ flag_b_la_LDFLAGS += -L"@FLAGBEAM_LIBDIR@" -Wl, -rpath, "@FLAGBEAM_LIBDIR@"
 
 # flab_f.la sources and libraries
 flag_f_la_SOURCES = $(flag_databuf) $(flag_f_threads) $(fifo_codes)
-flag_f_la_LIBADD  = -lrt -lxgpu -lflagpfb -lcufft -lcudart -L/usr/local/cuda/lib64 -lcfitsio
+flag_f_la_LIBADD  = -lrt -ldl -lutil -L/usr/local/lib -lpython2.7 -lxgpu -lflagpfb -lcufft -lcudart -L/usr/local/cuda/lib64 -lcfitsio
 flag_f_la_LDFLAGS = -avoid-version -module -shared -export-dynamic --enable-shared
 flag_f_la_LDFLAGS += -L"@XGPU_LIBDIR@" -Wl, -rpath, "@XGPU_LIBDIR@"
 flag_f_la_LDFLAGS += -L"@HASHPIPE_LIBDIR@" -Wl, -rpath,"@HASHPIPE_LIBDIR@"

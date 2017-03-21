@@ -20,7 +20,7 @@ CUDA_LIBDIR = -L$(CUDA_DIR)/lib
 
 CLIBDIR = -L/usr/local/lib
 CU_LIB  = -lcufft -lcudart
-C_LIB = -lstdc++ -lpython2.7 -ldl -lutil
+C_LIB = -lpython2.7 -ldl -lutil
 
 LINKER = -Xlinker -export-dynamic
 

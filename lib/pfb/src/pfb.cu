@@ -361,10 +361,10 @@ int initPFB(int iCudaDevice, params pfbParams){
 }
 
 // make a call to execute a ptyhon program.
-void genCoeff(char* procName, params pfbParams) {
-
+void genCoeff(char* procName, params pfbParams) {	
+	system("python --version");	
 	FILE* file;
-	char fname[256] = {"../python/flag_gen_coeff.py"};
+	char fname[256] = {"/home/mburnett/GitHub/flag_gpu/lib/pfb/python/flag_gen_coeff.py"};
 
 	int argCount = 11;
 	char* arguments[32] = {}; // come back and create a dynamic structure, i.e definetly do not need 32, always 10 or 11.

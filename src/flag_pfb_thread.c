@@ -117,7 +117,7 @@ static void * run(hashpipe_thread_args_t * args) {
                 }
             }
            
-            // Run the beamformer
+            // Run the PFB
             runPFB((signed char *)&db_in->block[curblock_in].data, (float *)&db_out->block[curblock_out].data, pfbParams);
             check_count++;
             // if(check_count == 1000){
@@ -162,16 +162,16 @@ static void * run(hashpipe_thread_args_t * args) {
 }
 
 // Thread description
-static hashpipe_thread_desc_t b_thread = {
+static hashpipe_thread_desc_t f_thread = {
     name: "flag_pfb_thread",
     skey: "PFBSTAT",
     init: NULL,
     run:  run,
     ibuf_desc: {flag_gpu_input_databuf_create},
-    obuf_desc: {flag_gpu_beamformer_output_databuf_create}
+    obuf_desc: {flag_gpu_pfb_output_databuf_create}
 };
 
 static __attribute__((constructor)) void ctor() {
-    register_hashpipe_thread(&b_thread);
+    register_hashpipe_thread(&f_thread);
 }
 
