@@ -196,8 +196,8 @@ static void * run(hashpipe_thread_args_t * args) {
                     hgetr4(st.buf, "REQSTI", &requested_integration_time);
                     hashpipe_status_unlock_safe(&st);
 
-                    int_count = ceil((N_MCNT_PER_SECOND / N_MCNT_PER_BLOCK) * requested_integration_time);
-                    actual_integration_time = int_count/(N_MCNT_PER_SECOND / N_MCNT_PER_BLOCK);
+                    int_count = ceil((N_MCNT_PER_SECOND / Nm) * requested_integration_time);
+                    actual_integration_time = int_count/(N_MCNT_PER_SECOND / Nm);
 
                     hashpipe_status_lock_safe(&st);
                     hputr4(st.buf, "ACTSTI", actual_integration_time);

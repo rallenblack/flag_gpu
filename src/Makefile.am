@@ -6,6 +6,7 @@ AM_CPPFLAGS += -I"@XGPU_INCDIR@"
 AM_CPPFLAGS += -I"@FLAGBEAM_INCDIR@"
 AM_CPPFLAGS += -I"@FLAGPOW_INCDIR@"
 AM_CPPFLAGS += -I"@XGPU_FRB_INCDIR@"
+AM_CPPFLAGS += -I"@XGPU_PFB_INCDIR@"
 
 # AM_CFLAGS is used for all C compiles
 AM_CFLAGS = -fPIC -O3 -Wall -Werror -fno-strict-aliasing -mavx
@@ -52,10 +53,14 @@ flag_x_frb_threads = flag_net_thread.c \
                      flag_frb_correlator_thread.c \
                      flag_frb_corsave_thread.c
 
-
+# TODO: Add the pfb thread
+flag_fx_threads = flag_net_thread.c \
+                     flag_transpose_thread.c \
+                     flag_pfb_correlator_thread.c \
+                     flag_pfb_corsave_thread.c
 
 # This lists all of the plugins that will be created
-lib_LTLIBRARIES = flag_x.la flag_b.la flag_x_frb.la flag_bx.la
+lib_LTLIBRARIES = flag_x.la flag_b.la flag_x_frb.la flag_bx.la flag_fx.la
 
 # flag_x.la sources and libraries
 flag_x_la_SOURCES  = $(flag_databuf) $(flag_x_threads) $(fifo_codes)
@@ -82,10 +87,19 @@ flag_bx_la_LDFLAGS += -L"@FLAGBEAM_LIBDIR@" -Wl, -rpath, "@FLAGBEAM_LIBDIR@"
 
 # flag_x_frb.la sources and libraries
 flag_x_frb_la_SOURCES = $(flag_databuf) $(flag_x_frb_threads) $(fifo_codes)
-flag_x_frb_la_LIBADD   = -lrt -lxgpufrb -lflagbeamformer -lcublas -L/usr/local/cuda/lib64 -lcfitsio
+flag_x_frb_la_LIBADD   = -lrt -lxgpufrb -lcublas -L/usr/local/cuda/lib64 -lcfitsio
 flag_x_frb_la_LDFLAGS  = -avoid-version -module -shared -export-dynamic --enable-shared
 flag_x_frb_la_LDFLAGS += -L"@XGPU_FRB_LIBDIR@" -Wl,-rpath,"@XGPU_FRB_LIBDIR@"
 flag_x_frb_la_LDFLAGS += -L"@HASHPIPE_LIBDIR@" -Wl,-rpath,"@HASHPIPE_LIBDIR@"
+
+# flag_fx.la sources and libraries
+flag_fx_la_SOURCES = $(flag_databuf) $(flag_fx_threads) $(fifo_codes)
+flag_fx_la_LIBADD   = -lrt -lxgpupfb -lcublas -L/usr/local/cuda/lib64 -lcfitsio
+flag_fx_la_LDFLAGS  = -avoid-version -module -shared -export-dynamic --enable-shared
+flag_fx_la_LDFLAGS += -L"@XGPU_PFB_LIBDIR@" -Wl,-rpath,"@XGPU_PFB_LIBDIR@"
+flag_fx_la_LDFLAGS += -L"@HASHPIPE_LIBDIR@" -Wl,-rpath,"@HASHPIPE_LIBDIR@"
+# TODO: Add the PFB library flags
+
 
 # Installed scripts
 # dist_bin_SCRIPTS = paper_init.sh \
