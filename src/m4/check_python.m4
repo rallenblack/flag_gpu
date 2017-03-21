@@ -20,13 +20,13 @@ ax_save_LDFLAGS="${LDFLAGS}"
 AC_SUBST([PYTHON_INCDIR])
 AC_SUBST([PYTHON_LIBDIR])
 
-PYTHON_INCDIR="-I$python_prefix/python2.7/include"
+PYTHON_INCDIR="-I$python_prefix/include/python2.7"
 CFLAGS="$PYTHON_INCDIR $CFLAGS"
 PYTHON_LIBDIR="-L$python_prefix/lib"
 LDFLAGS="$PYTHON_LIBDIR $LDFLAGS"
 
 
-AC_CHECK_HEADER([Python.h], [], AC_MSG_FAILURE([Couldn't find Python.h]), [#include <cuda.h>])
+AC_CHECK_HEADER([Python.h], [], AC_MSG_FAILURE([Couldn't find Python.h]), [#include <Python.h>])
 AC_CHECK_LIB([python2.7], [Py_Initialize], [], AC_MSG_FAILURE([Couldn't find libpython]))
 
 # Return to original flags
