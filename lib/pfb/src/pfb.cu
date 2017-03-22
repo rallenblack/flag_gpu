@@ -240,10 +240,12 @@ int initPFB(int iCudaDevice, params pfbParams){
 		return EXIT_FAILURE;
 	}
 
+	char relPath[256] = "/home/mburnett/GitHub/flag_gpu/lib/pfb/src/";
 	// Read filter coefficients from file
 	(void) fprintf(stdout, "\tReading in coefficients...\n");
 	(void) sprintf(g_acFileCoeff,
-				   "%s_%s_%d_%d_%d%s",
+				   "%s%s_%s_%d_%d_%d%s",
+				   relPath,
 				   FILE_COEFF_PREFIX,
 				   FILE_COEFF_DATATYPE,
 				   g_iNTaps,
