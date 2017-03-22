@@ -28,6 +28,10 @@ AX_CHECK_XGPU_FRB_INFO
 AX_CHECK_XGPU_PFB_INFO
 AX_CHECK_FLAGBEAMFORM
 AX_CHECK_FLAGPOW
+AX_CHECK_FLAGPFB
+
+# Check for CUDA
+AX_CHECK_CUDA
 
 # Checks for libraries.
 AC_CHECK_LIB([pthread], [pthread_create])
@@ -35,7 +39,7 @@ AC_CHECK_LIB([rt], [clock_gettime])
 AC_CHECK_LIB([z], [crc32])
 
 # Checks for header files.
-AC_CHECK_HEADERS([netdb.h stdint.h stdlib.h string.h sys/socket.h sys/time.h unistd.h zlib.h])
+AC_CHECK_HEADERS([cuda.h netdb.h stdint.h stdlib.h string.h sys/socket.h sys/time.h unistd.h zlib.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE

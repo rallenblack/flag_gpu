@@ -5,6 +5,7 @@
 #include "cublas_beamformer.h"
 #include "total_power.h"
 #include "hashpipe_databuf.h"
+#include "pfb.h"
 #include "config.h"
 
 #define VERBOSE 1
@@ -250,8 +251,6 @@ typedef uint8_t flag_gpu_output_header_cache_alignment[
 ];
 
 
-
-
 /**********************************************************************************
  * There are various different types of GPU output buffers that will all share
  * the same header information.
@@ -317,6 +316,20 @@ typedef struct flag_gpu_beamformer_output_databuf {
     flag_gpu_beamformer_output_block_t block[N_GPU_OUT_BLOCKS];
 } flag_gpu_beamformer_output_databuf_t;
 
+//flag_gpu_pfb_output_block
+typedef struct flag_gpu_pfb_output_block {
+    flag_gpu_output_header_t header;
+    flag_gpu_output_header_cache_alignment padding;
+    float data[PFB_OUTPUT_BLOCK_SIZE];
+} flag_gpu_pfb_output_block_t;
+
+// flag_gpu_pfb_output_databuf
+typedef struct flag_gpu_pfb_output_databuf {
+    hashpipe_databuf_t header;
+    hashpipe_databuf_cache_alignment padding;
+    flag_gpu_pfb_output_block_t block[N_GPU_OUT_BLOCKS];
+} flag_gpu_pfb_output_databuf_t;
+
 // flag_gpu_power_output_block
 typedef struct flag_gpu_power_output_block {
     flag_gpu_output_header_t header;
@@ -324,14 +337,12 @@ typedef struct flag_gpu_power_output_block {
     float data[N_POWER_SAMPS];
 } flag_gpu_power_output_block_t;
 
-// flag_gpu_beamformer_output_databuf
+// flag_gpu_power_output_databuf
 typedef struct flag_gpu_power_output_databuf {
     hashpipe_databuf_t header;
     hashpipe_databuf_cache_alignment padding;
     flag_gpu_power_output_block_t block[N_GPU_OUT_BLOCKS];
 } flag_gpu_power_output_databuf_t;
-
-
 
 
 /*********************
@@ -390,6 +401,13 @@ int flag_gpu_beamformer_output_databuf_wait_filled (flag_gpu_beamformer_output_d
 int flag_gpu_beamformer_output_databuf_set_free    (flag_gpu_beamformer_output_databuf_t * d, int block_id);
 int flag_gpu_beamformer_output_databuf_set_filled  (flag_gpu_beamformer_output_databuf_t * d, int block_id);
 
+hashpipe_databuf_t * flag_gpu_pfb_output_databuf_create(int instance_id, int databuf_id);
+
+int flag_gpu_pfb_output_databuf_wait_free   (flag_gpu_pfb_output_databuf_t * d, int block_id);
+int flag_gpu_pfb_output_databuf_wait_filled (flag_gpu_pfb_output_databuf_t * d, int block_id);
+int flag_gpu_pfb_output_databuf_set_free    (flag_gpu_pfb_output_databuf_t * d, int block_id);
+int flag_gpu_pfb_output_databuf_set_filled  (flag_gpu_pfb_output_databuf_t * d, int block_id);
+
 hashpipe_databuf_t * flag_gpu_power_output_databuf_create(int instance_id, int databuf_id);
 
 int flag_gpu_power_output_databuf_wait_free   (flag_gpu_power_output_databuf_t * d, int block_id);
@@ -398,3 +416,28 @@ int flag_gpu_power_output_databuf_set_free    (flag_gpu_power_output_databuf_t *
 int flag_gpu_power_output_databuf_set_filled  (flag_gpu_power_output_databuf_t * d, int block_id);
 
 #endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

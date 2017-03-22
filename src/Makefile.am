@@ -4,9 +4,12 @@ AM_CPPFLAGS     =
 AM_CPPFLAGS += -I"@HASHPIPE_INCDIR@"
 AM_CPPFLAGS += -I"@XGPU_INCDIR@"
 AM_CPPFLAGS += -I"@FLAGBEAM_INCDIR@"
+AM_CPPFLAGS += -I"@FLAGPFB_INCDIR@"
 AM_CPPFLAGS += -I"@FLAGPOW_INCDIR@"
 AM_CPPFLAGS += -I"@XGPU_FRB_INCDIR@"
 AM_CPPFLAGS += -I"@XGPU_PFB_INCDIR@"
+
+AM_CPPFLAGS += "@CUDA_INCDIR@"
 
 # AM_CFLAGS is used for all C compiles
 AM_CFLAGS = -fPIC -O3 -Wall -Werror -fno-strict-aliasing -mavx
@@ -43,6 +46,11 @@ flag_b_threads = flag_net_thread.c \
                  flag_beamform_thread.c \
                  flag_beamsave_thread.c
 
+flag_f_threads = flag_net_thread.c \
+                 flag_transpose_thread.c \
+                 flag_pfb_thread.c \
+                 flag_pfbsave_thread.c
+
 flag_bx_threads = flag_net_thread.c \
                   flag_transpose_thread.c \
                   flag_dual_thread.c \
@@ -53,14 +61,14 @@ flag_x_frb_threads = flag_net_thread.c \
                      flag_frb_correlator_thread.c \
                      flag_frb_corsave_thread.c
 
-# TODO: Add the pfb thread
 flag_fx_threads = flag_net_thread.c \
                      flag_transpose_thread.c \
+                     flag_pfb_thread.c \
                      flag_pfb_correlator_thread.c \
                      flag_pfb_corsave_thread.c
 
 # This lists all of the plugins that will be created
-lib_LTLIBRARIES = flag_x.la flag_b.la flag_x_frb.la flag_bx.la flag_fx.la
+lib_LTLIBRARIES = flag_x.la flag_b.la flag_f.la flag_x_frb.la flag_bx.la flag_fx.la
 
 # flag_x.la sources and libraries
 flag_x_la_SOURCES  = $(flag_databuf) $(flag_x_threads) $(fifo_codes)
@@ -76,6 +84,14 @@ flag_b_la_LDFLAGS  = -avoid-version -module -shared -export-dynamic --enable-sha
 flag_b_la_LDFLAGS += -L"@XGPU_LIBDIR@" -Wl,-rpath,"@XGPU_LIBDIR@"
 flag_b_la_LDFLAGS += -L"@HASHPIPE_LIBDIR@" -Wl,-rpath,"@HASHPIPE_LIBDIR@"
 flag_b_la_LDFLAGS += -L"@FLAGBEAM_LIBDIR@" -Wl, -rpath, "@FLAGBEAM_LIBDIR@"
+
+# flab_f.la sources and libraries
+flag_f_la_SOURCES = $(flag_databuf) $(flag_f_threads) $(fifo_codes)
+flag_f_la_LIBADD  = -lrt -ldl -lutil -L/usr/local/lib -lpython2.7 -lxgpu -lflagpfb -lcufft -lcudart -L/usr/local/cuda/lib64 -lcfitsio
+flag_f_la_LDFLAGS = -avoid-version -module -shared -export-dynamic --enable-shared
+flag_f_la_LDFLAGS += -L"@XGPU_LIBDIR@" -Wl, -rpath, "@XGPU_LIBDIR@"
+flag_f_la_LDFLAGS += -L"@HASHPIPE_LIBDIR@" -Wl, -rpath,"@HASHPIPE_LIBDIR@"
+flag_f_la_LDFLAGS += -L"@FLAGPFB_LIBDIR@" -Wl, -rpath,"@FLAGPFB_LIBDIR@"
 
 # flag_bx.la sources and libraries
 flag_bx_la_SOURCES = $(flag_databuf) $(flag_bx_threads) $(fifo_codes)
@@ -94,11 +110,11 @@ flag_x_frb_la_LDFLAGS += -L"@HASHPIPE_LIBDIR@" -Wl,-rpath,"@HASHPIPE_LIBDIR@"
 
 # flag_fx.la sources and libraries
 flag_fx_la_SOURCES = $(flag_databuf) $(flag_fx_threads) $(fifo_codes)
-flag_fx_la_LIBADD   = -lrt -lxgpupfb -lcublas -L/usr/local/cuda/lib64 -lcfitsio
+flag_fx_la_LIBADD   = -lrt -lxgpupfb -lcublas -L/usr/local/cuda/lib64 -lcfitsio -lflagpfb -lcufft -lcudart
 flag_fx_la_LDFLAGS  = -avoid-version -module -shared -export-dynamic --enable-shared
 flag_fx_la_LDFLAGS += -L"@XGPU_PFB_LIBDIR@" -Wl,-rpath,"@XGPU_PFB_LIBDIR@"
 flag_fx_la_LDFLAGS += -L"@HASHPIPE_LIBDIR@" -Wl,-rpath,"@HASHPIPE_LIBDIR@"
-# TODO: Add the PFB library flags
+flag_fx_la_LDFLAGS += -L"@FLAGPFB_LIBDIR@" -Wl, -rpath,"@FLAGPFB_LIBDIR@"
 
 
 # Installed scripts
