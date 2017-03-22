@@ -34,8 +34,9 @@ sigma2 = kb*Tsys*BW;    % Noise power per channel
 % 3 -> Send all ones
 % 4 -> Send chirp
 % 5 -> Send spatially correlated data in a single bin
+% 6 -> Send complex sinusodial data
 % else -> Send all zeros
-data_flag = 5;
+data_flag = 6;
 
 % Sinusoid parameters (only used if data_flag = 2)
 % It should be noted that the phase of the sinusoid will not change between
@@ -63,7 +64,6 @@ c_time_per_bin = c_ntime/c_num_bins;
 % Correlated data parameters (only used if data_flag = 5)
 % kw = Karl Warnick
 kw_bin = 1;
-
 kw_xid = floor((kw_bin - 1)/Nbin_per_x) + 1;
 kw_bin_r = mod(kw_bin - 1, Nbin_per_x) + 1;
 
@@ -79,7 +79,8 @@ end
 
 % create time samples
 rng(1);
-kwNs = 4000*40;
+N = 4000;
+kwNs = 4000;
 kw_z = (randn(Nel, kwNs) + 1j*randn(Nel,kwNs))/sqrt(2);
 kwM = sqrtm(kwR);
 kw_x = kwM*kw_z;
@@ -96,10 +97,25 @@ kw_Rhat = (kw_x_quant*kw_x_quant')/kwNs;
 
 save('matlab_corr.mat', 'kw_Rhat');
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Case 6 - Complex Sinusoid
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+cs_Ns = 4000;
+cs_freq = 0.25;
+cs_n = 0:cs_Ns-1;
+cs_re = 127 * (0.1 * cos(2*pi*cs_freq*cs_n));
+cs_im = 127 * (0.1 * sin(2*pi*cs_freq*cs_n));
+
 
 % Create UDP sockets - 1 IP address per Xengine (xid)
 for xid = 1:Nxengines
-    remoteHost = ['10.17.16.', num2str(207+xid)];
+    remoteHost = ['10.10.1.', num2str(xid)];
+    %if xid == 1
+    %    remoteHost = '10.10.1.14';
+    %end
+    %if xid == 14
+    %    remoteHost = '10.10.1.1';
+    %end
     sock(xid) = udp(remoteHost, 'RemotePort', 60000, 'LocalPort', 60001);
     set(sock(xid), 'OutputBufferSize', 9000);
     set(sock(xid), 'OutputDatagramPacketSize', 9000);
@@ -109,9 +125,9 @@ end
 % Generate packet payloads
 mcnt = 0; % Each mcnt represents 20 packets across all F-engines in the
           % same time frame
-for mcnt = [0:7000] %while mcnt <= 10000
+for mcnt = [0:200, 401] %while mcnt <= 10000
     disp(['Sending mcnt = ', num2str(mcnt)]);
-    for xid = 1:1 % Set to a single X-engine for single HPC testing (Richard B.)
+    for xid = 14:14 % Set to a single X-engine for single HPC testing (Richard B.)
         for fid = 1:Nfengines
             w_idx = 1;
             
@@ -194,6 +210,16 @@ for mcnt = [0:7000] %while mcnt <= 10000
                         data(:, 2, kw_bin_r, :) = kw_x_imag(f_idxs,t_idxs);
                         data(data < 0) = 2^8 + data(data < 0);
                     end
+                case 6 % Send complex sinusoidal data
+                    t_idxs = mod(mcnt*20 + 1:(mcnt+1)*20, cs_Ns);
+                    t_idxs(t_idxs == 0) = kwNs;
+                    for cs_bin = 1:Nbin_per_x
+                        for cs_ele = 1:Nin_per_f
+                            data(cs_ele,1,cs_bin,:) = cs_re(t_idxs);
+                            data(cs_ele,2,cs_bin,:) = cs_im(t_idxs);
+                        end
+                    end
+                    data(data < 0) = 2^8 + data(data < 0);
                 otherwise % Send all zeros
             end
             data = uint8(data);
