@@ -395,6 +395,7 @@ static void *run(hashpipe_thread_args_t * args) {
     struct hashpipe_udp_packet p;
 
     /* Give all the threads a chance to start before opening network socket */
+    /*
     int netready = 0;
     int traready = 0;
     int corready = 0;
@@ -409,6 +410,7 @@ static void *run(hashpipe_thread_args_t * args) {
         netready = traready & corready;
     }
     sleep(1);
+    */
 
     // Create clean flags for other threads
     hashpipe_status_lock_safe(&st);
@@ -579,6 +581,7 @@ static void *run(hashpipe_thread_args_t * args) {
             // Check other threads to make sure they've finished cleaning up
             int traclean = 0;
             int corclean = 0;
+            int netready = 0;
             hashpipe_status_lock_safe(&st);
             hgetl(st.buf, "CLEANA",  &traclean);
             hgetl(st.buf, "CLEANB",  &corclean);
