@@ -32,16 +32,13 @@ AX_CHECK_FLAGPFB
 # Check for CUDA
 AX_CHECK_CUDA
 
-# Check for Python
-AX_CHECK_PYTHON
-
 # Checks for libraries.
 AC_CHECK_LIB([pthread], [pthread_create])
 AC_CHECK_LIB([rt], [clock_gettime])
 AC_CHECK_LIB([z], [crc32])
 
 # Checks for header files.
-AC_CHECK_HEADERS([Python.h cuda.h netdb.h stdint.h stdlib.h string.h sys/socket.h sys/time.h unistd.h zlib.h])
+AC_CHECK_HEADERS([cuda.h netdb.h stdint.h stdlib.h string.h sys/socket.h sys/time.h unistd.h zlib.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE

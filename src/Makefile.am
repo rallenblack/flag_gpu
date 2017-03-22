@@ -9,7 +9,6 @@ AM_CPPFLAGS += -I"@FLAGPOW_INCDIR@"
 AM_CPPFLAGS += -I"@XGPU_FRB_INCDIR@"
 
 AM_CPPFLAGS += "@CUDA_INCDIR@"
-AM_CPPFLAGS += "@PYTHON_INCDIR@"
 
 # AM_CFLAGS is used for all C compiles
 AM_CFLAGS = -fPIC -O3 -Wall -Werror -fno-strict-aliasing -mavx
