@@ -48,7 +48,8 @@ flag_b_threads = flag_net_thread.c \
 
 flag_f_threads = flag_net_thread.c \
                  flag_transpose_thread.c \
-                 flag_pfb_thread.c
+                 flag_pfb_thread.c \
+                 flag_pfbsave_thread.c
 
 flag_bx_threads = flag_net_thread.c \
                   flag_transpose_thread.c \
