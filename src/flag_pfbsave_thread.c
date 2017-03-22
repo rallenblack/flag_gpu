@@ -61,16 +61,23 @@ static void * run(hashpipe_thread_args_t * args) {
                 break;
             }
         }
+        printf("Getting ready to save...\n");
 
         uint64_t start_mcnt = db_in->block[curblock_in].header.mcnt;
         int good_data_flag = (int)(db_in->block[curblock_in].header.good_data);
         float * pfb_out_data = (float *)db_in->block[curblock_in].data;
 
+	printf("Creating filename...\n");
         char filename[256];
         sprintf(filename, "%s/pfb_%d_mcnt_%lld.out", data_dir, instance_id, (long long)start_mcnt);
-        
-        FILE * filePtr = fopen(filename, "w");
+	printf("Saving output file to: %s\n", filename);
+        FILE * filePtr = fopen(filename, "wb");
+	if(filePtr == NULL) {
+		printf("DUM DUM...\n");
+	}
+	printf("Writing good data...\n");
         fwrite(&good_data_flag, sizeof(int), 1, filePtr);
+	printf("Writing data out...\n");
         fwrite(pfb_out_data, sizeof(float), PFB_OUTPUT_BLOCK_SIZE, filePtr);
         fclose(filePtr);
 

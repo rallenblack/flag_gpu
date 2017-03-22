@@ -76,11 +76,6 @@ class BeamformerBackend(VegasBackend):
         # Read in the additional parameters from the configuration file
         self.read_parameters(theBank, theMode)
 
-        # Clear shared memory segments
-        command = "hashpipe_clean_shmem -I %d" %(self.instance)
-        ps_clean = subprocess.Popen(command.split())
-        ps_clean.wait()
-
         # Create the ARP table from the mac addresses in dibas.conf under [HPCMACS]
         self.name = theMode.backend_name.lower()
         self.hpc_macs = hpc_macs
@@ -93,10 +88,14 @@ class BeamformerBackend(VegasBackend):
 
         # Set some default parameter values
         self.requested_weight_file = ''
-        
+        self.weifile2 = ''
+
         # Add additional dealer-controlled parameters
         self.params["int_length"] = self.setIntegrationTime
 	self.params["weight_file"] = self.setNewWeightFilename
+
+        # Set weight flag to default value of 0
+        self.write_status(WFLAG=str(0))
 
         # Generate ROACH 10-GbE source mac addresses
         self.mac_base0 = 0x020200000000 + (2**8)*self.xid + 1
@@ -257,6 +256,15 @@ class BeamformerBackend(VegasBackend):
 
         # Write the beamformer weight filename to shared memory
         self.write_status(BWEIFILE=str(self.requested_weight_file))
+        
+        # Added code: Set flag to update weights in flag_beamform_thread ####
+        if BWEIFILE is None:
+            print "Weight file name unchanged."
+            self.write_status(WFLAG='0')
+        else:
+            print "Weight file name changed."
+            self.write_status(WFLAG='1')
+        ####################################################################
 
         # Print out this information
         print now, starttime
@@ -335,6 +343,16 @@ class BeamformerBackend(VegasBackend):
         # self.write_status(REQSTI=str(self.write_status(REQSTI=str(self.requested_integration_time))))
         self.write_status(REQSTI=str(self.requested_integration_time))
         self.write_status(BWEIFILE=str(self.requested_weight_file))
+
+        self.weifile1 = self.weifile2
+        self.weifile2 = self.get_status('BWEIFILE')
+
+        if self.weifile1 is self.weifile2:
+            print "Weight file name unchanged."
+            self.write_status(WFLAG=str(0))
+        else:
+            print "Weight file name changed."
+            self.write_status(WFLAG=str(1))
 
         dt = datetime.utcnow()
         dt.replace(second = 0)
@@ -485,8 +503,8 @@ class BeamformerBackend(VegasBackend):
             process_list = process_list + mode_str.split()
             # Add threads
             thread1 = "-c %d flag_net_thread" % (self.core[0])
-            thread2 = "-c %d flag_transpose_thread" % (self.core[1])
-            thread3 = "-c %d flag_correlator_thread" % (self.core[2])
+            thread2 = "-c %d flag_frb_transpose_thread" % (self.core[1])
+            thread3 = "-c %d flag_frb_correlator_thread" % (self.core[2])
             #thread4 = "-c %d flag_corsave_thread" % (self.core[3])
             process_list = process_list + thread1.split()
             process_list = process_list + thread2.split()
@@ -522,7 +540,16 @@ class BeamformerBackend(VegasBackend):
             process_list = process_list + thread2.split()
             process_list = process_list + thread3.split()
             process_list = process_list + thread4.split()
-            
+	elif self.name == "flag_pfb":
+	    # Add threads
+	    thread1 = "-c %d flag_net_thread" % (self.core[0])
+	    thread2 = "-c %d flag_transpose_thread" % (self.core[1])
+	    thread3 = "-c %d flag_pfb_thread" % (self.core[2])
+	    thread4 = "-c %d flag_pfbsave_thread" % (self.core[3])
+	    process_list = process_list + thread1.split()
+	    process_list = process_list + thread2.split()
+	    process_list = process_list + thread3.split()
+	    process_list = process_list + thread4.split()            
 
         print ' '.join(process_list)
         self.hpc_process = subprocess.Popen(process_list, stdin=subprocess.PIPE)

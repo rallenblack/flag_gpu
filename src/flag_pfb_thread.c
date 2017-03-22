@@ -121,15 +121,20 @@ static void * run(hashpipe_thread_args_t * args) {
 	        // Get block's starting mcnt for output block
             db_out->block[curblock_out].header.mcnt = start_mcnt;
             db_out->block[curblock_out].header.good_data = good_data;
+
+            printf("PFB: Wrote header info...\n");
                 
             // Mark output block as full and advance
             flag_gpu_pfb_output_databuf_set_filled(db_out, curblock_out);
+            printf("PFB: Marked block %d as filled...\n", curblock_out);
             curblock_out = (curblock_out + 1) % db_out->header.n_block;
             start_mcnt = last_mcnt + 1;
             last_mcnt = start_mcnt + Nm - 1;
+            printf("PFB: Attempting to mark block %d as free...\n", curblock_in);
             
             // Mark input block as free
             flag_gpu_input_databuf_set_free(db_in, curblock_in);
+            printf("PFB: Marked block %d as free...\n", curblock_in);
             curblock_in = (curblock_in + 1) % db_in->header.n_block;
         }
         else if (cur_state == CLEANUP) {
