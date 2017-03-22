@@ -48,11 +48,6 @@ static void * run(hashpipe_thread_args_t * args) {
     int cudaDevice = DEF_CUDA_DEVICE;
     params pfbParams = DEFAULT_PFB_PARAMS; //databuf.h?
 
-    // Initialize prototype filter
-    //char* processName = "flag_pfb_thread\0";
-    //printf("PFB: Generating filter coefficients...\n");
-    //genCoeff(processName, pfbParams);
-
     // Initialize polyphase filter bank
     printf("PFB: Initializing the polyphase filter bank...\n");
     pfb_flag = initPFB(cudaDevice, pfbParams);
