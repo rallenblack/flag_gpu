@@ -1,6 +1,6 @@
-/* flag_frb_corcheck_thread.c
+/* flag_pfb_corsave_thread.c
  *
- * Routine to save FRB correlator outputs to file for data verification
+ * Routine to save PFB correlator outputs to file for data verification
  *
  */
 
@@ -20,7 +20,7 @@ static hashpipe_status_t * st_p;
 static void * run(hashpipe_thread_args_t * args) {
 
     // Local aliases to shorten access to args fields
-    flag_frb_gpu_correlator_output_databuf_t * db_in = (flag_frb_gpu_correlator_output_databuf_t  *)args->ibuf;
+    flag_pfb_gpu_correlator_output_databuf_t * db_in = (flag_pfb_gpu_correlator_output_databuf_t  *)args->ibuf;
     hashpipe_status_t st = args->st;
     const char * status_key = args->thread_desc->skey;
 
@@ -36,7 +36,7 @@ static void * run(hashpipe_thread_args_t * args) {
     while (run_threads()) {
         
         // Wait for input buffer block to be filled
-        while ((rv=flag_frb_gpu_correlator_output_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
+        while ((rv=flag_pfb_gpu_correlator_output_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
             if (rv==HASHPIPE_TIMEOUT) {
                 hashpipe_status_lock_safe(&st);
                 hputs(st.buf, status_key, "waiting for free block");
@@ -62,7 +62,7 @@ static void * run(hashpipe_thread_args_t * args) {
         Complex * p = (Complex *)db_in->block[curblock_in].data;
 
         int j;
-        for (j = 0; j < N_FRB_COR_MATRIX; j++) {
+        for (j = 0; j < N_PFB_COR_MATRIX; j++) {
             float p_re = p[j].real;
             float p_im = p[j].imag;
             fprintf(filePtr, "%g\n", p_re);
@@ -72,7 +72,7 @@ static void * run(hashpipe_thread_args_t * args) {
         
         
 
-        flag_frb_gpu_correlator_output_databuf_set_free(db_in, curblock_in);
+        flag_pfb_gpu_correlator_output_databuf_set_free(db_in, curblock_in);
         curblock_in = (curblock_in + 1) % db_in->header.n_block;
         pthread_testcancel();
     }
@@ -83,11 +83,11 @@ static void * run(hashpipe_thread_args_t * args) {
 
 // Thread description
 static hashpipe_thread_desc_t xsave_thread = {
-    name: "flag_frb_corsave_thread",
+    name: "flag_pfb_corsave_thread",
     skey: "CORSAVE",
     init: NULL,
     run:  run,
-    ibuf_desc: {flag_frb_gpu_correlator_output_databuf_create},
+    ibuf_desc: {flag_pfb_gpu_correlator_output_databuf_create},
     obuf_desc: {NULL}
 };
 

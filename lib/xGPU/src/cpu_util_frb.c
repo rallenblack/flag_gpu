@@ -169,7 +169,7 @@ void xgpuCheckResult(Complex *gpu, Complex *cpu, int verbose, ComplexInput *arra
 	    if(error > maxError) {
 	      maxError = error;
 	    }
-	    if(error < TOL) {
+	    if(error > TOL) {
               if(verbose > 0) {
                 printf("%d %d %d %d %d %d %d %g  %g  %g  %g (%g %g)\n", f, i, j, k, pol1, pol2, index,
                        cpu[index].real, gpu[index].real, cpu[index].imag, gpu[index].imag, zabs(cpu[index]), zabs(gpu[index]));

@@ -106,12 +106,12 @@ static void * run(hashpipe_thread_args_t * args) {
                 //printf("TRA: Receiving block %d with starting mcnt = %lld\n", curblock_in, (long long int)mcnt);
 
                 // Get the specified frequency channel chunk
-                //hashpipe_status_lock_safe(&st);
-                //hgeti4(st.buf, "NCHUNK", &n_chunk);
-                //hashpipe_status_unlock_safe(&st);
-                //int c_start = n_chunk*N_CHAN_PER_FRB_BLOCK;
-                //int c_end   = c_start + N_CHAN_PER_FRB_BLOCK;
-                //printf("TRA: c_start = %d, c_end = %d\n", c_start, c_end);
+                hashpipe_status_lock_safe(&st);
+                hgeti4(st.buf, "NCHUNK", &n_chunk);
+                hashpipe_status_unlock_safe(&st);
+                int c_start = n_chunk*N_CHAN_PER_FRB_BLOCK;
+                int c_end   = c_start + N_CHAN_PER_FRB_BLOCK;
+                printf("TRA: c_start = %d, c_end = %d\n", c_start, c_end);
 
                 /**********************************************
                  * Perform transpose
@@ -127,11 +127,11 @@ static void * run(hashpipe_thread_args_t * args) {
                     uint64_t * block_out_p = db_out->block[curblock_out+m2].data;
                     for (t = 0; t < Nt; t++) {
                         for (f = 0; f < Nf; f++) {
-                            // for (c = c_start; c < c_end; c++) {
-                            for (c = 0; c < Nc; c++) {
+                            for (c = c_start; c < c_end; c++) {
+                            // for (c = 0; c < Nc; c++) {
                                 in_p  = block_in_p + flag_input_databuf_idx(m,f,t,c);
-                                // out_p = block_out_p + flag_gpu_input_databuf_idx(m % N_MCNT_PER_FRB_BLOCK,f,t,c % N_CHAN_PER_FRB_BLOCK);
-                                out_p = block_out_p + flag_gpu_input_databuf_idx(m % N_MCNT_PER_FRB_BLOCK,f,t,c);
+                                out_p = block_out_p + flag_frb_gpu_input_databuf_idx(m % N_MCNT_PER_FRB_BLOCK,f,t,c % N_CHAN_PER_FRB_BLOCK);
+                                // out_p = block_out_p + flag_gpu_input_databuf_idx(m % N_MCNT_PER_FRB_BLOCK,f,t,c);
                                 memcpy(out_p, in_p, 128/8);
                             }
                         }

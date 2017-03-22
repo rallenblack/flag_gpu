@@ -13,15 +13,15 @@
 #endif
 
 #ifndef NFREQUENCY
-#define NFREQUENCY 5
+#define NFREQUENCY 160
 #endif
 
 #ifndef NTIME
-#define NTIME 40
+#define NTIME 128
 #endif
 
 #ifndef NTIME_PIPE
-#define NTIME_PIPE 40
+#define NTIME_PIPE 128
 #endif
 
 // Ensure that NTIME_PIPE is a multiple of 4

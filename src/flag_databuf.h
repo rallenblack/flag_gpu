@@ -8,7 +8,7 @@
 #include "pfb.h"
 #include "config.h"
 
-#define VERBOSE 0
+#define VERBOSE 1
 
 // Total number of antennas (nominally 40)
 #define N_INPUTS 64
@@ -135,6 +135,14 @@
 #define N_GPU_FRB_INPUT_BLOCKS (N_GPU_INPUT_BLOCKS*N_FRB_BLOCKS_PER_BLOCK)
 #define N_MCNT_PER_FRB_BLOCK (Nm/N_FRB_BLOCKS_PER_BLOCK)
 #define N_FRB_COR_MATRIX (N_INPUTS/2*(N_INPUTS/2 + 1)/2*N_CHAN_PER_FRB_BLOCK*4)
+
+// Macro to comput data word offset for tranposed matrix in FRB mode
+#define flag_frb_gpu_input_databuf_idx(m,f,t,c) ((2*N_INPUTS_PER_FENGINE/sizeof(uint64_t))*(f+Nf*(c+N_CHAN_PER_FRB_BLOCK*(t+Nt*m))))
+
+// Macros specific to the fine-channel correlator (PFB correlator)
+#define N_TIME_PER_PFB_BLOCK XGPU_PFB_NTIME
+#define N_CHAN_PER_PFB_BLOCK XGPU_FRB_NFREQUENCY
+#define N_PFB_COR_MATRIX (N_INPUTS/2*(N_INPUTS/2 + 1)/2*N_CHAN_PER_PFB_BLOCK*4)
 
 // Macros to maintain cache alignment
 #define CACHE_ALIGNMENT (128)
@@ -280,6 +288,20 @@ typedef struct flag_frb_gpu_correlator_output_databuf {
     flag_frb_gpu_correlator_output_block_t block[N_GPU_OUT_BLOCKS];
 } flag_frb_gpu_correlator_output_databuf_t;
 
+// flag_pfb_gpu_correlator_output_block
+typedef struct flag_pfb_gpu_correlator_output_block {
+    flag_gpu_output_header_t header;
+    flag_gpu_output_header_cache_alignment padding;
+    float data[2*N_PFB_COR_MATRIX]; // x2 for real/imaginary samples
+} flag_pfb_gpu_correlator_output_block_t;
+
+// flag_pfb_gpu_correlator_output_databuf
+typedef struct flag_pfb_gpu_correlator_output_databuf {
+    hashpipe_databuf_t header;
+    hashpipe_databuf_cache_alignment padding;
+    flag_pfb_gpu_correlator_output_block_t block[N_GPU_OUT_BLOCKS];
+} flag_pfb_gpu_correlator_output_databuf_t;
+
 // flag_gpu_beamformer_output_block
 typedef struct flag_gpu_beamformer_output_block {
     flag_gpu_output_header_t header;
@@ -364,6 +386,13 @@ int flag_frb_gpu_correlator_output_databuf_wait_free   (flag_frb_gpu_correlator_
 int flag_frb_gpu_correlator_output_databuf_wait_filled (flag_frb_gpu_correlator_output_databuf_t * d, int block_id);
 int flag_frb_gpu_correlator_output_databuf_set_free    (flag_frb_gpu_correlator_output_databuf_t * d, int block_id);
 int flag_frb_gpu_correlator_output_databuf_set_filled  (flag_frb_gpu_correlator_output_databuf_t * d, int block_id);
+
+hashpipe_databuf_t * flag_pfb_gpu_correlator_output_databuf_create(int instance_id, int databuf_id);
+
+int flag_pfb_gpu_correlator_output_databuf_wait_free   (flag_pfb_gpu_correlator_output_databuf_t * d, int block_id);
+int flag_pfb_gpu_correlator_output_databuf_wait_filled (flag_pfb_gpu_correlator_output_databuf_t * d, int block_id);
+int flag_pfb_gpu_correlator_output_databuf_set_free    (flag_pfb_gpu_correlator_output_databuf_t * d, int block_id);
+int flag_pfb_gpu_correlator_output_databuf_set_filled  (flag_pfb_gpu_correlator_output_databuf_t * d, int block_id);
 
 hashpipe_databuf_t * flag_gpu_beamformer_output_databuf_create(int instance_id, int databuf_id);
 

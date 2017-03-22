@@ -1,6 +1,6 @@
-/* flag_frb_correlator_thread.c
+/* flag_pfb_correlator_thread.c
  * 
- * Routine to correlate received packets for FRB searches
+ * Routine to correlate channelized data from the PFB for HI surveys
  * 
  */
 
@@ -31,8 +31,8 @@ typedef enum {
 //         (2b) Print out some data in the block
 static void * run(hashpipe_thread_args_t * args) {
     // Local aliases to shorten access to args fields
-    flag_frb_gpu_input_databuf_t * db_in = (flag_frb_gpu_input_databuf_t *)args->ibuf;
-    flag_frb_gpu_correlator_output_databuf_t * db_out = (flag_frb_gpu_correlator_output_databuf_t *)args->obuf;
+    flag_pfb_gpu_input_databuf_t * db_in = (flag_pfb_gpu_input_databuf_t *)args->ibuf;
+    flag_pfb_gpu_correlator_output_databuf_t * db_out = (flag_pfb_gpu_correlator_output_databuf_t *)args->obuf;
     hashpipe_status_t st = args->st;
     const char * status_key = args->thread_desc->skey;
 
@@ -62,8 +62,8 @@ static void * run(hashpipe_thread_args_t * args) {
     context.array_h  = (ComplexInput *)db_in->block[0].data;
     context.matrix_h = (Complex *)db_out->block[0].data;
    
-    context.array_len = (db_in->header.n_block * sizeof(flag_frb_gpu_input_block_t) - sizeof(flag_gpu_input_header_t))/sizeof(ComplexInput);
-    context.matrix_len = (db_out->header.n_block * sizeof(flag_frb_gpu_correlator_output_block_t) - sizeof(flag_gpu_output_header_t))/sizeof(Complex);
+    context.array_len = (db_in->header.n_block * sizeof(flag_pfb_gpu_input_block_t) - sizeof(flag_gpu_input_header_t))/sizeof(ComplexInput);
+    context.matrix_len = (db_out->header.n_block * sizeof(flag_pfb_gpu_correlator_output_block_t) - sizeof(flag_gpu_output_header_t))/sizeof(Complex);
 
     int xgpu_error = xgpuInit(&context, gpu_dev);
     if (XGPU_OK != xgpu_error) {
@@ -75,9 +75,9 @@ static void * run(hashpipe_thread_args_t * args) {
         printf("XGPU CONTEXT\n");
         printf("############################################################\n");
         printf("header.n_block = %lld\n", (long long int)(db_in->header.n_block));
-        printf("sizeof(flag_frb_gpu_input_block_t) = %lld\n", (long long int)(sizeof(flag_frb_gpu_input_block_t)));
+        printf("sizeof(flag_pfb_gpu_input_block_t) = %lld\n", (long long int)(sizeof(flag_pfb_gpu_input_block_t)));
         printf("sizeof(flag_gpu_input_header_t) = %lld\n", (long long int)(sizeof(flag_gpu_input_header_t)));
-        printf("sizeof(flag_frb_gpu_correlator_output_block_t) = %d\n", (int)(sizeof(flag_gpu_correlator_output_block_t)));
+        printf("sizeof(flag_pfb_gpu_correlator_output_block_t) = %d\n", (int)(sizeof(flag_pfb_gpu_correlator_output_block_t)));
         printf("sizeof(flag_gpu_output_header_t) = %lld\n", (long long int)(sizeof(flag_gpu_output_header_t)));
         printf("sizeof(ComplexInput) = %d\n", (int)(sizeof(ComplexInput)));
         printf("sizeof(Complex) = %d\n", (int)(sizeof(Complex)));
@@ -87,11 +87,10 @@ static void * run(hashpipe_thread_args_t * args) {
     #endif
 
     #if VERBOSE==1
-        printf("N_TIME_PER_FRB_BLOCK = %d\n", N_TIME_PER_FRB_BLOCK);
-        printf("N_CHAN_PER_FRB_BLOCK = %d\n", N_CHAN_PER_FRB_BLOCK);
-        printf("N_GPU_FRB_INPUT_BLOCKS = %d\n", N_GPU_FRB_INPUT_BLOCKS);
-        printf("N_FRB_COR_MATRIX = %d\n", N_FRB_COR_MATRIX);
-        printf("N_BYTES_PER_FRB_BLOCK = %lld\n", (long long int) N_BYTES_PER_FRB_BLOCK);
+        printf("N_TIME_PER_PFB_BLOCK = %d\n", N_TIME_PER_PFB_BLOCK);
+        printf("N_CHAN_PER_PFB_BLOCK = %d\n", N_CHAN_PER_PFB_BLOCK);
+        printf("N_GPU_INPUT_BLOCKS = %d\n", N_GPU_INPUT_BLOCKS);
+        printf("N_PFB_COR_MATRIX = %d\n", N_PFB_COR_MATRIX);
     #endif
     
 
@@ -115,12 +114,8 @@ static void * run(hashpipe_thread_args_t * args) {
         if (cur_state == ACQUIRE) {
             next_state = ACQUIRE;
 	    // Wait for input buffer block to be filled
-            while ((rv=flag_frb_gpu_input_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
+            while ((rv=flag_pfb_gpu_input_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
                 if (rv==HASHPIPE_TIMEOUT) {
-                    hashpipe_status_lock_safe(&st);
-                    hputs(st.buf, "FRB", "stuck waiting for data");
-                    hashpipe_status_unlock_safe(&st);
-
                     int cleanb;
                     hashpipe_status_lock_safe(&st);
                     hgetl(st.buf, "CLEANB", &cleanb);
@@ -159,7 +154,7 @@ static void * run(hashpipe_thread_args_t * args) {
                 #if VERBOSE==1
                     fprintf(stderr, "COR: Correlator is off...\n");
                 #endif
-                flag_frb_gpu_input_databuf_set_free(db_in, curblock_in);
+                flag_pfb_gpu_input_databuf_set_free(db_in, curblock_in);
                 curblock_in = (curblock_in + 1) % db_in->header.n_block;
                 good_data = 1;
                 continue;
@@ -184,7 +179,7 @@ static void * run(hashpipe_thread_args_t * args) {
 
                     // starting mcnt not yet reached
                     // free block and continue
-                    flag_frb_gpu_input_databuf_set_free(db_in, curblock_in);
+                    flag_pfb_gpu_input_databuf_set_free(db_in, curblock_in);
                     curblock_in = (curblock_in + 1) % db_in->header.n_block;
                     continue;
                 }
@@ -201,8 +196,8 @@ static void * run(hashpipe_thread_args_t * args) {
                     hgetr4(st.buf, "REQSTI", &requested_integration_time);
                     hashpipe_status_unlock_safe(&st);
 
-                    int_count = ceil((N_MCNT_PER_SECOND / N_MCNT_PER_FRB_BLOCK) * requested_integration_time);
-                    actual_integration_time = int_count/(N_MCNT_PER_SECOND / N_MCNT_PER_FRB_BLOCK);
+                    int_count = ceil((N_MCNT_PER_SECOND / Nm) * requested_integration_time);
+                    actual_integration_time = int_count/(N_MCNT_PER_SECOND / Nm);
 
                     hashpipe_status_lock_safe(&st);
                     hputr4(st.buf, "ACTSTI", actual_integration_time);
@@ -210,7 +205,7 @@ static void * run(hashpipe_thread_args_t * args) {
                     hashpipe_status_unlock_safe(&st);
 
                     // Compute last mcount
-                    last_mcnt = start_mcnt + int_count*N_MCNT_PER_FRB_BLOCK - 1;
+                    last_mcnt = start_mcnt + int_count*N_MCNT_PER_BLOCK - 1;
                 }
                 else {
                     // fprintf(stdout, "COR: We missed the start of the integration\n");
@@ -226,15 +221,15 @@ static void * run(hashpipe_thread_args_t * args) {
 
             // If we get here, then integ_status == "on"
             // Setup for current chunk
-            context.input_offset  = curblock_in  * sizeof(flag_frb_gpu_input_block_t) / sizeof(ComplexInput);
-            context.output_offset = curblock_out * sizeof(flag_frb_gpu_correlator_output_block_t) / sizeof(Complex);
+            context.input_offset  = curblock_in  * sizeof(flag_pfb_gpu_input_block_t) / sizeof(ComplexInput);
+            context.output_offset = curblock_out * sizeof(flag_pfb_gpu_correlator_output_block_t) / sizeof(Complex);
         
             int doDump = 0;
-            if ((db_in->block[curblock_in].header.mcnt + int_count*N_MCNT_PER_FRB_BLOCK - 1) >= last_mcnt) {
+            if ((db_in->block[curblock_in].header.mcnt + int_count*N_MCNT_PER_BLOCK - 1) >= last_mcnt) {
                 doDump = 1;
 
                 // Wait for new output block to be free
-                while ((rv=flag_frb_gpu_correlator_output_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
+                while ((rv=flag_pfb_gpu_correlator_output_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
                     if (rv==HASHPIPE_TIMEOUT) {
                         int cleanb;
                         hashpipe_status_lock_safe(&st);
@@ -281,10 +276,10 @@ static void * run(hashpipe_thread_args_t * args) {
                 #if VERBOSE==1
                 printf("COR: Marking output block %d as filled, mcnt=%lld\n", curblock_out, (long long int)start_mcnt);
                 #endif
-                flag_frb_gpu_correlator_output_databuf_set_filled(db_out, curblock_out);
+                flag_pfb_gpu_correlator_output_databuf_set_filled(db_out, curblock_out);
                 curblock_out = (curblock_out + 1) % db_out->header.n_block;
                 start_mcnt = last_mcnt + 1;
-                last_mcnt = start_mcnt + int_count*N_MCNT_PER_FRB_BLOCK - 1;
+                last_mcnt = start_mcnt + int_count*N_MCNT_PER_BLOCK - 1;
                 // Reset good_data flag for next block
                 good_data = 1;
             }
@@ -292,7 +287,7 @@ static void * run(hashpipe_thread_args_t * args) {
             #if VERBOSE==1
             printf("COR: Marking input block %d as free\n", curblock_in);
             #endif
-            flag_frb_gpu_input_databuf_set_free(db_in, curblock_in);
+            flag_pfb_gpu_input_databuf_set_free(db_in, curblock_in);
             curblock_in = (curblock_in + 1) % db_in->header.n_block;
         }
         }
@@ -335,12 +330,12 @@ static void * run(hashpipe_thread_args_t * args) {
 
 // Thread description
 static hashpipe_thread_desc_t x_thread = {
-    name: "flag_frb_correlator_thread",
+    name: "flag_pfb_correlator_thread",
     skey: "CORSTAT",
     init: NULL,
     run:  run,
-    ibuf_desc: {flag_frb_gpu_input_databuf_create},
-    obuf_desc: {flag_frb_gpu_correlator_output_databuf_create}
+    ibuf_desc: {flag_pfb_gpu_input_databuf_create},
+    obuf_desc: {flag_pfb_gpu_correlator_output_databuf_create}
 };
 
 static __attribute__((constructor)) void ctor() {
