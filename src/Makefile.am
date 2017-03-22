@@ -61,9 +61,9 @@ flag_x_frb_threads = flag_net_thread.c \
                      flag_frb_correlator_thread.c \
                      flag_frb_corsave_thread.c
 
-# TODO: Add the pfb thread
 flag_fx_threads = flag_net_thread.c \
                      flag_transpose_thread.c \
+                     flag_pfb_thread.c \
                      flag_pfb_correlator_thread.c \
                      flag_pfb_corsave_thread.c
 
@@ -110,11 +110,11 @@ flag_x_frb_la_LDFLAGS += -L"@HASHPIPE_LIBDIR@" -Wl,-rpath,"@HASHPIPE_LIBDIR@"
 
 # flag_fx.la sources and libraries
 flag_fx_la_SOURCES = $(flag_databuf) $(flag_fx_threads) $(fifo_codes)
-flag_fx_la_LIBADD   = -lrt -lxgpupfb -lcublas -L/usr/local/cuda/lib64 -lcfitsio
+flag_fx_la_LIBADD   = -lrt -lxgpupfb -lcublas -L/usr/local/cuda/lib64 -lcfitsio -lflagpfb -lcufft -lcudart
 flag_fx_la_LDFLAGS  = -avoid-version -module -shared -export-dynamic --enable-shared
 flag_fx_la_LDFLAGS += -L"@XGPU_PFB_LIBDIR@" -Wl,-rpath,"@XGPU_PFB_LIBDIR@"
 flag_fx_la_LDFLAGS += -L"@HASHPIPE_LIBDIR@" -Wl,-rpath,"@HASHPIPE_LIBDIR@"
-# TODO: Add the PFB library flags
+flag_fx_la_LDFLAGS += -L"@FLAGPFB_LIBDIR@" -Wl, -rpath,"@FLAGPFB_LIBDIR@"
 
 
 # Installed scripts
