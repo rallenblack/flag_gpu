@@ -31,7 +31,7 @@ typedef enum {
 //         (2b) Print out some data in the block
 static void * run(hashpipe_thread_args_t * args) {
     // Local aliases to shorten access to args fields
-    flag_pfb_gpu_input_databuf_t * db_in = (flag_pfb_gpu_input_databuf_t *)args->ibuf;
+    flag_gpu_pfb_output_databuf_t * db_in = (flag_gpu_pfb_output_databuf_t *)args->ibuf;
     flag_pfb_gpu_correlator_output_databuf_t * db_out = (flag_pfb_gpu_correlator_output_databuf_t *)args->obuf;
     hashpipe_status_t st = args->st;
     const char * status_key = args->thread_desc->skey;
@@ -62,7 +62,7 @@ static void * run(hashpipe_thread_args_t * args) {
     context.array_h  = (ComplexInput *)db_in->block[0].data;
     context.matrix_h = (Complex *)db_out->block[0].data;
    
-    context.array_len = (db_in->header.n_block * sizeof(flag_pfb_gpu_input_block_t) - sizeof(flag_gpu_input_header_t))/sizeof(ComplexInput);
+    context.array_len = (db_in->header.n_block * sizeof(flag_gpu_pfb_output_block_t) - sizeof(flag_gpu_input_header_t))/sizeof(ComplexInput);
     context.matrix_len = (db_out->header.n_block * sizeof(flag_pfb_gpu_correlator_output_block_t) - sizeof(flag_gpu_output_header_t))/sizeof(Complex);
 
     int xgpu_error = xgpuInit(&context, gpu_dev);
@@ -75,7 +75,7 @@ static void * run(hashpipe_thread_args_t * args) {
         printf("XGPU CONTEXT\n");
         printf("############################################################\n");
         printf("header.n_block = %lld\n", (long long int)(db_in->header.n_block));
-        printf("sizeof(flag_pfb_gpu_input_block_t) = %lld\n", (long long int)(sizeof(flag_pfb_gpu_input_block_t)));
+        printf("sizeof(flag_gpu_pfb_output_block_t) = %lld\n", (long long int)(sizeof(flag_gpu_pfb_output_block_t)));
         printf("sizeof(flag_gpu_input_header_t) = %lld\n", (long long int)(sizeof(flag_gpu_input_header_t)));
         printf("sizeof(flag_pfb_gpu_correlator_output_block_t) = %d\n", (int)(sizeof(flag_pfb_gpu_correlator_output_block_t)));
         printf("sizeof(flag_gpu_output_header_t) = %lld\n", (long long int)(sizeof(flag_gpu_output_header_t)));
@@ -114,7 +114,7 @@ static void * run(hashpipe_thread_args_t * args) {
         if (cur_state == ACQUIRE) {
             next_state = ACQUIRE;
 	    // Wait for input buffer block to be filled
-            while ((rv=flag_pfb_gpu_input_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
+            while ((rv=flag_gpu_pfb_output_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
                 if (rv==HASHPIPE_TIMEOUT) {
                     int cleanb;
                     hashpipe_status_lock_safe(&st);
@@ -154,7 +154,7 @@ static void * run(hashpipe_thread_args_t * args) {
                 #if VERBOSE==1
                     fprintf(stderr, "COR: Correlator is off...\n");
                 #endif
-                flag_pfb_gpu_input_databuf_set_free(db_in, curblock_in);
+                flag_gpu_pfb_output_databuf_set_free(db_in, curblock_in);
                 curblock_in = (curblock_in + 1) % db_in->header.n_block;
                 good_data = 1;
                 continue;
@@ -179,7 +179,7 @@ static void * run(hashpipe_thread_args_t * args) {
 
                     // starting mcnt not yet reached
                     // free block and continue
-                    flag_pfb_gpu_input_databuf_set_free(db_in, curblock_in);
+                    flag_gpu_pfb_output_databuf_set_free(db_in, curblock_in);
                     curblock_in = (curblock_in + 1) % db_in->header.n_block;
                     continue;
                 }
@@ -221,7 +221,7 @@ static void * run(hashpipe_thread_args_t * args) {
 
             // If we get here, then integ_status == "on"
             // Setup for current chunk
-            context.input_offset  = curblock_in  * sizeof(flag_pfb_gpu_input_block_t) / sizeof(ComplexInput);
+            context.input_offset  = curblock_in  * sizeof(flag_gpu_pfb_output_block_t) / sizeof(ComplexInput);
             context.output_offset = curblock_out * sizeof(flag_pfb_gpu_correlator_output_block_t) / sizeof(Complex);
         
             int doDump = 0;
@@ -287,7 +287,7 @@ static void * run(hashpipe_thread_args_t * args) {
             #if VERBOSE==1
             printf("COR: Marking input block %d as free\n", curblock_in);
             #endif
-            flag_pfb_gpu_input_databuf_set_free(db_in, curblock_in);
+            flag_gpu_pfb_output_databuf_set_free(db_in, curblock_in);
             curblock_in = (curblock_in + 1) % db_in->header.n_block;
         }
         }
@@ -334,7 +334,7 @@ static hashpipe_thread_desc_t x_thread = {
     skey: "CORSTAT",
     init: NULL,
     run:  run,
-    ibuf_desc: {flag_pfb_gpu_input_databuf_create},
+    ibuf_desc: {flag_gpu_pfb_output_databuf_create},
     obuf_desc: {flag_pfb_gpu_correlator_output_databuf_create}
 };
 
