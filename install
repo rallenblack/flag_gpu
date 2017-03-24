@@ -9,7 +9,7 @@ else
 fi
 
 # Change this to match your destination directory
-prefix=~/fresh_hash
+prefix=~/hash
 
 # Set library source directories
 HASHPIPE_SRC=$FLAG_DIR/lib/hashpipe/src
