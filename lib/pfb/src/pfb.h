@@ -7,8 +7,10 @@
 #include <sys/types.h>  /* for open()  */
 #include <sys/stat.h>	/* for open()  */
 #include <fcntl.h>		/* for open()  */
+#include <errno.h>		/* for errno   */
+#include <unistd.h>     /* for read, close*/
 
-#include <python2.7/Python.h> /* for executing coeff gen file */
+//#include <python2.7/Python.h> /* for executing coeff gen file */
 
 #include "kernels.h"
 
@@ -26,7 +28,7 @@
 #define DEF_NUM_ELEMENTS		64  // System spec for number of elements
 #define SAMPLES					4000// Time samples.
 
-#define PFB_OUTPUT_BLOCK_SIZE	SAMPLES*PFB_CHANNELS*2
+#define PFB_OUTPUT_BLOCK_SIZE	(SAMPLES+3*DEF_LEN_SPEC)*PFB_CHANNELS*ELEMNTS*2 // (3*DEF_LEN_SPEC is to add more samples on the end to make it look like 128 pfb windows had been processed for the pfb correlator)
 
 // FFT Plan configuration
 #define FFTPLAN_RANK 			1				 // dimension of the transform
@@ -48,7 +50,7 @@ typedef unsigned char BYTE;
 #define CUDASafeCallWithCleanUp(iRet) __CUDASafeCallWithCleanUp(iRet, __FILE__, __LINE__, &cleanUp)
 void __CUDASafeCallWithCleanUp(cudaError_t iRet, const char* pcFile, const int iLine, void (*pcleanUp)(void));
 
-void genCoeff(char* procName, params pfbParams);
+//void genCoeff(char* procName, params pfbParams);
 int initPFB(int iCudaDevice, params pfbParams);
 int runPFB(signed char* inputData_h, float* outputData_h, params pfbParams);
 int doFFT();
