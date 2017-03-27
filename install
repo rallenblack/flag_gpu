@@ -9,7 +9,34 @@ else
 fi
 
 # Change this to match your destination directory
-prefix=~/hash
+prefix=$HOME/hash
+
+# Add prefix to PATH
+if [[ "$PATH" == ?(*:)"$prefix/bin"?(:*) ]]
+then
+    echo "PATH includes $prefix/bin"
+else
+    echo "PATH does not include $prefix/bin... Adding now"
+    export PATH=$prefix/bin:$PATH
+fi
+
+# Add prefix to LD_LIBRARY_PATH
+if [[ "$LD_LIBRARY_PATH" == ?(*:)"$prefix/lib"?(:*) ]]
+then
+    echo "LD_LIBRARY_PATH includes $prefix/lib"
+else
+    echo "LD_LIBRARY_PATH does not include $prefix/lib... Adding now"
+    export LD_LIBRARY_PATH=$prefix/lib:$LD_LIBRARY_PATH
+fi
+
+# Check for CUDA
+if [ -z "$CUDA" ]
+then
+    echo "CUDA is not set-- using $prefix/cuda"
+    CUDA=$prefix/cuda
+else
+    echo "CUDA is set to $CUDA"
+fi
 
 # Set library source directories
 HASHPIPE_SRC=$FLAG_DIR/lib/hashpipe/src
@@ -25,6 +52,7 @@ echo "Navigating to $HASHPIPE_SRC"
 cd $HASHPIPE_SRC
 autoreconf -is
 ./configure --prefix=$prefix --silent
+make clean
 make
 make install
 echo "========================================"
@@ -35,6 +63,7 @@ echo "Installing xGPU"
 echo "========================================"
 echo "Navigating to $XGPU_SRC"
 cd $XGPU_SRC
+make clean
 make
 make install prefix=$prefix
 echo "========================================"
@@ -45,6 +74,7 @@ echo "Installing flagbeamformer"
 echo "========================================"
 echo "Navigating to $BEAM_SRC"
 cd $BEAM_SRC
+make clean
 make
 make install prefix=$prefix
 echo "========================================"
@@ -55,6 +85,7 @@ echo "Installing flagPower"
 echo "========================================"
 echo "Navigating to $POWER_SRC"
 cd $POWER_SRC
+make clean
 make
 make install prefix=$prefix
 echo "========================================"
@@ -65,8 +96,9 @@ echo "Installing flagpfb"
 echo "========================================"
 echo "Navigating to $PFB_SRC"
 cd $PFB_SRC
-make
-make install prefix=$prefix
+make clean
+make CUDA_DIR=$CUDA
+make install prefix=$prefix CUDA_DIR=$CUDA
 echo "========================================"
 echo
 
@@ -76,11 +108,14 @@ echo "========================================"
 echo "Navigating to $FLAG_DIR/src"
 cd $FLAG_DIR/src
 autoreconf -is
-./configure --prefix=$prefix --with-hashpipe=$prefix --with-xgpu=$prefix --with-xgpufrb=$prefix --with-xgpupfb=$prefix --with-flagpfb=$prefix --with-flagbeamformer=$prefix --with-flagpower=$prefix --silent
+./configure --prefix=$prefix --with-hashpipe=$prefix --with-xgpu=$prefix --with-xgpufrb=$prefix --with-xgpupfb=$prefix --with-flagpfb=$prefix --with-flagbeamformer=$prefix --with-flagpower=$prefix
+make clean
 make
 make install
 echo "========================================"
 echo 
+
+cd $FLAG_DIR
 
 echo "DONE!"
 echo "The FLAG plugins have been installed to $prefix"
