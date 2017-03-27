@@ -362,6 +362,7 @@ int initPFB(int iCudaDevice, params pfbParams){
 	return EXIT_SUCCESS;
 }
 
+/*
 // make a call to execute a ptyhon program.
 void genCoeff(char* procName, params pfbParams) {	
 	system("python --version");	
@@ -411,7 +412,7 @@ void genCoeff(char* procName, params pfbParams) {
 	Py_Finalize();
 
 	return;
-}
+}*/
 
 int doFFT() {
     cufftResult iCUFFTRet = CUFFT_SUCCESS;
