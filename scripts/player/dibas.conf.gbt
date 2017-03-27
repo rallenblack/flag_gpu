@@ -88,7 +88,7 @@ hpchost = flag3
 player_port = 6677
 # ROACH Control:
 # Are these even necessary? (RBlack Mar 31, 2016)
-has_roach = false
+has_roach = true
 katcp_ip = srbsr2-1
 #katcp_ip = flagr2-1
 katcp_port = 7147
@@ -490,7 +490,7 @@ dest_ip_register_name = bart
 dest_port_register_name = lisa
 master_slave_sel = 0,0,0,0,0,0
 
-sim3 = 0
+sim3 = 1
 
 
 ###################################  FLAG RTBF MODE  #############################################
