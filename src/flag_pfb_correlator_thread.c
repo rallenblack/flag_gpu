@@ -205,7 +205,7 @@ static void * run(hashpipe_thread_args_t * args) {
                     hashpipe_status_unlock_safe(&st);
 
                     // Compute last mcount
-                    last_mcnt = start_mcnt + int_count*N_MCNT_PER_BLOCK - 1;
+                    last_mcnt = start_mcnt + int_count*Nm - 1;
                 }
                 else {
                     // fprintf(stdout, "COR: We missed the start of the integration\n");
@@ -225,7 +225,7 @@ static void * run(hashpipe_thread_args_t * args) {
             context.output_offset = curblock_out * sizeof(flag_pfb_gpu_correlator_output_block_t) / sizeof(Complex);
         
             int doDump = 0;
-            if ((db_in->block[curblock_in].header.mcnt + int_count*N_MCNT_PER_BLOCK - 1) >= last_mcnt) {
+            if ((db_in->block[curblock_in].header.mcnt + int_count*Nm - 1) >= last_mcnt) {
                 doDump = 1;
 
                 // Wait for new output block to be free
@@ -279,7 +279,7 @@ static void * run(hashpipe_thread_args_t * args) {
                 flag_pfb_gpu_correlator_output_databuf_set_filled(db_out, curblock_out);
                 curblock_out = (curblock_out + 1) % db_out->header.n_block;
                 start_mcnt = last_mcnt + 1;
-                last_mcnt = start_mcnt + int_count*N_MCNT_PER_BLOCK - 1;
+                last_mcnt = start_mcnt + int_count*Nm - 1;
                 // Reset good_data flag for next block
                 good_data = 1;
             }

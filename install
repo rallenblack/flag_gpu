@@ -108,7 +108,7 @@ echo "========================================"
 echo "Navigating to $FLAG_DIR/src"
 cd $FLAG_DIR/src
 autoreconf -is
-./configure --prefix=$prefix --with-hashpipe=$prefix --with-xgpu=$prefix --with-xgpufrb=$prefix --with-xgpupfb=$prefix --with-flagpfb=$prefix --with-flagbeamformer=$prefix --with-flagpower=$prefix --silent
+./configure --prefix=$prefix --with-hashpipe=$prefix --with-xgpu=$prefix --with-xgpufrb=$prefix --with-xgpupfb=$prefix --with-flagpfb=$prefix --with-flagbeamformer=$prefix --with-flagpower=$prefix
 make clean
 make
 make install
