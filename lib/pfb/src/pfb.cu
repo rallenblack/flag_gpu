@@ -51,6 +51,7 @@ int g_iMaxPhysThreads = 0;
 int runPFB(signed char* inputData_h, float* outputData_h, params pfbParams) {
 
 	//process variables
+	g_IsProcDone = FALSE;
 	int iRet = EXIT_SUCCESS;
 	int countPFB = 0; // count number of times pfb fires.
 	int countCpyFFT = 0;
@@ -69,6 +70,7 @@ int runPFB(signed char* inputData_h, float* outputData_h, params pfbParams) {
 	// Begin PFB
 	g_pc2DataRead_d = g_pc2Data_d; // p_pc2Data_d contains all the data. DataRead will update with each pass through the PFB.
 	int pfb_on = 1; // Enable pfb flag. Extendable.
+
 	while(!g_IsProcDone){
 
 		if(pfb_on) {

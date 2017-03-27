@@ -28,7 +28,7 @@
 #define DEF_NUM_ELEMENTS		64  // System spec for number of elements
 #define SAMPLES					4000// Time samples.
 
-#define PFB_OUTPUT_BLOCK_SIZE	(SAMPLES+3*DEF_LEN_SPEC)*PFB_CHANNELS*ELEMNTS*2 // (3*DEF_LEN_SPEC is to add more samples on the end to make it look like 128 pfb windows had been processed for the pfb correlator)
+#define PFB_OUTPUT_BLOCK_SIZE	(SAMPLES+3*32)*PFB_CHANNELS*DEF_NUM_ELEMENTS*2 // (3*DEF_LEN_SPEC is to add more samples on the end to make it look like 128 pfb windows had been processed for the pfb correlator)
 
 // FFT Plan configuration
 #define FFTPLAN_RANK 			1				 // dimension of the transform
