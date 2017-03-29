@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "xgpu.h"
+#include "xgpu_pfb.h"
 
 int main(int argc, char** argv)
 {

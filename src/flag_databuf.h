@@ -141,7 +141,7 @@
 
 // Macros specific to the fine-channel correlator (PFB correlator)
 #define N_TIME_PER_PFB_BLOCK XGPU_PFB_NTIME
-#define N_CHAN_PER_PFB_BLOCK XGPU_FRB_NFREQUENCY
+#define N_CHAN_PER_PFB_BLOCK XGPU_PFB_NFREQUENCY
 #define N_PFB_COR_MATRIX (N_INPUTS/2*(N_INPUTS/2 + 1)/2*N_CHAN_PER_PFB_BLOCK*4)
 
 // Macros to maintain cache alignment

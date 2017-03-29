@@ -18,7 +18,7 @@
 #include <omp.h>
 #endif
 
-#include "xgpu.h"
+#include "xgpu_pfb.h"
 #include "xgpu_info_pfb.h"
 
 #define cxmac(acc,z0,z1)                                                         \

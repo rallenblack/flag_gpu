@@ -1,20 +1,16 @@
 #include <stddef.h>
 
-#ifndef XGPU_PFB_H
-#define XGPU_PFB_H
+#ifndef XGPU_H
+#define XGPU_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#ifndef VERBOSE
-    #define VERBOSE 1
-#endif
-
 // If FIXED_POINT is defined, the library was compiled to use 8-bit fixed
 // point (i.e. integers), otherwise it was compiled to use 32-bit floating
 // point (i.e. floats).
-#define FIXED_POINT
+// #define FIXED_POINT
 
 // set the data type accordingly
 #ifndef FIXED_POINT

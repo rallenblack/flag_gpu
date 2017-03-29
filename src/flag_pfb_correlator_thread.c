@@ -10,7 +10,7 @@
 #include <string.h>
 #include <math.h>
 
-#include <xgpu.h>
+#include <xgpu_pfb.h>
 #include "hashpipe.h"
 #include "flag_databuf.h"
 

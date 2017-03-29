@@ -20,8 +20,8 @@ close all;
 
 Nele = 40;
 Nele_tot = 64;
-Nbin = 25;
-Nsamp = 40;
+Nbin = 160;
+Nsamp = 125;
 Nbaselines_tot = (Nele_tot/2 + 1)*Nele_tot;
 Nbaselines     = (Nele + 1)*Nele/2;
 Nblocks        = (Nele_tot/2 + 1)*Nele_tot/4;
@@ -38,9 +38,11 @@ for i = 1:Nele_tot/2
 end
 
 Rtot = zeros(Nele_tot, Nele_tot, Nbin);
-
-for mcnt = 0:2:198
-    FILE = fopen(sprintf('~/cor_mcnt_%d.out', mcnt), 'r');
+PATH = '/home/mburnett/dibas/lib/python/';
+mcnt = [0]%, 200, 400, 600];
+%for mcnt = 0:2:198
+for k = 1:length(mcnt)
+    FILE = fopen([PATH, sprintf('cor_mcnt_%d.out', mcnt(k))], 'r');
     [R, count] = fscanf(FILE, '%g\n');
     fclose(FILE);
 
@@ -67,15 +69,15 @@ for mcnt = 0:2:198
 
         Rtot(:,:,Nb) = Rtot(:,:,Nb) + Rb.*Nsamp;
 
-        figure(1);
-        subplot(5,5,Nb);
+        fig_mod = ceil(Nb/40);
+        fig_mod_plot = mod(Nb,40);
+        figure(fig_mod);
+        if fig_mod_plot == 0
+            fig_mod_plot = 40;
+        end
+        subplot(8,5,fig_mod_plot);
         imagesc(abs(Rtot(1:Nele, 1:Nele, Nb)));
         title(['Bin ', num2str(Nb)]);
-        
-        figure(2);
-        subplot(5,5,Nb);
-        imagesc(abs(Rb(1:Nele, 1:Nele)));
-        title(['Bin ', num2str(Nb), ' mcnt = ', num2str(mcnt)]);
         drawnow;
     end
 end
