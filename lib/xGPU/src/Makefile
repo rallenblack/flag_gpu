@@ -48,6 +48,10 @@ LIBXGPU_FRB = libxgpufrb.so
 LIBXGPU_PFB = libxgpupfb.so
 endif
 
+PFB_FLAGS=
+FRB_FLAGS =
+X_FLAGS =
+
 NVCCFLAGS += $(DEBUG) -arch=$(CUDA_ARCH) -Xptxas -abi=no --ptxas-options=-v -prec-sqrt=false -Xcompiler -fPIC 
 NVCCFLAGS += -DTEXTURE_DIM=$(TEXTURE_DIM)
 
@@ -190,31 +194,31 @@ PFB_DEPS = $(BINXGPU_PFB_OBJS:.o=.d) $(LIBXGPU_PFB_OBJS:.o=.d)
 all: cuda_correlator cuda_correlator_frb cuda_correlator_pfb xgpuinfo xgpuinfo_frb xgpuinfo_pfb $(LIBXGPU) $(LIBXGPU_FRB) $(LIBXGPU_PFB)
 
 cuda_correlator: $(CUDA_CORRELATOR_OBJS) $(LIBXGPU)
-	$(NVCC) $(NVCCFLAGS) $(CUDA_CORRELATOR_OBJS) -o $@ $(LFLAGS) $(RPATH) -lxgpu
+	$(NVCC) $(NVCCFLAGS) $(CUDA_CORRELATOR_OBJS) $(X_FLAGS) -o $@ $(LFLAGS) $(RPATH) -lxgpu
 
 cuda_correlator_frb: $(CUDA_CORRELATOR_OBJS) $(LIBXGPU_FRB)
-	$(NVCC) $(NVCCFLAGS) $(CUDA_CORRELATOR_OBJS) -o $@ $(LFLAGS) $(RPATH) -lxgpufrb
+	$(NVCC) $(NVCCFLAGS) $(CUDA_CORRELATOR_OBJS) $(FRB_FLAGS) -o $@ $(LFLAGS) $(RPATH) -lxgpufrb
 
 cuda_correlator_pfb: $(CUDA_CORRELATOR_OBJS) $(LIBXGPU_PFB)
-	$(NVCC) $(NVCCFLAGS) $(CUDA_CORRELATOR_OBJS) -o $@ $(LFLAGS) $(RPATH) -lxgpupfb
+	$(NVCC) $(NVCCFLAGS) $(CUDA_CORRELATOR_OBJS) $(PFB_FLAGS) -o $@ $(LFLAGS) $(RPATH) -lxgpupfb
 
 xgpuinfo: $(XGPUINFO_OBJS) $(LIBXGPU)
-	$(NVCC) $(NVCCFLAGS) $(XGPUINFO_OBJS) -o $@ $(LFLAGS) $(RPATH) -lxgpu
+	$(NVCC) $(NVCCFLAGS) $(XGPUINFO_OBJS) $(X_FLAGS) -o $@ $(LFLAGS) $(RPATH) -lxgpu
 
 xgpuinfo_frb: $(XGPUINFO_FRB_OBJS) $(LIBXGPU_FRB)
-	$(NVCC) $(NVCCFLAGS) $(XGPUINFO_FRB_OBJS) -o $@ $(LFLAGS) $(RPATH) -lxgpufrb
+	$(NVCC) $(NVCCFLAGS) $(XGPUINFO_FRB_OBJS) $(FRB_FLAGS) -o $@ $(LFLAGS) $(RPATH) -lxgpufrb
 
 xgpuinfo_pfb: $(XGPUINFO_PFB_OBJS) $(LIBXGPU_PFB)
-	$(NVCC) $(NVCCFLAGS) $(XGPUINFO_PFB_OBJS) -o $@ $(LFLAGS) $(RPATH) -lxgpupfb
+	$(NVCC) $(NVCCFLAGS) $(XGPUINFO_PFB_OBJS) $(PFB_FLAGS) -o $@ $(LFLAGS) $(RPATH) -lxgpupfb
 
 $(LIBXGPU): $(LIBXGPU_OBJS)
-	$(NVCC) $(NVCCFLAGS) $^ -o $@ $(LFLAGS) --shared
+	$(NVCC) $(NVCCFLAGS) $(X_FLAGS) $^ -o $@ $(LFLAGS) --shared
 
 $(LIBXGPU_FRB): $(LIBXGPU_FRB_OBJS)
-	$(NVCC) $(NVCCFLAGS) $^ -o $@ $(LFLAGS) --shared
+	$(NVCC) $(NVCCFLAGS) $(FRB_FLAGS) $^ -o $@ $(LFLAGS) --shared
 
 $(LIBXGPU_PFB): $(LIBXGPU_PFB_OBJS)
-	$(NVCC) $(NVCCFLAGS) $^ -o $@ $(LFLAGS) --shared
+	$(NVCC) $(NVCCFLAGS) $(PFB_FLAGS) $^ -o $@ $(LFLAGS) --shared
 
 # A target to make all object files, but not link them
 objs: $(BINXGPU_OBJS) $(LIBXGPU_OBJS) $(LIBXGPU_FRB_OBJS) $(LIBXGPU_PFB_OBJS)
@@ -252,6 +256,7 @@ install: xgpuinfo $(LIBXGPU) xgpuinfo_frb $(LIBXGPU_FRB) xgpuinfo_pfb $(LIBXGPU_
 	cp xgpuinfo_pfb $(bindir)
 	mkdir -p $(includedir)
 	cp xgpu.h $(includedir)
+	cp xgpu_pfb.h $(includedir)
 	mkdir -p $(libdir)
 	cp $(LIBXGPU) $(libdir)
 	cp $(LIBXGPU_FRB) $(libdir)

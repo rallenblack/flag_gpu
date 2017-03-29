@@ -36,7 +36,7 @@ sigma2 = kb*Tsys*BW;    % Noise power per channel
 % 5 -> Send spatially correlated data in a single bin
 % 6 -> Send complex sinusodial data
 % else -> Send all zeros
-data_flag = 6;
+data_flag = 1;
 
 % Sinusoid parameters (only used if data_flag = 2)
 % It should be noted that the phase of the sinusoid will not change between
@@ -79,7 +79,8 @@ end
 
 % create time samples
 rng(1);
-N = 4000;
+data_windows = 5;
+N = 4000*data_windows;
 kwNs = 4000;
 kw_z = (randn(Nel, kwNs) + 1j*randn(Nel,kwNs))/sqrt(2);
 kwM = sqrtm(kwR);
@@ -100,11 +101,12 @@ save('matlab_corr.mat', 'kw_Rhat');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Case 6 - Complex Sinusoid
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-cs_Ns = 4000;
-cs_freq = 0.25;
+cs_Ns = N;
+cs_freq = 0.5;
 cs_n = 0:cs_Ns-1;
-cs_re = 127 * (0.1 * cos(2*pi*cs_freq*cs_n));
-cs_im = 127 * (0.1 * sin(2*pi*cs_freq*cs_n));
+sigma = 2;
+cs_re = 127 * (0.1 * cos(2*pi*cs_freq*cs_n)) + sigma^2*randn();
+cs_im = 127 * (0.1 * sin(2*pi*cs_freq*cs_n)) + sigma^2*randn();
 
 
 % Create UDP sockets - 1 IP address per Xengine (xid)
@@ -125,6 +127,7 @@ end
 % Generate packet payloads
 mcnt = 0; % Each mcnt represents 20 packets across all F-engines in the
           % same time frame
+  
 for mcnt = [0:200, 401] %while mcnt <= 10000
     disp(['Sending mcnt = ', num2str(mcnt)]);
     for xid = 14:14 % Set to a single X-engine for single HPC testing (Richard B.)

@@ -33,10 +33,10 @@ static void * run(hashpipe_thread_args_t * args) {
     hgets(st.buf, "DATADIR", 127, data_dir);
     hashpipe_status_unlock_safe(&st);
     if (data_dir == NULL) {
-        printf("SAV: DATADIR = .\n");
+        printf("PFB_SAV: DATADIR = .\n");
     }
     else {
-        printf("SAV: DATADIR = %s\n", data_dir);
+        printf("PFB_SAV: DATADIR = %s\n", data_dir);
     }
 
     // Mark thread as ready to run
@@ -61,25 +61,21 @@ static void * run(hashpipe_thread_args_t * args) {
                 break;
             }
         }
-        printf("Getting ready to save...\n");
 
         uint64_t start_mcnt = db_in->block[curblock_in].header.mcnt;
         int good_data_flag = (int)(db_in->block[curblock_in].header.good_data);
         float * pfb_out_data = (float *)db_in->block[curblock_in].data;
 
-	printf("Creating filename...\n");
         char filename[256];
         sprintf(filename, "%s/pfb_%d_mcnt_%lld.out", data_dir, instance_id, (long long)start_mcnt);
-	printf("Saving output file to: %s\n", filename);
         FILE * filePtr = fopen(filename, "wb");
 	if(filePtr == NULL) {
-		printf("DUM DUM...\n");
+		printf("PFB_SAVE: Could not open file for writing.\n");
 	}
-	printf("Writing good data...\n");
         fwrite(&good_data_flag, sizeof(int), 1, filePtr);
-	printf("Writing data out...\n");
         fwrite(pfb_out_data, sizeof(float), PFB_OUTPUT_BLOCK_SIZE, filePtr);
         fclose(filePtr);
+	printf("PFB_SAVE: wrote out to %s\n", filename);
 
         flag_gpu_pfb_output_databuf_set_free(db_in, curblock_in);
         curblock_in = (curblock_in + 1) % db_in->header.n_block;

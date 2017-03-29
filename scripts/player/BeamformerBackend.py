@@ -540,16 +540,28 @@ class BeamformerBackend(VegasBackend):
             process_list = process_list + thread2.split()
             process_list = process_list + thread3.split()
             process_list = process_list + thread4.split()
-	elif self.name == "flag_pfb":
-	    # Add threads
-	    thread1 = "-c %d flag_net_thread" % (self.core[0])
-	    thread2 = "-c %d flag_transpose_thread" % (self.core[1])
-	    thread3 = "-c %d flag_pfb_thread" % (self.core[2])
-	    thread4 = "-c %d flag_pfbsave_thread" % (self.core[3])
-	    process_list = process_list + thread1.split()
-	    process_list = process_list + thread2.split()
-	    process_list = process_list + thread3.split()
-	    process_list = process_list + thread4.split()            
+    	elif self.name == "flag_pfb":
+    	    # Add threads
+    	    thread1 = "-c %d flag_net_thread" % (self.core[0])
+    	    thread2 = "-c %d flag_transpose_thread" % (self.core[1])
+    	    thread3 = "-c %d flag_pfb_thread" % (self.core[2])
+    	    thread4 = "-c %d flag_pfbsave_thread" % (self.core[3])
+    	    process_list = process_list + thread1.split()
+    	    process_list = process_list + thread2.split()
+    	    process_list = process_list + thread3.split()
+    	    process_list = process_list + thread4.split()
+        elif self.name == "flag_pfb_corr":
+            # Add threads
+            thread1 = "-c %d flag_net_thread" % (self.core[0])
+            thread2 = "-c %d flag_transpose_thread" % (self.core[1])
+            thread3 = "-c %d flag_pfb_thread" % (self.core[2])
+            thread4 = "-c %d flag_pfb_correlator_thread" % (self.core[3])
+            thread5 = "-c %d flag_pfb_corsave_thread" % (self.core[1])
+            process_list = process_list + thread1.split()
+            process_list = process_list + thread2.split()
+            process_list = process_list + thread3.split()
+            process_list = process_list + thread4.split()
+            process_list = process_list + thread5.split()
 
         print ' '.join(process_list)
         self.hpc_process = subprocess.Popen(process_list, stdin=subprocess.PIPE)

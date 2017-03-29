@@ -14,7 +14,7 @@
 #include <unistd.h>
 #include <stdint.h>
 
-#include "xgpu.h"
+#include "xgpu_pfb.h"
 #include "xgpu_info_pfb.h"
 #include "xgpu_version.h"
 #include "cube/cube.h"

@@ -3,7 +3,7 @@
 #include <string.h>
 #include <math.h>
 
-#include "xgpu.h"
+#include "xgpu_pfb.h"
 #include "xgpu_info_pfb.h"
 
 // Normally distributed random numbers with standard deviation of 2.5,
