@@ -1,6 +1,6 @@
-/* flag_frb_transpose_thread.c
+/* flag_bx_transpose_thread.c
  * 
- * Routine to reorder received data to correct format for the FRB version of xGPU
+ * Routine to reorder received data to correct format for the FRB version of xGPU + beamformer
  * 
  */
 
@@ -33,6 +33,8 @@ static void * run(hashpipe_thread_args_t * args) {
     // Local aliases to shorten access to args fields
     flag_input_databuf_t * db_in = (flag_input_databuf_t *)args->ibuf;
     flag_frb_gpu_input_databuf_t * db_out = (flag_frb_gpu_input_databuf_t *)args->obuf;
+    // Beamformer needs its own input buffer
+    flag_gpu_input_databuf_t * b_db_out = (flag_gpu_input_databuf_t *)flag_gpu_input_databuf_create(args->instance_id, args->output_buffer+2);
     hashpipe_status_t st = args->st;
     const char * status_key = args->thread_desc->skey;
 
@@ -52,6 +54,7 @@ static void * run(hashpipe_thread_args_t * args) {
     int rv;
     int curblock_in = 0;
     int curblock_out = 0;
+    int b_curblock_out = 0;
     uint64_t mcnt;
     state cur_state = ACQUIRE;
     state next_state = ACQUIRE;
@@ -98,6 +101,21 @@ static void * run(hashpipe_thread_args_t * args) {
                         break;
                     }
                 }
+
+                // Wait for the Beamformer output buffer block to be freed
+                while ((rv=flag_gpu_input_databuf_wait_free(b_db_out, b_curblock_out)) != HASHPIPE_OK) {
+                    if (rv == HASHPIPE_TIMEOUT) {
+                        //hashpipe_status_lock_safe(&st);
+                        //hputs(st.buf, status_key, "waiting for free block");
+                        //hashpipe_status_unlock_safe(&st);
+                        continue;
+                    }
+                    else {
+                        hashpipe_error(__FUNCTION__, "error waiting for free databuf block");
+                        pthread_exit(NULL);
+                        break;
+                    }
+                }
        
                 // Print out the header information for this block 
                 flag_input_header_t tmp_header;
@@ -125,20 +143,32 @@ static void * run(hashpipe_thread_args_t * args) {
                 for (m = 0; m < Nm; m++) {
                     m2 = m/N_MCNT_PER_FRB_BLOCK;
                     uint64_t * block_out_p = db_out->block[curblock_out+m2].data;
+                    uint64_t * b_block_out_p = b_db_out->block[b_curblock_out].data;
                     for (t = 0; t < Nt; t++) {
                         for (f = 0; f < Nf; f++) {
-                            for (c = c_start; c < c_end; c++) {
-                            // for (c = 0; c < Nc; c++) {
+                            for (c = 0; c < Nc; c++) {
+                            // for (c = c_start; c < c_end; c++) {
                                 in_p  = block_in_p + flag_input_databuf_idx(m,f,t,c);
-                                out_p = block_out_p + flag_frb_gpu_input_databuf_idx(m % N_MCNT_PER_FRB_BLOCK,f,t,c % N_CHAN_PER_FRB_BLOCK);
-                                // out_p = block_out_p + flag_gpu_input_databuf_idx(m % N_MCNT_PER_FRB_BLOCK,f,t,c);
+
+                                // Only process input data if in the chunk
+                                if (c >= c_start && c < c_end) {
+                                    // Get pointer for FRB Correlator buffer
+                                    out_p = block_out_p + flag_frb_gpu_input_databuf_idx(m % N_MCNT_PER_FRB_BLOCK,f,t,c % N_CHAN_PER_FRB_BLOCK);
+                                    // Copy data to buffer
+                                    memcpy(out_p, in_p, 128/8);
+                                }
+
+                                // Get pointer for Beamformer buffer
+                                out_p = b_block_out_p + flag_gpu_input_databuf_idx(m % N_MCNT_PER_FRB_BLOCK,f,t,c);
+                                // Copy data to buffer
                                 memcpy(out_p, in_p, 128/8);
                             }
                         }
                     }
                 }
 
-    
+   
+                // Copy header info for FRB blocks and mark as filled 
                 int j;
                 for (j = 0; j < N_FRB_BLOCKS_PER_BLOCK; j++) {
                     // Add header information to output block
@@ -146,13 +176,23 @@ static void * run(hashpipe_thread_args_t * args) {
                     db_out->block[curblock_out + j].header.good_data = db_in->block[curblock_in].header.good_data;
                     // Set output block to filled
                     #if VERBOSE==1
-                        printf("TRA: Marking output block %d as filled, mcnt=%lld\n", curblock_out + j, (long long int)mcnt + j*N_MCNT_PER_FRB_BLOCK);
+                        printf("TRA: Marking FRB output block %d as filled, mcnt=%lld\n", curblock_out + j, (long long int)mcnt + j*N_MCNT_PER_FRB_BLOCK);
                     #endif
 
                     // Mark block as filled
                     flag_frb_gpu_input_databuf_set_filled(db_out, curblock_out + j);
                 }
-                curblock_out = (curblock_out + N_FRB_BLOCKS_PER_BLOCK) % db_out->header.n_block;
+
+                // Copy header info for Beamformer blocks and mark as filled
+                b_db_out->block[b_curblock_out].header.mcnt = mcnt;
+                b_db_out->block[b_curblock_out].header.good_data = db_in->block[curblock_in].header.good_data;
+                flag_gpu_input_databuf_set_filled(b_db_out, b_curblock_out);
+
+
+                b_curblock_out = (b_curblock_out + 1) % b_db_out->header.n_block;
+                #if VERBOSE==1
+                    printf("TRA: Marking BF output block %d as filled, mcnt=%lld\n", b_curblock_out, (long long int)mcnt);
+                #endif
     
                 // Set input block to free
                 #if VERBOSE==1
@@ -166,6 +206,7 @@ static void * run(hashpipe_thread_args_t * args) {
             printf("TRA: In Clean up \n");
             curblock_in = 0;
             curblock_out = 0;
+            b_curblock_out = 0;
             next_state = ACQUIRE;
             // Indicate that we have finished cleanup
             hashpipe_status_lock_safe(&st);
@@ -192,8 +233,8 @@ static void * run(hashpipe_thread_args_t * args) {
 
 // Thread description
 static hashpipe_thread_desc_t t_thread = {
-    name: "flag_frb_transpose_thread",
-    skey: "FTRASTAT",
+    name: "flag_bx_transpose_thread",
+    skey: "BXTRSTAT",
     init: NULL,
     run:  run,
     ibuf_desc: {flag_input_databuf_create},

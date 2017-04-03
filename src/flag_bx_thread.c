@@ -1,6 +1,6 @@
-/* flag_correlator_thread.c
+/* flag_bx_thread.c
  * 
- * Routine to correlate received packets
+ * Routine to run the fast-dump reduced bandwidth correlator and beamformer
  * 
  */
 
@@ -29,8 +29,8 @@ typedef enum {
 typedef struct {
     int curblock_in;
     int curblock_out;
-    flag_gpu_input_databuf_t * db_in;
-    flag_gpu_correlator_output_databuf_t * db_out;
+    flag_frb_gpu_input_databuf_t * db_in;
+    flag_frb_gpu_correlator_output_databuf_t * db_out;
     char * integ_status;
     int good_data;
     int int_count;
@@ -56,134 +56,158 @@ void * run_correlator_thread(void * args) {
 
     // Extract arguments into local memory
     char * integ_status = my_args->integ_status;
-    flag_gpu_input_databuf_t * db_in = my_args->db_in;
-    flag_gpu_correlator_output_databuf_t * db_out = my_args->db_out;
-    
-    // Propagate good_data flag
-    (my_args->good_data) &= db_in->block[my_args->curblock_in].header.good_data;
+    flag_frb_gpu_input_databuf_t * db_in = my_args->db_in;
+    flag_frb_gpu_correlator_output_databuf_t * db_out = my_args->db_out;
 
-    // Retrieve correlator integrator status
-    hashpipe_status_lock_safe(st_p);
-    hgets(st_p->buf, "INTSTAT", 16, integ_status);
-    hashpipe_status_unlock_safe(st_p);
-        
-    // If the correlator integrator status is "off,"
-    // Return and reset variables
-    if (strcmp(integ_status, "off") == 0) {
-        // The input databuf semaphore control is reserved to the parent thread
-        // flag_gpu_input_databuf_set_free(db_in, curblock_in);
-        // args->curblock_in = (curblock_in + 1) % db_in->header.n_block;
-        my_args->good_data = 1;
-        return NULL;
-    }
-    
-    // If the correlator integrator status is "start,"
-    // Get the correlator started
-    // The INTSTAT string is set to "start" by the net thread once it's up and running
-    if (strcmp(integ_status, "start") == 0) {
-
-        // Get the starting mcnt for integration (should be zero)
-        hashpipe_status_lock_safe(st_p);
-        hgeti4(st_p->buf, "NETMCNT", (int *)(&(my_args->start_mcnt)));
-        hashpipe_status_unlock_safe(st_p);
-
-        // Check to see if block's starting mcnt matches INTSYNC
-        if (db_in->block[my_args->curblock_in].header.mcnt < my_args->start_mcnt) {
-
-	    // If we get here, then there is a bug since the net thread shouldn't
-	    // mark blocks as filled that are before the starting mcnt
-
-            // starting mcnt not yet reached
-            // free block and continue
-            //flag_gpu_input_databuf_set_free(db_in, curblock_in);
-            //curblock_in = (curblock_in + 1) % db_in->header.n_block;
-            return NULL;
-        }
-        else if (db_in->block[my_args->curblock_in].header.mcnt == my_args->start_mcnt) {
-            // set correlator integrator to "on"
-            // fprintf(stderr, "COR: Starting correlator!\n");
-            strcpy(integ_status, "on");
-            float requested_integration_time = 0.0;
-            float actual_integration_time = 0.0;
-            hashpipe_status_lock_safe(st_p);
-            hputs(st_p->buf, "INTSTAT", integ_status);
-            hgetr4(st_p->buf, "REQSTI", &requested_integration_time);
-            hashpipe_status_unlock_safe(st_p);
-
-            my_args->int_count = ceil((N_MCNT_PER_SECOND / Nm) * requested_integration_time);
-            actual_integration_time = (my_args->int_count)/(N_MCNT_PER_SECOND / Nm);
-
-            hashpipe_status_lock_safe(st_p);
-            hputr4(st_p->buf, "ACTSTI", actual_integration_time);
-            hputi4(st_p->buf, "INTCOUNT", my_args->int_count);
-            hashpipe_status_unlock_safe(st_p);
-
-            // Compute last mcount
-            my_args->last_mcnt = my_args->start_mcnt + (my_args->int_count)*Nm - 1;
-        }
-        else {
-            // fprintf(stdout, "COR: We missed the start of the integration\n");
-	    fprintf(stdout, "COR: Missed start. Expected start_mcnt = %lld, got %lld\n", (long long int)(my_args->start_mcnt), (long long int)db_in->block[my_args->curblock_in].header.mcnt);
-            // we apparently missed the start of the integation... ouch...
-        }
-    }
-
-    // Check to see if a stop is issued
-    if (strcmp(integ_status, "stop") == 0) {
-        return NULL;
-    }
-
-    // If we get here, then integ_status == "on"
-    // Setup for current chunk
-    my_args->context.input_offset  = my_args->curblock_in  * sizeof(flag_gpu_input_block_t) / sizeof(ComplexInput);
-    my_args->context.output_offset = my_args->curblock_out * sizeof(flag_gpu_correlator_output_block_t) / sizeof(Complex);
-    
-    // Check to see if the correlator will dump to the output buffer    
-    int doDump = 0;
-    if ((db_in->block[my_args->curblock_in].header.mcnt + (my_args->int_count)*Nm - 1) >= my_args->last_mcnt) {
-        doDump = 1;
-
-        // Wait for new output block to be free
-        int rv;
-        while ((rv=flag_gpu_correlator_output_databuf_wait_free(db_out, my_args->curblock_out)) != HASHPIPE_OK) {
-            if (rv==HASHPIPE_TIMEOUT) { // If timeout, check if processing is done
+    if (cur_state == ACQUIRE) {
+           next_state = ACQUIRE;
+        // Wait for FRB input buffer block to be filled
+        while ((rv=flag_frb_gpu_input_databuf_wait_filled(db_in, my_args->curblock_in)) != HASHPIPE_OK) {
+            if (rv==HASHPIPE_TIMEOUT) {
                 int cleanb;
-                char netstat[17];
                 hashpipe_status_lock_safe(st_p);
-                hgetl(st_p->buf, "CLEANB", &cleanb);
-                hgets(st_p->buf, "NETSTAT", 16, netstat);
+                hgetl(st.buf, "CLEANB", &cleanb);
+                hgets(st.buf, "NETSTAT", 16, netstat);
                 hashpipe_status_unlock_safe(st_p);
                 if (cleanb == 0 && strcmp(netstat, "CLEANUP") == 0) {
                     printf("COR: Cleanup condition met!\n");
                     my_args->next_state = CLEANUP;
-                    return NULL;
+                    break;
                 }
             }
             else {
-                hashpipe_error(__FUNCTION__, "error waiting for free databuf");
-                my_args->next_state = ERROR;
-                return NULL;
+                hashpipe_error(__FUNCTION__, "error waiting for filled databuf block");
+                pthread_exit(NULL);
+                break;
             }
         }
-    }
-    
-    // Run the correlator kernel  
-    xgpuCudaXengine(&(my_args->context), doDump ? SYNCOP_DUMP : SYNCOP_SYNC_TRANSFER);
         
-    // If the correlator dumped, clean up for next integration
-    if (doDump) {
-        xgpuClearDeviceIntegrationBuffer(&(my_args->context));
-        db_out->block[my_args->curblock_out].header.mcnt = my_args->start_mcnt;
-        db_out->block[my_args->curblock_out].header.good_data = my_args->good_data;
+        // Propagate good_data flag
+        (my_args->good_data) &= db_in->block[my_args->curblock_in].header.good_data;
+
+        // Retrieve correlator integrator status
+        hashpipe_status_lock_safe(st_p);
+        hgets(st_p->buf, "INTSTAT", 16, integ_status);
+        hashpipe_status_unlock_safe(st_p);
+            
+        // If the correlator integrator status is "off,"
+        // Return and reset variables
+        if (strcmp(integ_status, "off") == 0) {
+            // The input databuf semaphore control is reserved to the parent thread
+            // flag_gpu_input_databuf_set_free(db_in, curblock_in);
+            // args->curblock_in = (curblock_in + 1) % db_in->header.n_block;
+            my_args->good_data = 1;
+            return NULL;
+        }
         
-        // Mark output block as full and advance
-        flag_gpu_correlator_output_databuf_set_filled(db_out, my_args->curblock_out);
-        my_args->curblock_out = (my_args->curblock_out + 1) % db_out->header.n_block;
-        my_args->start_mcnt = my_args->last_mcnt + 1;
-        my_args->last_mcnt  = my_args->start_mcnt + (my_args->int_count)*Nm - 1;
+        // If the correlator integrator status is "start,"
+        // Get the correlator started
+        // The INTSTAT string is set to "start" by the net thread once it's up and running
+        if (strcmp(integ_status, "start") == 0) {
+
+            // Get the starting mcnt for integration (should be zero)
+            hashpipe_status_lock_safe(st_p);
+            hgeti4(st_p->buf, "NETMCNT", (int *)(&(my_args->start_mcnt)));
+            hashpipe_status_unlock_safe(st_p);
+
+            // Check to see if block's starting mcnt matches INTSYNC
+            if (db_in->block[my_args->curblock_in].header.mcnt < my_args->start_mcnt) {
+
+	        // If we get here, then there is a bug since the net thread shouldn't
+	        // mark blocks as filled that are before the starting mcnt
+
+                // starting mcnt not yet reached
+                // free block and continue
+                //flag_gpu_input_databuf_set_free(db_in, curblock_in);
+                //curblock_in = (curblock_in + 1) % db_in->header.n_block;
+                return NULL;
+            }
+            else if (db_in->block[my_args->curblock_in].header.mcnt == my_args->start_mcnt) {
+                // set correlator integrator to "on"
+                // fprintf(stderr, "COR: Starting correlator!\n");
+                strcpy(integ_status, "on");
+                float requested_integration_time = 0.0;
+                float actual_integration_time = 0.0;
+                hashpipe_status_lock_safe(st_p);
+                hputs(st_p->buf, "INTSTAT", integ_status);
+                hgetr4(st_p->buf, "REQSTI", &requested_integration_time);
+                hashpipe_status_unlock_safe(st_p);
+
+                my_args->int_count = ceil((N_MCNT_PER_SECOND / N_MCNT_PER_FRB_BLOCK) * requested_integration_time);
+                actual_integration_time = (my_args->int_count)/(N_MCNT_PER_SECOND / N_MCNT_PER_FRB_BLOCK);
+
+                hashpipe_status_lock_safe(st_p);
+                hputr4(st_p->buf, "ACTSTI", actual_integration_time);
+                hputi4(st_p->buf, "INTCOUNT", my_args->int_count);
+                hashpipe_status_unlock_safe(st_p);
+
+                // Compute last mcount
+                my_args->last_mcnt = my_args->start_mcnt + (my_args->int_count)*N_MCNT_PER_FRB_BLOCK - 1;
+            }
+            else {
+                // fprintf(stdout, "COR: We missed the start of the integration\n");
+	        fprintf(stdout, "COR: Missed start. Expected start_mcnt = %lld, got %lld\n", (long long int)(my_args->start_mcnt), (long long int)db_in->block[my_args->curblock_in].header.mcnt);
+                // we apparently missed the start of the integation... ouch...
+            }
+        }
+
+        // Check to see if a stop is issued
+        if (strcmp(integ_status, "stop") == 0) {
+            return NULL;
+        }
+
+        // If we get here, then integ_status == "on"
+        // Setup for current chunk
+        my_args->context.input_offset  = my_args->curblock_in  * sizeof(flag_frb_gpu_input_block_t) / sizeof(ComplexInput);
+        my_args->context.output_offset = my_args->curblock_out * sizeof(flag_frb_gpu_correlator_output_block_t) / sizeof(Complex);
         
-        // Reset good_data flag for next block
-        my_args->good_data = 1;
+        // Check to see if the correlator will dump to the output buffer    
+        int doDump = 0;
+        if ((db_in->block[my_args->curblock_in].header.mcnt + (my_args->int_count)*N_MCNT_PER_FRB_BLOCK - 1) >= my_args->last_mcnt) {
+            doDump = 1;
+
+            // Wait for new output block to be free
+            int rv;
+            while ((rv=flag_gpu_correlator_output_databuf_wait_free(db_out, my_args->curblock_out)) != HASHPIPE_OK) {
+                if (rv==HASHPIPE_TIMEOUT) { // If timeout, check if processing is done
+                    int cleanb;
+                    char netstat[17];
+                    hashpipe_status_lock_safe(st_p);
+                    hgetl(st_p->buf, "CLEANB", &cleanb);
+                    hgets(st_p->buf, "NETSTAT", 16, netstat);
+                    hashpipe_status_unlock_safe(st_p);
+                    if (cleanb == 0 && strcmp(netstat, "CLEANUP") == 0) {
+                        printf("COR: Cleanup condition met!\n");
+                        my_args->next_state = CLEANUP;
+                        return NULL;
+                    }
+                }
+                else {
+                    hashpipe_error(__FUNCTION__, "error waiting for free databuf");
+                    my_args->next_state = ERROR;
+                    return NULL;
+                }
+            }
+        }
+        
+        // Run the correlator kernel  
+        xgpuCudaXengine(&(my_args->context), doDump ? SYNCOP_DUMP : SYNCOP_SYNC_TRANSFER);
+            
+        // If the correlator dumped, clean up for next integration
+        if (doDump) {
+            xgpuClearDeviceIntegrationBuffer(&(my_args->context));
+            db_out->block[my_args->curblock_out].header.mcnt = my_args->start_mcnt;
+            db_out->block[my_args->curblock_out].header.good_data = my_args->good_data;
+            
+            // Mark output block as full and advance
+            flag_gpu_correlator_output_databuf_set_filled(db_out, my_args->curblock_out);
+            my_args->curblock_out = (my_args->curblock_out + 1) % db_out->header.n_block;
+            my_args->start_mcnt = my_args->last_mcnt + 1;
+            my_args->last_mcnt  = my_args->start_mcnt + (my_args->int_count)*N_MCNT_PER_FRB_BLOCK - 1;
+            
+            // Reset good_data flag for next block
+            my_args->good_data = 1;
+        }
     }
 
     // Input buffer operations are reserved for master thread
@@ -251,8 +275,8 @@ void  * run_beamformer_thread(void * args) {
 //         (2b) Print out some data in the block
 static void * run(hashpipe_thread_args_t * args) {
     // Local aliases to shorten access to args fields
-    flag_gpu_input_databuf_t * db_in = (flag_gpu_input_databuf_t *)args->ibuf;
-    flag_gpu_correlator_output_databuf_t * db_out = (flag_gpu_correlator_output_databuf_t *)args->obuf;
+    flag_frb_gpu_input_databuf_t * db_in = (flag_frb_gpu_input_databuf_t *)args->ibuf;
+    flag_frb_gpu_correlator_output_databuf_t * db_out = (flag_frb_gpu_correlator_output_databuf_t *)args->obuf;
     hashpipe_status_t st = args->st;
     const char * status_key = args->thread_desc->skey;
     int instance_id = args->instance_id;
@@ -304,9 +328,13 @@ static void * run(hashpipe_thread_args_t * args) {
      * BEAMFORMER INIT
      ***************************************************************************/
 
+    // Need to create another databuf just for the beamformer inputs
+    printf("Creating databuf %d for beamformer inputs\n", args->input_buffer+2);
+    flag_gpu_input_databuf_t * bf_in = (flag_gpu_input_databuf_t *)flag_gpu_input_databuf_create(args->instance_id, args->input_buffer+2);
+
     // Need to create another databuf just for the beamformer outputs
-    printf("Creating databuf %d for beamformer outputs\n", args->output_buffer+1);
-    flag_gpu_beamformer_output_databuf_t * bf_out = (flag_gpu_beamformer_output_databuf_t *)flag_gpu_beamformer_output_databuf_create(args->instance_id, args->output_buffer+1);
+    printf("Creating databuf %d for beamformer outputs\n", args->output_buffer+2);
+    flag_gpu_beamformer_output_databuf_t * bf_out = (flag_gpu_beamformer_output_databuf_t *)flag_gpu_beamformer_output_databuf_create(args->instance_id, args->output_buffer+2);
 
     // Call beamformer_lib initialization functions
     init_beamformer();
@@ -378,9 +406,22 @@ static void * run(hashpipe_thread_args_t * args) {
     b_args my_b_args;
     my_b_args.curblock_in  = curblock_in;
     my_b_args.curblock_out = curblock_bf_out;
-    my_b_args.db_in        = db_in;
+    my_b_args.db_in        = bf_in;
     my_b_args.db_out       = bf_out;
     my_b_args.next_state   = ACQUIRE;
+
+
+    // Prepare arguments for next block
+    my_x_args.curblock_in = curblock_in;
+    my_x_args.next_state = ACQUIRE;
+    my_b_args.curblock_in = curblock_in;
+    my_b_args.next_state = ACQUIRE;
+
+    // Create the correlator thread
+    pthread_t corr_thread;
+    pthread_t beam_thread;
+    pthread_create(&corr_thread, NULL, run_correlator_thread, &my_x_args);
+    pthread_create(&beam_thread, NULL, run_beamformer_thread, &my_b_args);
 
     /***************************************************************************
      * Begin Loop
@@ -392,41 +433,11 @@ static void * run(hashpipe_thread_args_t * args) {
     hashpipe_status_unlock_safe(&st);
  
     while (run_threads()) {
-       
-        if (cur_state == ACQUIRE) {
-           next_state = ACQUIRE;
-	   // Wait for input buffer block to be filled
-           while ((rv=flag_gpu_input_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
-               if (rv==HASHPIPE_TIMEOUT) {
-                   int cleanb;
-                   hashpipe_status_lock_safe(&st);
-                   hgetl(st.buf, "CLEANB", &cleanb);
-                   hgets(st.buf, "NETSTAT", 16, netstat);
-                   hashpipe_status_unlock_safe(&st);
-                   if (cleanb == 0 && strcmp(netstat, "CLEANUP") == 0) {
-                      printf("COR: Cleanup condition met!\n");
-                      next_state = CLEANUP;
-                      break;
-                   }
-               }
-               else {
-                   hashpipe_error(__FUNCTION__, "error waiting for filled databuf block");
-                   pthread_exit(NULL);
-                   break;
-               }
-           }
-
-           // Prepare arguments for next block
-           my_x_args.curblock_in = curblock_in;
-           my_x_args.next_state = ACQUIRE;
-           my_b_args.curblock_in = curblock_in;
-           my_b_args.next_state = ACQUIRE;
-
-           // Create the correlator thread
-           pthread_t corr_thread;
-           pthread_t beam_thread;
-           pthread_create(&corr_thread, NULL, run_correlator_thread, &my_x_args);
-           pthread_create(&beam_thread, NULL, run_beamformer_thread, &my_b_args);
+           
+        // Check for CLEANUP
+        if (my_x_args.cur_state == CLEANUP || my_b_args.cur_state == CLEANUP) {
+            
+        }
 
            // Wait until all threads have joined
            pthread_join(corr_thread, NULL);
@@ -486,16 +497,16 @@ static void * run(hashpipe_thread_args_t * args) {
 
 
 // Thread description
-static hashpipe_thread_desc_t d_thread = {
-    name: "flag_dual_thread",
-    skey: "DUALSTAT",
+static hashpipe_thread_desc_t bx_thread = {
+    name: "flag_bx_thread",
+    skey: "BXSTAT",
     init: NULL,
     run:  run,
-    ibuf_desc: {flag_gpu_input_databuf_create},
-    obuf_desc: {flag_gpu_correlator_output_databuf_create}
+    ibuf_desc: {flag_frb_gpu_input_databuf_create},
+    obuf_desc: {flag_frb_gpu_correlator_output_databuf_create}
 };
 
 static __attribute__((constructor)) void ctor() {
-    register_hashpipe_thread(&d_thread);
+    register_hashpipe_thread(&bx_thread);
 }
 
