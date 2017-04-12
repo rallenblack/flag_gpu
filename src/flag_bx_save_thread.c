@@ -16,7 +16,7 @@
 #define DISABLE_SAVE 1
 
 typedef struct {
-    flag_gpu_correlator_output_databuf_t * db_in;
+    flag_frb_gpu_correlator_output_databuf_t * db_in;
 } x_save_args;
 
 typedef struct {
@@ -29,14 +29,14 @@ static hashpipe_status_t * st_p;
 
 void * run_corrsave_thread(void * args) {
     x_save_args * my_args = (x_save_args *)args;
-    flag_gpu_correlator_output_databuf_t * db_in = my_args->db_in;
+    flag_frb_gpu_correlator_output_databuf_t * db_in = my_args->db_in;
     
     int rv;
     int curblock_in = 0;
     while (run_threads()) {
         
         // Wait for input buffer block to be filled
-        while ((rv=flag_gpu_correlator_output_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
+        while ((rv=flag_frb_gpu_correlator_output_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
             if (rv==HASHPIPE_TIMEOUT) {
                 hashpipe_status_lock_safe(st_p);
                 hputs(st_p->buf, "CORRSAVE", "waiting for free block");
@@ -49,17 +49,18 @@ void * run_corrsave_thread(void * args) {
             }
         }
 
-        #if DISABLE_SAVE == 0
         // Extract information from header
         uint64_t start_mcnt = db_in->block[curblock_in].header.mcnt;
-
-        // Get pointer to input buffer
-        Complex * p = (Complex *)db_in->block[curblock_in].data;
 
         // Get filename for output correlation file
         char filename[256];
         sprintf(filename, "corr_mcnt_%lld.out", (long long)start_mcnt);
         fprintf(stderr, "SAV: Saving to %s\n", filename);
+
+        #if DISABLE_SAVE == 0
+
+        // Get pointer to input buffer
+        Complex * p = (Complex *)db_in->block[curblock_in].data;
         
         // Open file and save
         FILE * filePtr = fopen(filename, "w");
@@ -74,7 +75,7 @@ void * run_corrsave_thread(void * args) {
         #endif
 
         // Mark input block as free and advance
-        flag_gpu_correlator_output_databuf_set_free(db_in, curblock_in);
+        flag_frb_gpu_correlator_output_databuf_set_free(db_in, curblock_in);
         curblock_in = (curblock_in + 1) % db_in->header.n_block;
         pthread_testcancel();
     }
@@ -104,17 +105,17 @@ void * run_beamsave_thread(void * args) {
             }
         }
 
-        #if DISABLE_SAVE == 0
         // Extract information from header
         uint64_t start_mcnt = db_in->block[curblock_in].header.mcnt;
-
-        // Get pointer to input buffer
-        float * p = (float *)db_in->block[curblock_in].data;
 
         // Get filename for output correlation file
         char filename[256];
         sprintf(filename, "beam_mcnt_%lld.out", (long long)start_mcnt);
         fprintf(stderr, "SAV: Saving to %s\n", filename);
+
+        #if DISABLE_SAVE == 0
+        // Get pointer to input buffer
+        float * p = (float *)db_in->block[curblock_in].data;
         
         // Open file and save
         FILE * filePtr = fopen(filename, "w");
@@ -142,13 +143,13 @@ static void * run(hashpipe_thread_args_t * args) {
     #endif
 
     // Local aliases to shorten access to args fields
-    flag_gpu_correlator_output_databuf_t * db_in = (flag_gpu_correlator_output_databuf_t  *)args->ibuf;
+    flag_frb_gpu_correlator_output_databuf_t * db_in = (flag_frb_gpu_correlator_output_databuf_t  *)args->ibuf;
     hashpipe_status_t st = args->st;
 
     st_p = &st; // allow global (this source file) access to the status buffer
 
     // Create additional databuf just for the beamformer outputs
-    flag_gpu_beamformer_output_databuf_t * bf_in = (flag_gpu_beamformer_output_databuf_t *) flag_gpu_beamformer_output_databuf_create(args->instance_id, args->input_buffer+1);
+    flag_gpu_beamformer_output_databuf_t * bf_in = (flag_gpu_beamformer_output_databuf_t *) flag_gpu_beamformer_output_databuf_create(args->instance_id, args->input_buffer+2);
 
     // Set up the argument structures
     x_save_args x_args;
@@ -176,16 +177,16 @@ static void * run(hashpipe_thread_args_t * args) {
 }
 
 // Thread description
-static hashpipe_thread_desc_t dsave_thread = {
-    name: "flag_dualsave_thread",
+static hashpipe_thread_desc_t bxsave_thread = {
+    name: "flag_bx_save_thread",
     skey: "DUALSAVE",
     init: NULL,
     run:  run,
-    ibuf_desc: {flag_gpu_correlator_output_databuf_create},
+    ibuf_desc: {flag_frb_gpu_correlator_output_databuf_create},
     obuf_desc: {NULL}
 };
 
 static __attribute__((constructor)) void ctor() {
-    register_hashpipe_thread(&dsave_thread);
+    register_hashpipe_thread(&bxsave_thread);
 }
 

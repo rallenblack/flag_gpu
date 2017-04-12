@@ -66,7 +66,7 @@ static void * run(hashpipe_thread_args_t * args) {
         float * p = (float *)db_in->block[curblock_in].data;
         char filename[256];
         sprintf(filename, "%s/beamformer_%d_mcnt_%lld.out", data_dir, instance_id, (long long)start_mcnt);
-        // fprintf(stderr, "Saving to %s\n", filename);
+        fprintf(stderr, "SAV: Saving to %s\n", filename);
         FILE * filePtr = fopen(filename, "w");
         fwrite(&good_data, sizeof(int), 1, filePtr);
         fwrite(p, sizeof(float), N_BEAM_SAMPS, filePtr);
@@ -76,8 +76,8 @@ static void * run(hashpipe_thread_args_t * args) {
         //float * p = (float *)db_in->block[curblock_in].data;
 
 	// Derive output filename
-        //char filename[128];
-        //sprintf(filename, "power_mcnt_%lld.out", (long long)start_mcnt);
+        // char filename[128];
+        // sprintf(filename, "power_mcnt_%lld.out", (long long)start_mcnt);
         // fprintf(stderr, "SAV: Saving to %s\n", filename);
 
 	// Open file and begin writing
