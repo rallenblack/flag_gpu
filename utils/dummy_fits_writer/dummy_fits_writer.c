@@ -15,21 +15,25 @@ int main(int argc, char * argv[]) {
     signal(SIGINT, cc); // Connect Ctrl+C to handler
     int cmd = INVALID;
     int fits_fifo_id = open_fifo("/tmp/fits_bogus.fifo");
+    //int counter = 0;
     while(quit != 1) {
-        cmd = check_cmd(fits_fifo_id);
-        switch(cmd) {
-            case START:
-                printf("dummy_fits_writer: START\n");
-                break;
-            case STOP:
-                printf("dummy_fits_writer: STOP\n");
-                break;
-            case QUIT:
-                printf("dummy_fits_writer: QUIT\n");
-                quit = 1;
-                break;
-        }
-        sleep(0.2);
+        //if (counter++ >= 50000) {
+            cmd = check_cmd(fits_fifo_id);
+            switch(cmd) {
+                case START:
+                    printf("dummy_fits_writer: START\n");
+                    break;
+                case STOP:
+                    printf("dummy_fits_writer: STOP\n");
+                    break;
+                case QUIT:
+                    printf("dummy_fits_writer: QUIT\n");
+                    quit = 1;
+                    break;
+            }
+           // counter = 0;
+       // }
+       sleep(1.0);
     }
     return 1;
 }
