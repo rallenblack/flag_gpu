@@ -111,7 +111,9 @@ static void * run(hashpipe_thread_args_t * args) {
                 hashpipe_status_unlock_safe(&st);
                 int c_start = n_chunk*N_CHAN_PER_FRB_BLOCK;
                 int c_end   = c_start + N_CHAN_PER_FRB_BLOCK;
+                #if VERBOSE == 1
                 printf("TRA: c_start = %d, c_end = %d\n", c_start, c_end);
+                #endif
 
                 /**********************************************
                  * Perform transpose
