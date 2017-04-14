@@ -25,6 +25,7 @@ int main(int argc, char * argv[]) {
                     break;
                 case STOP:
                     printf("dummy_fits_writer: STOP\n");
+                    quit = 1;
                     break;
                 case QUIT:
                     printf("dummy_fits_writer: QUIT\n");
