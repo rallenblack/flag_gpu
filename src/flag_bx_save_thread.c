@@ -55,10 +55,11 @@ void * run_corrsave_thread(void * args) {
         // Get filename for output correlation file
         char filename[256];
         sprintf(filename, "corr_mcnt_%lld.out", (long long)start_mcnt);
-        fprintf(stderr, "SAV: Saving to %s\n", filename);
+        if (start_mcnt % 200 == 0) {
+            fprintf(stderr, "SAV: Saving to %s\n", filename);
+        }
 
         #if DISABLE_SAVE == 0
-
         // Get pointer to input buffer
         Complex * p = (Complex *)db_in->block[curblock_in].data;
         
@@ -111,7 +112,9 @@ void * run_beamsave_thread(void * args) {
         // Get filename for output correlation file
         char filename[256];
         sprintf(filename, "beam_mcnt_%lld.out", (long long)start_mcnt);
-        fprintf(stderr, "SAV: Saving to %s\n", filename);
+        if (start_mcnt % 200 == 0) {
+            fprintf(stderr, "SAV: Saving to %s\n", filename);
+        }
 
         #if DISABLE_SAVE == 0
         // Get pointer to input buffer

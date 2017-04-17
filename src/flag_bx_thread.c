@@ -219,7 +219,9 @@ void * run_correlator_thread(void * args) {
            
                 xgpuCudaXengine(&(my_args->context), doDump ? SYNCOP_DUMP : SYNCOP_SYNC_TRANSFER);
            
+                #if VERBOSE==1
                 printf("COR: start_mcnt = %lld, last_mcnt = %lld\n", (long long int)(my_args->start_mcnt), (long long int)(my_args->last_mcnt));
+                #endif
                 if (doDump) {
                     xgpuClearDeviceIntegrationBuffer(&(my_args->context));
                     //xgpuReorderMatrix((Complex *)db_out->block[curblock_out].data);
@@ -362,7 +364,9 @@ void  * run_beamformer_thread(void * args) {
             run_beamformer((signed char *)&db_in->block[my_args->curblock_in].data, (float *)&db_out->block[my_args->curblock_out].data);
             check_count++;
             // if(check_count == 1000){
+            #if VERBOSE == 1
                  printf("RTBF: dumping mcnt = %lld\n", (long long int)(my_args->start_mcnt));
+            #endif
             // }
 	        // Get block's starting mcnt for output block
             db_out->block[my_args->curblock_out].header.mcnt = my_args->start_mcnt;
@@ -439,7 +443,7 @@ static void * run(hashpipe_thread_args_t * args) {
     hashpipe_status_lock_safe(&st);
     hputs(st.buf, "INTSTAT", "off");
     hputi8(st.buf, "INTSYNC", 0);
-    hputr4(st.buf, "REQSTI", 0.5); // Requested STI length (set by Dealer/Player)
+    hputr4(st.buf, "REQSTI", 0.0001); // Requested STI length (set by Dealer/Player)
     hputr4(st.buf, "ACTSTI", 0.0); // Delivered (actual) STI length (based on whole number of blocks)
     hputi4(st.buf, "INTCOUNT", 1); // Number of blocks to integrate per STI
     hgeti4(st.buf, "GPUDEV", &gpu_dev);
@@ -559,8 +563,18 @@ static void * run(hashpipe_thread_args_t * args) {
 
     // Create the correlator thread
     pthread_t corr_thread;
+    // Only run for even-indexed instances
+    if (args->instance_id % 2 == 0) {
+        pthread_create(&corr_thread, NULL, run_correlator_thread, &my_x_args);
+    }
+    #if VERBOSE == 1
+    else {
+        printf("BX: Only running beamformer for this instance!\n");
+    }
+    #endif
+
+    // Create the beamformer thread
     pthread_t beam_thread;
-    pthread_create(&corr_thread, NULL, run_correlator_thread, &my_x_args);
     pthread_create(&beam_thread, NULL, run_beamformer_thread, &my_b_args);
 
     /***************************************************************************
@@ -574,13 +588,16 @@ static void * run(hashpipe_thread_args_t * args) {
  
     while (run_threads()) {
 
-        pthread_join(corr_thread, NULL);
-        printf("BX: Correlator thread has joined\n");
+        if (args->instance_id % 2 == 0) {
+            pthread_join(corr_thread, NULL);
+            printf("BX: Correlator thread has joined\n");
+        }
         pthread_join(beam_thread, NULL);
         printf("BX: Beamformer thread has joined\n");
 
+        
         // TODO: Check current state of each thread to see if CLEANUP state
-        if (my_x_args.cur_state == CLEANUP && my_b_args.cur_state == CLEANUP) {
+        if (my_b_args.cur_state == CLEANUP) {
             // Reinitialize counters
             curblock_in     = 0;
             curblock_out    = 0;
@@ -614,7 +631,9 @@ static void * run(hashpipe_thread_args_t * args) {
 
             // Recreate threads
             printf("BX: Launching threads again\n");
-            pthread_create(&corr_thread, NULL, run_correlator_thread, &my_x_args);
+            if (args->instance_id % 2 == 0) {
+                pthread_create(&corr_thread, NULL, run_correlator_thread, &my_x_args);
+            }
             pthread_create(&beam_thread, NULL, run_beamformer_thread, &my_b_args);
         }
         else if (my_x_args.cur_state == ERROR || my_b_args.cur_state == ERROR) {

@@ -128,9 +128,9 @@ end
 mcnt = 0; % Each mcnt represents 20 packets across all F-engines in the
           % same time frame
   
-for mcnt = [0:200, 401] %while mcnt <= 10000
+for mcnt = [0:10000] %while mcnt <= 10000
     disp(['Sending mcnt = ', num2str(mcnt)]);
-    for xid = 14:14 % Set to a single X-engine for single HPC testing (Richard B.)
+    for xid = 13:13 % Set to a single X-engine for single HPC testing (Richard B.)
         for fid = 1:Nfengines
             w_idx = 1;
             

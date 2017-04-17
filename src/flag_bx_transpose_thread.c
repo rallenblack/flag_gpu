@@ -129,7 +129,9 @@ static void * run(hashpipe_thread_args_t * args) {
                 hashpipe_status_unlock_safe(&st);
                 int c_start = n_chunk*N_CHAN_PER_FRB_BLOCK;
                 int c_end   = c_start + N_CHAN_PER_FRB_BLOCK;
+                #if VERBOSE == 1
                 printf("TRA: c_start = %d, c_end = %d\n", c_start, c_end);
+                #endif
 
                 /**********************************************
                  * Perform transpose
@@ -188,11 +190,13 @@ static void * run(hashpipe_thread_args_t * args) {
                 b_db_out->block[b_curblock_out].header.good_data = db_in->block[curblock_in].header.good_data;
                 flag_gpu_input_databuf_set_filled(b_db_out, b_curblock_out);
 
-
-                b_curblock_out = (b_curblock_out + 1) % b_db_out->header.n_block;
+                // Update correlator output block counter
+                curblock_out = (curblock_out + N_FRB_BLOCKS_PER_BLOCK) % db_out->header.n_block;
+                
                 #if VERBOSE==1
                     printf("TRA: Marking BF output block %d as filled, mcnt=%lld\n", b_curblock_out, (long long int)mcnt);
                 #endif
+                b_curblock_out = (b_curblock_out + 1) % b_db_out->header.n_block;
     
                 // Set input block to free
                 #if VERBOSE==1
