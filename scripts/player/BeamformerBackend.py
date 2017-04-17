@@ -89,10 +89,12 @@ class BeamformerBackend(VegasBackend):
         # Set some default parameter values
         self.requested_weight_file = ''
         self.weifile2 = ''
+	self.requested_channel = 0
 
         # Add additional dealer-controlled parameters
         self.params["int_length"] = self.setIntegrationTime
 	self.params["weight_file"] = self.setNewWeightFilename
+	self.params["channel_select"] = self.setChannel
 
         # Set weight flag to default value of 0
         self.write_status(WFLAG=str(0))
@@ -138,6 +140,30 @@ class BeamformerBackend(VegasBackend):
         Sets the file containing the weights
         """
         self.requested_weight_file = weights
+
+    def setChannel(self, channel):
+	"""
+	This method is avaliable to the user to select a block of 5 contiguous coarse channels for
+	fine filter bank processing.
+	
+	@param channel - int - [0, 4]
+		0 --> channels 0-4
+		1 --> channels 5-9
+		2 --> channels 10-14
+		3 --> channels 15-19
+		4 --> channels 20-24
+	
+	If the selected channel is outside the range [0,4] prints an error to the user and retains
+	the current channel select value.
+	"""
+
+	if channel >= 0 and channel <= 4:
+		self.requested_channel =  channel
+	else:
+		print("ERROR: Invalid channel selection. Valid values are in the range [0,4].")
+		print("\tUsing %i as the selected channel." % self.requested_channel)
+
+	return
 
     def get_instance_id(self, theBank, theMode):
         bank = theBank.name
@@ -343,6 +369,7 @@ class BeamformerBackend(VegasBackend):
         # self.write_status(REQSTI=str(self.write_status(REQSTI=str(self.requested_integration_time))))
         self.write_status(REQSTI=str(self.requested_integration_time))
         self.write_status(BWEIFILE=str(self.requested_weight_file))
+	self.write_status(CHANSEL=str(self.requested_channel))
 
         self.weifile1 = self.weifile2
         self.weifile2 = self.get_status('BWEIFILE')
@@ -492,11 +519,11 @@ class BeamformerBackend(VegasBackend):
             thread1 = "-c %d flag_net_thread" % (self.core[0])
             thread2 = "-c %d flag_transpose_thread" % (self.core[1])
             thread3 = "-c %d flag_correlator_thread" % (self.core[2])
-            #thread4 = "-c %d flag_corsave_thread" % (self.core[3])
+            thread4 = "-c %d flag_corsave_thread" % (self.core[3])
             process_list = process_list + thread1.split()
             process_list = process_list + thread2.split()
             process_list = process_list + thread3.split()
-            #process_list = process_list + thread4.split()
+            process_list = process_list + thread4.split()
         if self.name == "frb_correlator":
             # Add mode specifier for FITS writers
             mode_str = "-o COVMODE=FRB"

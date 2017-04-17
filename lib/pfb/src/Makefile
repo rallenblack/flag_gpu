@@ -6,6 +6,8 @@ includedir ?= $(prefix)/include
 bindir ?= $(prefix)/bin
 CUDA_DIR ?= $(prefix)/cuda
 
+datdir ?= $(prefix)/data
+
 #CUDA_DIR ?= /usr/local/cuda
 #prefix ?= tmp
 #libdir ?= $(prefix)/lib
@@ -53,5 +55,5 @@ install: kernels.o pfb.o libflagpfb.so
 	cp kernels.h $(includedir)
 	mkdir -p $(libdir)
 	cp libflagpfb.so $(libdir)
-
-
+	mkdir -p $(datdir)
+	cp *.dat $(datdir)
