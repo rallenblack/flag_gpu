@@ -57,7 +57,7 @@ static void * run(hashpipe_thread_args_t * args) {
             fprintf(stderr, "SAV: Saving to %s\n", filename);
         //}
         
-        
+        /* 
         FILE * filePtr = fopen(filename, "w");
         Complex * p = (Complex *)db_in->block[curblock_in].data;
 
@@ -69,7 +69,7 @@ static void * run(hashpipe_thread_args_t * args) {
             fprintf(filePtr, "%g\n", p_im);
         }
         fclose(filePtr);
-        
+        */
         
 
         flag_pfb_gpu_correlator_output_databuf_set_free(db_in, curblock_in);

@@ -50,45 +50,50 @@ int g_iMaxPhysThreads = 0;
 
 int runPFB(signed char* inputData_h, float* outputData_h, params pfbParams) {
 
-	//process variables
 	g_IsProcDone = FALSE;
 	int iRet = EXIT_SUCCESS;
-	int countPFB = 0; // count number of times pfb fires.
-	int countCpyFFT = 0;
-	int countFFT = 0; // count number of FFT's computed.
-	long lProcData = 0; // count how much data processed
-	long ltotData = pfbParams.samples * pfbParams.fine_channels * pfbParams.elements + pfbParams.fine_channels*pfbParams.elements*pfbParams.nfft*pfbParams.taps; // total amount of data to proc (includes the padding for the saved filter state.)
-	int start = pfbParams.fine_channels*pfbParams.elements*(pfbParams.nfft*pfbParams.taps); // starting point to copy over the map data.
+	long lProcData = 0;
+	long ltotData = pfbParams.fine_channels*pfbParams.elements*(pfbParams.samples + pfbParams.nfft*pfbParams.taps);
+	int start = pfbParams.fine_channels*pfbParams.elements*pfbParams.nfft*pfbParams.taps;
+	int countFFT = 0;
 	// copy data to device
 	CUDASafeCallWithCleanUp(cudaMemcpy(g_pcInputData_d, inputData_h, g_iSizeRead, cudaMemcpyHostToDevice)); //g_iSizeRead = samples*coarse_channels*elements*(2*sizeof(char));
 
 	// map - extract channel data from full data stream and load into buffer.
 	map<<<mapGSize, mapBSize>>>(g_pcInputData_d, &g_pc2Data_d[start], pfbParams.select, pfbParams);
-	CUDASafeCallWithCleanUp(cudaGetLastError());
-	CUDASafeCallWithCleanUp(cudaThreadSynchronize());
+	//CUDASafeCallWithCleanUp(cudaGetLastError());
+	//CUDASafeCallWithCleanUp(cudaThreadSynchronize());
 
 	// Begin PFB
 	g_pc2DataRead_d = g_pc2Data_d; // p_pc2Data_d contains all the data. DataRead will update with each pass through the PFB.
 	int pfb_on = 1; // Enable pfb flag. Extendable.
 
-	while(!g_IsProcDone){
+	if(pfb_on) {
+		//PFB
+		PFB_kernel<<<g_dimGPFB, g_dimBPFB>>>(g_pc2DataRead_d, g_pf2FFTIn_d, g_pfPFBCoeff_d, pfbParams);
+		//CUDASafeCallWithCleanUp(cudaGetLastError());
+		//CUDASafeCallWithCleanUp(cudaThreadSynchronize());
 
-		if(pfb_on) {
-			//PFB
-			PFB_kernel<<<g_dimGPFB, g_dimBPFB>>>(g_pc2DataRead_d, g_pf2FFTIn_d, g_pfPFBCoeff_d, pfbParams);
-			CUDASafeCallWithCleanUp(cudaGetLastError());
-			CUDASafeCallWithCleanUp(cudaThreadSynchronize());
+	} else {
+		// Prepare for FFT
+		printf("Skipping PBF... copying for FFT!\n");
+		CopyDataForFFT<<<g_dimGPFB, g_dimBPFB>>>(g_pc2DataRead_d, g_pf2FFTIn_d);
+		//CUDASafeCallWithCleanUp(cudaGetLastError());
+		//CUDASafeCallWithCleanUp(cudaThreadSynchronize());
 
-			//update data read pointer
-			g_pc2DataRead_d += g_iNumSubBands * g_iNFFT;
-			++countPFB;
-		} else {
-			CopyDataForFFT<<<g_dimGPFB, g_dimBPFB>>>(g_pc2DataRead_d, g_pf2FFTIn_d);
+	}
 
-			g_pc2DataRead_d += g_iNumSubBands * g_iNFFT;
-			++countCpyFFT;
-		}
-
+	// Doesnt seem to be possible to do all 125 FFT's at once....
+	// //FFT
+	// iRet = doFFT();
+	// if(iRet != EXIT_SUCCESS) {
+	// 	(void) fprintf(stderr, "ERROR: FFT failed\n");
+	// 	cleanUp();
+	// 	return EXIT_FAILURE;
+	// }
+	// CUDASafeCallWithCleanUp(cudaGetLastError());
+	float2* fftOutPtr = g_pf2FFTOut_d;
+	while(!g_IsProcDone) {
 		//FFT
 		iRet = doFFT();
 		if(iRet != EXIT_SUCCESS) {
@@ -99,32 +104,38 @@ int runPFB(signed char* inputData_h, float* outputData_h, params pfbParams) {
 		CUDASafeCallWithCleanUp(cudaGetLastError());
 		++countFFT;
 
-		//update output fft pointer.
+		g_pf2FFTIn_d += g_iNumSubBands *g_iNFFT;
 		g_pf2FFTOut_d += g_iNumSubBands * g_iNFFT;
 
-		//update proc data
 		lProcData += g_iNumSubBands * g_iNFFT;
 		if(lProcData >= ltotData - NUM_TAPS*g_iNumSubBands*g_iNFFT){ // >= process 117 ffts leaving 256 time samples, > process 118 ffts leaving 224 time samples.
-			(void) fprintf(stdout, "\nINFO: Processed finished!\n");
-			(void) fprintf(stdout, "\tCounters--PFB:%d FFT:%d\n",countPFB, countFFT);
-			(void) fprintf(stdout, "\tData process by the numbers:\n \t\tProcessed:%ld (Samples) \n \t\tTo Process:%ld (Samples)\n\n",lProcData, ltotData);
+			//(void) fprintf(stdout, "\nINFO: Processed finished!\n");
+			//(void) fprintf(stdout, "\tCounter -- FFT:%d\n", countFFT);
+			//(void) fprintf(stdout, "\tData process by the numbers:\n \t\tProcessed:%ld (Samples) \n \t\tTo Process:%ld (Samples)\n\n",lProcData, ltotData);
 			g_IsProcDone = TRUE;
-
-			// prepare next filter
-			saveData<<<saveGSize, saveBSize>>>(g_pc2DataRead_d, g_pc2Data_d);
-			CUDASafeCallWithCleanUp(cudaGetLastError());
-
-			// copy back to host.
-			//wind back out ptr - should put in another pointer as a process read ptr.
-			int outDataSize = countFFT * g_iNumSubBands * g_iNFFT * sizeof(cufftComplex);
-			g_pf2FFTOut_d = g_pf2FFTOut_d - countFFT*g_iNumSubBands*g_iNFFT;
-			//fprintf(stdout, "Copyting back: %d\n", outDataSize);
-			CUDASafeCallWithCleanUp(cudaMemcpy(outputData_h, g_pf2FFTOut_d, outDataSize, cudaMemcpyDeviceToHost));
 		}
 
 	}
+	
+	// prepare next filter
+	g_pc2DataRead_d += countFFT*g_iNumSubBands*g_iNFFT;
+	saveData<<<saveGSize, saveBSize>>>(g_pc2DataRead_d, g_pc2Data_d);
+	CUDASafeCallWithCleanUp(cudaGetLastError());
+
+	// copy back to host.
+
+	//wind back out ptr - should put in another pointer as a process read ptr.
+	int outDataSize = countFFT * g_iNumSubBands * g_iNFFT;
+	g_pf2FFTOut_d = g_pf2FFTOut_d - countFFT*g_iNumSubBands*g_iNFFT;
+	g_pf2FFTIn_d = g_pf2FFTIn_d -countFFT*g_iNumSubBands*g_iNFFT;
+
+	//int outDataSize = pfbParams.samples*pfbParams.fine_channels*pfbParams.elements;
+	//fprintf(stdout, "Copying back: %d\n", outDataSize);
+	//CUDASafeCallWithCleanUp(cudaMemcpy(outputData_h, g_pf2FFTOut_d, outDataSize*sizeof(cufftComplex), cudaMemcpyDeviceToHost));
+	CUDASafeCallWithCleanUp(cudaMemcpy(outputData_h, fftOutPtr, outDataSize*sizeof(cufftComplex), cudaMemcpyDeviceToHost));
 
 	return iRet;
+
 }
 
 // return true or false upon successful setup.
@@ -190,7 +201,7 @@ int initPFB(int iCudaDevice, params pfbParams){
 	size_t lTotCUDAMalloc = 0;
 	cudaMemGetInfo(&cudaMem_available, &cudaMem_total);
 	lTotCUDAMalloc += g_iSizeRead; // size   data
-	lTotCUDAMalloc += (g_iNumSubBands * g_iNFFT * sizeof(float(2))); // size of FFT input array This should be different since our data is unsigned char?
+	lTotCUDAMalloc += (g_iNumSubBands * pfbParams.samples * sizeof(float(2))); // size of FFT input array This should be different since our data is unsigned char?
 	lTotCUDAMalloc += (g_iNumSubBands * pfbParams.samples * sizeof(float(2))); // size of FFT output array
 	lTotCUDAMalloc += (g_iNumSubBands * g_iNFFT * sizeof(float)); 	// size of PFB Coefficients
 	// Check CUDA device can handle the memory request
@@ -206,7 +217,7 @@ int initPFB(int iCudaDevice, params pfbParams){
 						((float) cudaMem_available) / (1024*1024), //stDevProp.totalGlobalMem
 						((float) cudaMem_total) / (1024*1024),
 						((float) g_iSizeRead) / (1024 * 1024),
-						((float) g_iNumSubBands * g_iNFFT * sizeof(float2)) / (1024 * 1024),
+						((float) g_iNumSubBands * pfbParams.samples * sizeof(float2)) / (1024 * 1024),
 						((float) g_iNumSubBands * pfbParams.samples * sizeof(float2)) / (1024 * 1024),
 						((float) g_iNumSubBands * g_iNFFT * sizeof(float)));
 		return EXIT_FAILURE;
@@ -224,7 +235,7 @@ int initPFB(int iCudaDevice, params pfbParams){
 					((float) cudaMem_available) / (1024*1024), //stDevProp.totalGlobalMem
 					((float) cudaMem_total) / (1024*1024),
 					((float) g_iSizeRead) / (1024 * 1024),
-					((float) g_iNumSubBands * g_iNFFT * sizeof(float2)) / (1024 * 1024),
+					((float) g_iNumSubBands * pfbParams.samples * sizeof(float2)) / (1024 * 1024),
 					((float) g_iNumSubBands * pfbParams.samples * sizeof(float2)) / (1024 * 1024),
 					((float) g_iNumSubBands * g_iNFFT * sizeof(float)));
 
@@ -241,7 +252,7 @@ int initPFB(int iCudaDevice, params pfbParams){
 								strerror(errno));
 		return EXIT_FAILURE;
 	}
-
+	
 	char relPath[256] = "/home/mburnett/GitHub/flag_gpu/lib/pfb/src/";
 	// Read filter coefficients from file
 	(void) fprintf(stdout, "\tReading in coefficients...\n");
@@ -295,10 +306,14 @@ int initPFB(int iCudaDevice, params pfbParams){
 
 	// allocate memory for FFT in and out arrays
 	(void) fprintf(stdout, "\tAllocate memory for FFT arrays...\n");
-	int sizeDataBlock_in = g_iNumSubBands * g_iNFFT * sizeof(float2);
+	//int sizeDataBlock_in = g_iNumSubBands * g_iNFFT * sizeof(float2);
+	int sizeDataBlock_in = pfbParams.samples*g_iNumSubBands * sizeof(float2);
 	int sizeTotalDataBlock_out = pfbParams.samples*g_iNumSubBands * sizeof(float2); // output fft array same size as output data for convinence the full size is not used. In the pfb function the output data will be the fft counter times block amount in the fft.
 	CUDASafeCallWithCleanUp(cudaMalloc((void **) &g_pf2FFTIn_d, sizeDataBlock_in));
 	CUDASafeCallWithCleanUp(cudaMalloc((void **) &g_pf2FFTOut_d, sizeTotalDataBlock_out)); // goal will be to update the output ptr each time it fires.
+
+	CUDASafeCallWithCleanUp(cudaMemset((void *) g_pf2FFTIn_d, 0, sizeDataBlock_in));
+	CUDASafeCallWithCleanUp(cudaMemset((void *) g_pf2FFTOut_d, 0, sizeTotalDataBlock_out));
 
 	// set kernel parameters
 	(void) fprintf(stdout, "\tSetting kernel parameters...\n");
@@ -311,6 +326,9 @@ int initPFB(int iCudaDevice, params pfbParams){
 	}
 	g_dimGPFB.x  = (g_iNumSubBands * g_iNFFT) / g_dimBPFB.x;
 	g_dimGCopy.x = (g_iNumSubBands * g_iNFFT) / g_dimBCopy.x;
+
+	g_dimGPFB.y = 125;
+	g_dimGCopy.y = 125;
 
 	// map kernel params	
 	mapGSize.x = pfbParams.samples;
@@ -343,6 +361,10 @@ int initPFB(int iCudaDevice, params pfbParams){
 							saveBSize.x, saveBSize.y, saveBSize.z);
 
 	// create a CUFFT plan
+	//int n_rank[2] = {32, 1};
+	//int n_inembed[2] = {32, 1};
+	//int n_onembed[2] = {32, 1};
+
 	(void) fprintf(stdout, "\tCreating cuFFT plan...\n");
 	iCUFFTRet = cufftPlanMany(&g_stPlan,
 							  FFTPLAN_RANK,
@@ -362,61 +384,22 @@ int initPFB(int iCudaDevice, params pfbParams){
 
 	fprintf(stdout, "\nDevice for PFB successfully initialized!\n");
 	return EXIT_SUCCESS;
+
 }
 
-/*
-// make a call to execute a ptyhon program.
-void genCoeff(char* procName, params pfbParams) {	
-	system("python --version");	
-	FILE* file;
-	char fname[256] = {"/home/mburnett/GitHub/flag_gpu/lib/pfb/python/flag_gen_coeff.py"};
+int resetDevice() {
+	cudaError_t cuErr = cudaDeviceReset();
+	if (cuErr != cudaSuccess) {
+		fprintf(stderr, "Device Reset Failed.\n");
 
-	int argCount = 11;
-	char* arguments[32] = {}; // come back and create a dynamic structure, i.e definetly do not need 32, always 10 or 11.
-	int i = 0;
-	for(i = 0; i < 32; i++) {
-		arguments[i] = (char*) malloc(256*sizeof(char*));
+		return EXIT_FAILURE;
 	}
+	return EXIT_SUCCESS;
+}
 
-	arguments[0] = procName;
-
-	arguments[1] = (char*) "-n\0"; // (char*) acknowledges that I am assigning a const literal to a mutable and removes compile warnings for now.
-	sprintf(arguments[2], "%d", pfbParams.nfft);
-
-	arguments[3] = (char*) "-t\0";
-	sprintf(arguments[4], "%d", pfbParams.taps);
-
-	arguments[5] = (char*) "-b\0";
-	sprintf(arguments[6], "%d", pfbParams.subbands);
-
-	arguments[7] = (char*) "-w\0";
-	sprintf(arguments[8], "%s", pfbParams.window);
-
-	arguments[9] = (char*) "-d\0";
-	sprintf(arguments[10], "%s", pfbParams.dataType);
-
-	if(pfbParams.plot) {
-		arguments[11] = (char*) "-p\0";
-		argCount++;
-	}
-
-	for(i = 0; i < argCount; i++){
-		fprintf(stdout, " %s", arguments[i]); // Add a gen coeff output for feedback.c
-	}
-	fprintf(stdout, "\n");
-
-	// initalize and run python script
-	Py_SetProgramName(procName);
-	Py_Initialize();
-	PySys_SetArgv(argCount, arguments);
-	file = fopen(fname, "r");
-	PyRun_SimpleFile(file, fname);
-	Py_Finalize();
-
-	return;
-}*/
-
-int doFFT() {
+/* do fft on pfb data */
+int doFFT()
+{
     cufftResult iCUFFTRet = CUFFT_SUCCESS;
 
     /* execute plan */
@@ -433,14 +416,24 @@ int doFFT() {
     return EXIT_SUCCESS;
 }
 
-int resetDevice() {
-	cudaError_t cuErr = cudaDeviceReset();
-	if (cuErr != cudaSuccess) {
-		fprintf(stderr, "Device Reset Failed.\n");
+void __CUDASafeCallWithCleanUp(cudaError_t iRet,
+                               const char* pcFile,
+                               const int iLine,
+                               void (*pcleanUp)(void))
+{
+    if (iRet != cudaSuccess)
+    {
+        (void) fprintf(stderr,
+                       "ERROR: File <%s>, Line %d: %s\n",
+                       pcFile,
+                       iLine,
+                       cudaGetErrorString(iRet));
+        /* free resources */
+        (*pcleanUp)();
+        exit(EXIT_FAILURE);
+    }
 
-		return EXIT_FAILURE;
-	}
-	return EXIT_SUCCESS;
+    return;
 }
 
 void cleanUp() {
@@ -472,18 +465,17 @@ void cleanUp() {
     return;
 }
 
-void __CUDASafeCallWithCleanUp(cudaError_t iRet, const char* pcFile, const int iLine, void (*pcleanUp)(void)) {
-    if (iRet != cudaSuccess)
-    {
-        (void) fprintf(stderr,
-                       "ERROR: File <%s>, Line %d: %s\n",
-                       pcFile,
-                       iLine,
-                       cudaGetErrorString(iRet));
-        /* free resources */
-        (*pcleanUp)();
-        exit(EXIT_FAILURE);
-    }
 
-    return;
-}
+
+
+
+
+
+
+
+
+
+
+
+
+

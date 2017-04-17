@@ -43,22 +43,33 @@ static void * run(hashpipe_thread_args_t * args) {
     uint64_t start_mcnt = 0;
     uint64_t last_mcnt = Nm - 1;
 
+    params pfbParams = DEFAULT_PFB_PARAMS;
+
     // Setup polyphase filter bank
-    int pfb_flag = 0;
-    int cudaDevice = DEF_CUDA_DEVICE;
-    params pfbParams = DEFAULT_PFB_PARAMS; //databuf.h?
+    int pfb_init_flag = 0;
+    int cudaDevice = 0;
+    int chanSel = 0;
+
+    // Write and read smem buffer
+    hashpipe_status_lock_safe(&st);
+    //get
+    hgeti4(st.buf, "CHANSEL", &chanSel);
+    hgeti4(st.buf, "GPUDEV", &cudaDevice);
+    //put
+    hputi4(st.buf, "NTAPS", pfbParams.taps);
+    hputi4(st.buf, "NFFT", pfbParams.taps);
+    hputs(st.buf, "WINDOW", pfbParams.window);
+    hashpipe_status_unlock_safe(&st);
+	
+    // set any pfb params that need to be set before init
+    pfbParams.select = chanSel;
 
     // Initialize polyphase filter bank
-    printf("PFB: Initializing the polyphase filter bank...\n");
-    pfb_flag = initPFB(cudaDevice, pfbParams);
+    if(VERBOSE) {
+    	printf("PFB: Initializing the polyphase filter bank...\n");
+    }
 
-    // write pfb params to smem buffer
-    hashpipe_status_lock_safe(&st);
-    hputi4(st.buf, "NTAPS",  pfbParams.taps);
-    hputi4(st.buf, "NFFT",   pfbParams.nfft);
-    hputi4(st.buf, "SELECT", pfbParams.select);
-    hputs(st.buf,  "WINDOW", pfbParams.window);
-    hashpipe_status_unlock_safe(&st);
+    pfb_init_flag = initPFB(cudaDevice, pfbParams);
 
     state cur_state = ACQUIRE;
     state next_state = ACQUIRE;
@@ -75,8 +86,19 @@ static void * run(hashpipe_thread_args_t * args) {
     while (run_threads()) {
         if(cur_state == ACQUIRE){
             next_state = ACQUIRE;
-	        // Wait for input buffer block to be filled
+	    // Wait for input buffer block to be filled
             while ((rv=flag_gpu_input_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
+
+		// Take this time to update CHANSEL
+		int chk_chanSel = 0;
+		hashpipe_status_lock_safe(&st);
+		hgeti4(st.buf, "CHANSEL", &chk_chanSel);
+		hashpipe_status_unlock_safe(&st);
+		if( (chanSel - chk_chanSel) != 0) {
+		    printf("PFB: Channel Selection detected. Switching channel");
+		    pfbParams.select = chk_chanSel;
+		}
+
                 if (rv==HASHPIPE_TIMEOUT) {
                     int cleanb;
                     hashpipe_status_lock_safe(&st);
@@ -113,11 +135,11 @@ static void * run(hashpipe_thread_args_t * args) {
             }
            
             // Run the PFB
-            printf("PFB: Launching PFB...\n");
+            //printf("PFB: Launching PFB...\n");
             runPFB((signed char *)&db_in->block[curblock_in].data, (float *)&db_out->block[curblock_out].data, pfbParams);
             check_count++;
             // if(check_count == 1000){
-                printf("PFB: dumping mcnt = %lld\n", (long long int)start_mcnt);
+            //    printf("PFB: dumping mcnt = %lld\n", (long long int)start_mcnt);
             // }
 	        // Get block's starting mcnt for output block
             db_out->block[curblock_out].header.mcnt = start_mcnt;

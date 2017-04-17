@@ -53,5 +53,5 @@ install: kernels.o pfb.o libflagpfb.so
 	cp kernels.h $(includedir)
 	mkdir -p $(libdir)
 	cp libflagpfb.so $(libdir)
-	#mkdir -p $(bindir)
-	#cp cublas_main $(bindir)
+
+
