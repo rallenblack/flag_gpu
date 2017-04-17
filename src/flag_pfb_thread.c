@@ -43,9 +43,9 @@ static void * run(hashpipe_thread_args_t * args) {
     uint64_t start_mcnt = 0;
     uint64_t last_mcnt = Nm - 1;
 
+    // Setup polyphase filter bank
     params pfbParams = DEFAULT_PFB_PARAMS;
 
-    // Setup polyphase filter bank
     int pfb_init_flag = 0;
     int cudaDevice = 0;
     int chanSel = 0;
@@ -65,7 +65,7 @@ static void * run(hashpipe_thread_args_t * args) {
     pfbParams.select = chanSel;
 
     // Initialize polyphase filter bank
-    if(VERBOSE) {
+    if (VERBOSE) {
     	printf("PFB: Initializing the polyphase filter bank...\n");
     }
 
@@ -81,7 +81,6 @@ static void * run(hashpipe_thread_args_t * args) {
     hputi4(st.buf, "PFBREADY", 1);
     hashpipe_status_unlock_safe(&st);
     
-    int check_count = 0;
     // Main loop for thread
     while (run_threads()) {
         if(cur_state == ACQUIRE){
@@ -95,7 +94,7 @@ static void * run(hashpipe_thread_args_t * args) {
 		hgeti4(st.buf, "CHANSEL", &chk_chanSel);
 		hashpipe_status_unlock_safe(&st);
 		if( (chanSel - chk_chanSel) != 0) {
-		    printf("PFB: Channel Selection detected. Switching channel");
+		    printf("PFB: Channel Selection detected. Switching channel...");
 		    pfbParams.select = chk_chanSel;
 		}
 
@@ -135,29 +134,37 @@ static void * run(hashpipe_thread_args_t * args) {
             }
            
             // Run the PFB
-            //printf("PFB: Launching PFB...\n");
+            if (VERBOSE) {
+                printf("PFB: Launching PFB...\n");
+            }
+
             runPFB((signed char *)&db_in->block[curblock_in].data, (float *)&db_out->block[curblock_out].data, pfbParams);
-            check_count++;
-            // if(check_count == 1000){
-            //    printf("PFB: dumping mcnt = %lld\n", (long long int)start_mcnt);
-            // }
+
 	        // Get block's starting mcnt for output block
             db_out->block[curblock_out].header.mcnt = start_mcnt;
             db_out->block[curblock_out].header.good_data = good_data;
-
-            //printf("PFB: Wrote header info...\n");
                 
             // Mark output block as full and advance
             flag_gpu_pfb_output_databuf_set_filled(db_out, curblock_out);
-            //printf("PFB: Marked block %d as filled...\n", curblock_out);
+
+            if (VERBOSE) {
+                printf("PFB: Marked block %d as filled...\n", curblock_out);
+            }
             curblock_out = (curblock_out + 1) % db_out->header.n_block;
             start_mcnt = last_mcnt + 1;
             last_mcnt = start_mcnt + Nm - 1;
-            //printf("PFB: Attempting to mark block %d as free...\n", curblock_in);
             
             // Mark input block as free
+            if (VERBOSE) {
+                printf("PFB: Attempting to mark block %d as free...\n", curblock_in);
+            }
+
             flag_gpu_input_databuf_set_free(db_in, curblock_in);
-            //printf("PFB: Marked block %d as free...\n", curblock_in);
+
+            if (VERBOSE) {
+                printf("PFB: Marked block %d as free...\n", curblock_in);
+            }
+
             curblock_in = (curblock_in + 1) % db_in->header.n_block;
         }
         else if (cur_state == CLEANUP) {

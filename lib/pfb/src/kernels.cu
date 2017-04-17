@@ -28,30 +28,25 @@ __global__ void PFB_kernel(char2* pc2Data,
                       float* pfPFBCoeff,
                       params pfbParams)
 {
-    //int i = (blockIdx.x * blockDim.x) + threadIdx.x;
     int blkIdx = blockIdx.y * gridDim.x + blockIdx.x;
     int i = blkIdx*blockDim.x + threadIdx.x;
+
+    int absCoeff = (blockIdx.x * blockDim.x) + threadIdx.x;
 
     int iNFFT = (gridDim.x * blockDim.x);
     int j = 0;
     int iAbsIdx = 0;
+    int coeffIdx = 0;
+
     float2 f2PFBOut = make_float2(0.0, 0.0);
     char2 c2Data = make_char2(0, 0);
 
-    // if ( i > 10239) {
-    // 	f2PFBOut.x = 1;
-    // 	f2PFBOut.y = 1;
-    // 	pf2FFTIn[i] = f2PFBOut;	
-    // 	return;
-    // }
-    int coeffIdx = 0;
-    int absCoeff = (blockIdx.x * blockDim.x) + threadIdx.x;
     for (j = 0; j < pfbParams.taps; ++j)
     {
         /* calculate the absolute index */
         iAbsIdx  = (j * iNFFT) + i;
-
      	coeffIdx = (j * iNFFT) + absCoeff;
+
         /* get the address of the block */
         c2Data = pc2Data[iAbsIdx];
         
@@ -65,11 +60,12 @@ __global__ void PFB_kernel(char2* pc2Data,
     return;
 }
 
+// When PFB disabled just perform FFT.
 __global__ void CopyDataForFFT(char2 *pc2Data, float2 *pf2FFTIn)
 {
-    //int i = (blockIdx.x * blockDim.x) + threadIdx.x;
 	int blkIdx = blockIdx.y * gridDim.x + blockIdx.x;
     int i = blkIdx*blockDim.x + threadIdx.x;
+
     pf2FFTIn[i].x = (float) pc2Data[i].x;
     pf2FFTIn[i].y = (float) pc2Data[i].y;
 

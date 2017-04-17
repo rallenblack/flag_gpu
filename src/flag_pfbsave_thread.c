@@ -65,34 +65,38 @@ static void * run(hashpipe_thread_args_t * args) {
 
         uint64_t start_mcnt = db_in->block[curblock_in].header.mcnt;
         int good_data_flag = (int)(db_in->block[curblock_in].header.good_data);
-        //float * pfb_out_data = (float *)db_in->block[curblock_in].data;
-	block_ctr++;
-	if(!good_data_flag) {
-		//printf("PFB_SAVE: BAD DATA!!!\n");
-		bad_data_ctr++;
-	}
+        float * pfb_out_data = (float *)db_in->block[curblock_in].data;
+
+        block_ctr++;
+
+        if (!good_data_flag) {
+            printf("PFB_SAVE: BAD DATA!!!\n");
+            bad_data_ctr++;
+        }
 	
         char filename[256];
         sprintf(filename, "%s/pfb_%d_mcnt_%lld.out", data_dir, instance_id, (long long)start_mcnt);
-	/*
-        FILE * filePtr = fopen(filename, "wb");
-	if(filePtr == NULL) {
-		printf("PFB_SAVE: Could not open file for writing.\n");
-	}
-        fwrite(&good_data_flag, sizeof(int), 1, filePtr);
-        fwrite(pfb_out_data, sizeof(float), PFB_OUTPUT_BLOCK_SIZE, filePtr);
-        fclose(filePtr);
-	*/
+
+        if (SAVE) {
+            FILE * filePtr = fopen(filename, "wb");
+            if(filePtr == NULL) {
+                printf("PFB_SAVE: Could not open file for writing.\n");
+            }
+            fwrite(&good_data_flag, sizeof(int), 1, filePtr);
+            fwrite(pfb_out_data, sizeof(float), PFB_OUTPUT_BLOCK_SIZE, filePtr);
+            fclose(filePtr);
+        }
+	
 
         flag_gpu_pfb_output_databuf_set_free(db_in, curblock_in);
         curblock_in = (curblock_in + 1) % db_in->header.n_block;
 
-    	if(start_mcnt % 2000 == 0) {
-	        printf("PFB_SAVE: wrote out to %s\n", filename);
+        if (start_mcnt % 2000 == 0) {
+            printf("PFB_SAVE: wrote out to %s\n", filename);
+            float tot_good_data = (float) (block_ctr-bad_data_ctr)/block_ctr;
+            printf("PFB_SAVE: Bad data blocks %d, percent good: tot_good_data %f\n", bad_data_ctr, tot_good_data);
+        }
 
-        	float tot_good_data = (block_ctr-bad_data_ctr)/block_ctr;
-        	printf("PFB_SAVE: Bad data blocks %d, percent good: tot_good_data %f\n", bad_data_ctr, tot_good_data);
-	}
         pthread_testcancel();
     }
 

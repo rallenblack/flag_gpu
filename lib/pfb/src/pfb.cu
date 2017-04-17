@@ -56,13 +56,13 @@ int runPFB(signed char* inputData_h, float* outputData_h, params pfbParams) {
 	long ltotData = pfbParams.fine_channels*pfbParams.elements*(pfbParams.samples + pfbParams.nfft*pfbParams.taps);
 	int start = pfbParams.fine_channels*pfbParams.elements*pfbParams.nfft*pfbParams.taps;
 	int countFFT = 0;
+
 	// copy data to device
 	CUDASafeCallWithCleanUp(cudaMemcpy(g_pcInputData_d, inputData_h, g_iSizeRead, cudaMemcpyHostToDevice)); //g_iSizeRead = samples*coarse_channels*elements*(2*sizeof(char));
 
 	// map - extract channel data from full data stream and load into buffer.
 	map<<<mapGSize, mapBSize>>>(g_pcInputData_d, &g_pc2Data_d[start], pfbParams.select, pfbParams);
-	//CUDASafeCallWithCleanUp(cudaGetLastError());
-	//CUDASafeCallWithCleanUp(cudaThreadSynchronize());
+	CUDASafeCallWithCleanUp(cudaGetLastError());
 
 	// Begin PFB
 	g_pc2DataRead_d = g_pc2Data_d; // p_pc2Data_d contains all the data. DataRead will update with each pass through the PFB.
@@ -71,27 +71,14 @@ int runPFB(signed char* inputData_h, float* outputData_h, params pfbParams) {
 	if(pfb_on) {
 		//PFB
 		PFB_kernel<<<g_dimGPFB, g_dimBPFB>>>(g_pc2DataRead_d, g_pf2FFTIn_d, g_pfPFBCoeff_d, pfbParams);
-		//CUDASafeCallWithCleanUp(cudaGetLastError());
-		//CUDASafeCallWithCleanUp(cudaThreadSynchronize());
+		CUDASafeCallWithCleanUp(cudaThreadSynchronize());
 
 	} else {
 		// Prepare for FFT
-		printf("Skipping PBF... copying for FFT!\n");
 		CopyDataForFFT<<<g_dimGPFB, g_dimBPFB>>>(g_pc2DataRead_d, g_pf2FFTIn_d);
-		//CUDASafeCallWithCleanUp(cudaGetLastError());
-		//CUDASafeCallWithCleanUp(cudaThreadSynchronize());
-
+		CUDASafeCallWithCleanUp(cudaGetLastError());
 	}
 
-	// Doesnt seem to be possible to do all 125 FFT's at once....
-	// //FFT
-	// iRet = doFFT();
-	// if(iRet != EXIT_SUCCESS) {
-	// 	(void) fprintf(stderr, "ERROR: FFT failed\n");
-	// 	cleanUp();
-	// 	return EXIT_FAILURE;
-	// }
-	// CUDASafeCallWithCleanUp(cudaGetLastError());
 	float2* fftOutPtr = g_pf2FFTOut_d;
 	while(!g_IsProcDone) {
 		//FFT
@@ -104,14 +91,15 @@ int runPFB(signed char* inputData_h, float* outputData_h, params pfbParams) {
 		CUDASafeCallWithCleanUp(cudaGetLastError());
 		++countFFT;
 
-		g_pf2FFTIn_d += g_iNumSubBands *g_iNFFT;
+		// step input and output buffers.
+		g_pf2FFTIn_d += g_iNumSubBands * g_iNFFT;
 		g_pf2FFTOut_d += g_iNumSubBands * g_iNFFT;
 
 		lProcData += g_iNumSubBands * g_iNFFT;
 		if(lProcData >= ltotData - NUM_TAPS*g_iNumSubBands*g_iNFFT){ // >= process 117 ffts leaving 256 time samples, > process 118 ffts leaving 224 time samples.
-			//(void) fprintf(stdout, "\nINFO: Processed finished!\n");
-			//(void) fprintf(stdout, "\tCounter -- FFT:%d\n", countFFT);
-			//(void) fprintf(stdout, "\tData process by the numbers:\n \t\tProcessed:%ld (Samples) \n \t\tTo Process:%ld (Samples)\n\n",lProcData, ltotData);
+			(void) fprintf(stdout, "\nINFO: Processed finished!\n");
+			(void) fprintf(stdout, "\tCounter -- FFT:%d\n", countFFT);
+			(void) fprintf(stdout, "\tData process by the numbers:\n \t\tProcessed:%ld (Samples) \n \t\tTo Process:%ld (Samples)\n\n",lProcData, ltotData);
 			g_IsProcDone = TRUE;
 		}
 
@@ -124,14 +112,11 @@ int runPFB(signed char* inputData_h, float* outputData_h, params pfbParams) {
 
 	// copy back to host.
 
-	//wind back out ptr - should put in another pointer as a process read ptr.
-	int outDataSize = countFFT * g_iNumSubBands * g_iNFFT;
+	//wind back in/out ptrs - should put in another pointer as a process read ptr instead of updating the global ptr.
 	g_pf2FFTOut_d = g_pf2FFTOut_d - countFFT*g_iNumSubBands*g_iNFFT;
 	g_pf2FFTIn_d = g_pf2FFTIn_d -countFFT*g_iNumSubBands*g_iNFFT;
 
-	//int outDataSize = pfbParams.samples*pfbParams.fine_channels*pfbParams.elements;
-	//fprintf(stdout, "Copying back: %d\n", outDataSize);
-	//CUDASafeCallWithCleanUp(cudaMemcpy(outputData_h, g_pf2FFTOut_d, outDataSize*sizeof(cufftComplex), cudaMemcpyDeviceToHost));
+	int outDataSize = countFFT * g_iNumSubBands * g_iNFFT;
 	CUDASafeCallWithCleanUp(cudaMemcpy(outputData_h, fftOutPtr, outDataSize*sizeof(cufftComplex), cudaMemcpyDeviceToHost));
 
 	return iRet;
@@ -151,6 +136,7 @@ int initPFB(int iCudaDevice, params pfbParams){
 	g_iNumSubBands = pfbParams.subbands; // equal to elements*fine_channels. (The fine channels are the channels processed.)
 
 	g_iSizeRead = pfbParams.samples*pfbParams.coarse_channels*pfbParams.elements*(2*sizeof(char));
+	char coeffLoc[256] = pfbParams.coeffPath
 
 	int iDevCount = 0;
 	cudaDeviceProp stDevProp = {0};
@@ -252,13 +238,12 @@ int initPFB(int iCudaDevice, params pfbParams){
 								strerror(errno));
 		return EXIT_FAILURE;
 	}
-	
-	char relPath[256] = "/home/mburnett/GitHub/flag_gpu/lib/pfb/src/";
+
 	// Read filter coefficients from file
 	(void) fprintf(stdout, "\tReading in coefficients...\n");
 	(void) sprintf(g_acFileCoeff,
 				   "%s%s_%s_%d_%d_%d%s",
-				   relPath,
+				   coeffLoc,
 				   FILE_COEFF_PREFIX,
 				   FILE_COEFF_DATATYPE,
 				   g_iNTaps,
@@ -361,9 +346,6 @@ int initPFB(int iCudaDevice, params pfbParams){
 							saveBSize.x, saveBSize.y, saveBSize.z);
 
 	// create a CUFFT plan
-	//int n_rank[2] = {32, 1};
-	//int n_inembed[2] = {32, 1};
-	//int n_onembed[2] = {32, 1};
 
 	(void) fprintf(stdout, "\tCreating cuFFT plan...\n");
 	iCUFFTRet = cufftPlanMany(&g_stPlan,
