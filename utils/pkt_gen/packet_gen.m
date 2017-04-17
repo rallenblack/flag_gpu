@@ -242,6 +242,17 @@ for mcnt = [0:10000] %while mcnt <= 10000
                         end
                     end
                     data(data < 0) = 2^8 + data(data < 0);
+                case 7 % Send ULA complex data
+                    t_idxs = mod(mcnt*20 + 1:(mcnt+1)*20, ULA_N);
+                    t_idxs(t_idxs == 0) = ULA_N;
+                    f_idxs = (fid - 1)*8+1:fid*8;
+                    freq_idxs = 5*(xid-1) + [1:5, 101:105, 201:205, 301:305, 401:405];
+                    tmp = ULA_complex(t_idxs, f_idxs, freq_idxs);
+                    tmp2 = permute(tmp, [2, 3, 1]);
+                    data(:,1,:,:) = real(tmp2);
+                    data(:,2,:,:) = imag(tmp2);
+                    data(data < 0) = 2^8 + data(data < 0);
+                    
                 otherwise % Send all zeros
             end
             data = uint8(data);
