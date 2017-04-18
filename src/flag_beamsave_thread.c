@@ -63,37 +63,23 @@ static void * run(hashpipe_thread_args_t * args) {
         }
         uint64_t start_mcnt = db_in->block[curblock_in].header.mcnt;
         int good_data = (int)(db_in->block[curblock_in].header.good_data);
-        float * p = (float *)db_in->block[curblock_in].data;
+
         char filename[256];
         sprintf(filename, "%s/beamformer_%d_mcnt_%lld.out", data_dir, instance_id, (long long)start_mcnt);
-        fprintf(stderr, "SAV: Saving to %s\n", filename);
-        FILE * filePtr = fopen(filename, "w");
-        fwrite(&good_data, sizeof(int), 1, filePtr);
-        fwrite(p, sizeof(float), N_BEAM_SAMPS, filePtr);
-        fclose(filePtr);
-               
-        //uint64_t start_mcnt = db_in->block[curblock_in].header.mcnt;
-        //float * p = (float *)db_in->block[curblock_in].data;
+        fprintf(stderr, "Saving to %s\n", filename);
+        if (SAVE) {
+            float * p = (float *)db_in->block[curblock_in].data;
+            FILE * filePtr = fopen(filename, "w");
+            fwrite(&good_data, sizeof(int), 1, filePtr);
+            fwrite(p, sizeof(float), N_BEAM_SAMPS, filePtr);
+            fclose(filePtr);
+        }
 
-	// Derive output filename
-        // char filename[128];
-        // sprintf(filename, "power_mcnt_%lld.out", (long long)start_mcnt);
-        // fprintf(stderr, "SAV: Saving to %s\n", filename);
-
-	// Open file and begin writing
-        //FILE * filePtr = fopen(filename, "w");
-        //fwrite(p, sizeof(float), N_BEAM_SAMPS, filePtr);
-	//int j;
-        //for (j = 0; j < N_BEAM_SAMPS; j++) {
-        //    fprintf(filePtr, "%f\n", p[j]);
-        //}
-        //fclose(filePtr);
-
-	// Mark input block as free and wait for next block
+        // Mark input block as free and wait for next block
         flag_gpu_beamformer_output_databuf_set_free(db_in, curblock_in);
         curblock_in = (curblock_in + 1) % db_in->header.n_block;
 
-	// Check if program killed
+        // Check if program killed
         pthread_testcancel();
     }
 

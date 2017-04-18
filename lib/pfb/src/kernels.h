@@ -5,7 +5,7 @@
 #include <cufft.h>
 
 // stuct of parameters for PFB. Values indicate default values.
-#define DEFAULT_PFB_PARAMS {4000, 32, 8, 25, 5, 64, 320, 0, (char*)"hanning\0", (char*)"float\0", 1};
+#define DEFAULT_PFB_PARAMS {4000, 32, 8, 25, 5, 64, 320, 0, (char*)"hanning\0", (char*)"float\0", (char*)"\0",  1};
 // plot 1 mean to hide the plot of the filter before continuing.
 typedef struct {
 	int samples;
@@ -18,6 +18,7 @@ typedef struct {
 	int select;
 	char* window;
 	char* dataType;
+	char* coeffPath;
 	int plot;
 } params;
 

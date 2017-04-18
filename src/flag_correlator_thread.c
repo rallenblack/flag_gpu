@@ -225,8 +225,8 @@ static void * run(hashpipe_thread_args_t * args) {
        
             xgpuCudaXengine(&context, doDump ? SYNCOP_DUMP : SYNCOP_SYNC_TRANSFER);
        
-            printf("COR: doDump = %d\n", doDump);
-            printf("COR: start_mcnt = %lld, last_mcnt = %lld\n", (long long int)start_mcnt, (long long int)last_mcnt);
+            //printf("COR: doDump = %d\n", doDump);
+            //printf("COR: start_mcnt = %lld, last_mcnt = %lld\n", (long long int)start_mcnt, (long long int)last_mcnt);
             if (doDump) {
                 xgpuClearDeviceIntegrationBuffer(&context);
                 //xgpuReorderMatrix((Complex *)db_out->block[curblock_out].data);
