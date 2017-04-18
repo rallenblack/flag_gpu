@@ -97,9 +97,6 @@ int runPFB(signed char* inputData_h, float* outputData_h, params pfbParams) {
 
 		lProcData += g_iNumSubBands * g_iNFFT;
 		if(lProcData >= ltotData - NUM_TAPS*g_iNumSubBands*g_iNFFT){ // >= process 117 ffts leaving 256 time samples, > process 118 ffts leaving 224 time samples.
-			(void) fprintf(stdout, "\nINFO: Processed finished!\n");
-			(void) fprintf(stdout, "\tCounter -- FFT:%d\n", countFFT);
-			(void) fprintf(stdout, "\tData process by the numbers:\n \t\tProcessed:%ld (Samples) \n \t\tTo Process:%ld (Samples)\n\n",lProcData, ltotData);
 			g_IsProcDone = TRUE;
 		}
 
@@ -136,7 +133,8 @@ int initPFB(int iCudaDevice, params pfbParams){
 	g_iNumSubBands = pfbParams.subbands; // equal to elements*fine_channels. (The fine channels are the channels processed.)
 
 	g_iSizeRead = pfbParams.samples*pfbParams.coarse_channels*pfbParams.elements*(2*sizeof(char));
-	char coeffLoc[256] = pfbParams.coeffPath
+
+	char* coeffLoc = pfbParams.coeffPath;
 
 	int iDevCount = 0;
 	cudaDeviceProp stDevProp = {0};
@@ -238,7 +236,7 @@ int initPFB(int iCudaDevice, params pfbParams){
 								strerror(errno));
 		return EXIT_FAILURE;
 	}
-
+	
 	// Read filter coefficients from file
 	(void) fprintf(stdout, "\tReading in coefficients...\n");
 	(void) sprintf(g_acFileCoeff,

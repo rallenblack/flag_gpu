@@ -45,16 +45,18 @@ static void * run(hashpipe_thread_args_t * args) {
 
     // Setup polyphase filter bank
     params pfbParams = DEFAULT_PFB_PARAMS;
+    pfbParams.coeffPath = (char*) malloc(256*sizeof(char));
 
     int pfb_init_flag = 0;
     int cudaDevice = 0;
     int chanSel = 0;
-
+ 
     // Write and read smem buffer
     hashpipe_status_lock_safe(&st);
     //get
     hgeti4(st.buf, "CHANSEL", &chanSel);
     hgeti4(st.buf, "GPUDEV", &cudaDevice);
+    hgets(st.buf, "COEFFDIR", 64, pfbParams.coeffPath);
     //put
     hputi4(st.buf, "NTAPS", pfbParams.taps);
     hputi4(st.buf, "NFFT", pfbParams.taps);
