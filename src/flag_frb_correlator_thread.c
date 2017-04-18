@@ -45,7 +45,7 @@ static void * run(hashpipe_thread_args_t * args) {
     hashpipe_status_lock_safe(&st);
     hputs(st.buf, "INTSTAT", "off");
     hputi8(st.buf, "INTSYNC", 0);
-    hputr4(st.buf, "REQSTI", 0.5); // Requested STI length (set by Dealer/Player)
+    hputr4(st.buf, "REQSTI", 0.0001); // Requested STI length (set by Dealer/Player)
     hputr4(st.buf, "ACTSTI", 0.0); // Delivered (actual) STI length (based on whole number of blocks)
     hputi4(st.buf, "INTCOUNT", 1); // Number of blocks to integrate per STI
     hgeti4(st.buf, "GPUDEV", &gpu_dev);
@@ -200,6 +200,7 @@ static void * run(hashpipe_thread_args_t * args) {
                     hputs(st.buf, "INTSTAT", integ_status);
                     hgetr4(st.buf, "REQSTI", &requested_integration_time);
                     hashpipe_status_unlock_safe(&st);
+                    printf("COR: Requested integration length = %f\n", requested_integration_time);
 
                     int_count = ceil((N_MCNT_PER_SECOND / N_MCNT_PER_FRB_BLOCK) * requested_integration_time);
                     actual_integration_time = int_count/(N_MCNT_PER_SECOND / N_MCNT_PER_FRB_BLOCK);

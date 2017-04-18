@@ -35,6 +35,7 @@ sigma2 = kb*Tsys*BW;    % Noise power per channel
 % 4 -> Send chirp
 % 5 -> Send spatially correlated data in a single bin
 % 6 -> Send complex sinusodial data
+% 7 -> Send ULA data
 % else -> Send all zeros
 data_flag = 1;
 
@@ -109,6 +110,24 @@ cs_re = 127 * (0.1 * cos(2*pi*cs_freq*cs_n)) + sigma^2*randn();
 cs_im = 127 * (0.1 * sin(2*pi*cs_freq*cs_n)) + sigma^2*randn();
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Case 7 - ULA
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ULA_sigma2 = 8;
+ULA_theta = 90; % Degrees
+ULA_freqs = (0:499)*(303e3) + 1300e6; % All frequencies
+ULA_c = 3e8; % speed of propagation (m/s)
+ULA_d = ULA_c/ULA_freqs(end); % Element spacing
+ULA_phi = ULA_d*cos(ULA_theta*pi/180)/ULA_c*2*pi*ULA_freqs; % Phase shift
+ULA_N = 4000; % Number of samples
+ULA_complex = zeros(ULA_N, 40, length(ULA_freqs)); % time x freq x elements
+for ULA_b = 1:length(ULA_freqs) % Iterate over frequency
+        ULA_a = exp(1j*(1:40)*ULA_phi(ULA_b)); % Steering vector
+        ULA_complex(:, :, ULA_b) = ...
+            kron(ULA_a, sqrt(ULA_sigma2/2)*(randn(ULA_N, 1) + 1j*randn(ULA_N, 1)));
+end
+
+
 % Create UDP sockets - 1 IP address per Xengine (xid)
 for xid = 1:Nxengines
     remoteHost = ['10.10.1.', num2str(xid)];
@@ -128,9 +147,9 @@ end
 mcnt = 0; % Each mcnt represents 20 packets across all F-engines in the
           % same time frame
   
-for mcnt = [0:200, 401] %while mcnt <= 10000
+for mcnt = [0:10000] %while mcnt <= 10000
     disp(['Sending mcnt = ', num2str(mcnt)]);
-    for xid = 14:14 % Set to a single X-engine for single HPC testing (Richard B.)
+    for xid = 13:13 % Set to a single X-engine for single HPC testing (Richard B.)
         for fid = 1:Nfengines
             w_idx = 1;
             
@@ -223,6 +242,17 @@ for mcnt = [0:200, 401] %while mcnt <= 10000
                         end
                     end
                     data(data < 0) = 2^8 + data(data < 0);
+                case 7 % Send ULA complex data
+                    t_idxs = mod(mcnt*20 + 1:(mcnt+1)*20, ULA_N);
+                    t_idxs(t_idxs == 0) = ULA_N;
+                    f_idxs = (fid - 1)*8+1:fid*8;
+                    freq_idxs = 5*(xid-1) + [1:5, 101:105, 201:205, 301:305, 401:405];
+                    tmp = ULA_complex(t_idxs, f_idxs, freq_idxs);
+                    tmp2 = permute(tmp, [2, 3, 1]);
+                    data(:,1,:,:) = real(tmp2);
+                    data(:,2,:,:) = imag(tmp2);
+                    data(data < 0) = 2^8 + data(data < 0);
+                    
                 otherwise % Send all zeros
             end
             data = uint8(data);

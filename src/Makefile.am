@@ -52,9 +52,9 @@ flag_f_threads = flag_net_thread.c \
                  flag_pfbsave_thread.c
 
 flag_bx_threads = flag_net_thread.c \
-                  flag_transpose_thread.c \
-                  flag_dual_thread.c \
-                  flag_dualsave_thread.c
+                  flag_bx_transpose_thread.c \
+                  flag_bx_thread.c \
+                  flag_bx_save_thread.c
 
 flag_x_frb_threads = flag_net_thread.c \
                      flag_frb_transpose_thread.c \
@@ -95,9 +95,9 @@ flag_f_la_LDFLAGS += -L"@FLAGPFB_LIBDIR@" -Wl, -rpath,"@FLAGPFB_LIBDIR@"
 
 # flag_bx.la sources and libraries
 flag_bx_la_SOURCES = $(flag_databuf) $(flag_bx_threads) $(fifo_codes)
-flag_bx_la_LIBADD   = -lrt -lxgpu -lflagbeamformer -lcublas -L/usr/local/cuda/lib64 -lcfitsio
+flag_bx_la_LIBADD   = -lrt -lxgpufrb -lflagbeamformer -lcublas -L/usr/local/cuda/lib64 -lcfitsio
 flag_bx_la_LDFLAGS  = -avoid-version -module -shared -export-dynamic --enable-shared
-flag_bx_la_LDFLAGS += -L"@XGPU_LIBDIR@" -Wl,-rpath,"@XGPU_LIBDIR@"
+flag_bx_la_LDFLAGS += -L"@XGPU_FRB_LIBDIR@" -Wl,-rpath,"@XGPU_FRB_LIBDIR@"
 flag_bx_la_LDFLAGS += -L"@HASHPIPE_LIBDIR@" -Wl,-rpath,"@HASHPIPE_LIBDIR@"
 flag_bx_la_LDFLAGS += -L"@FLAGBEAM_LIBDIR@" -Wl, -rpath, "@FLAGBEAM_LIBDIR@"
 
