@@ -1,6 +1,6 @@
-/* flag_frb_transpose_thread.c
+/* flag_pfb_transpose_thread.c
  * 
- * Routine to reorder received data to correct format for the FRB version of xGPU
+ * Routine to reorder received data to correct format for the PFB
  * 
  */
 
@@ -32,7 +32,7 @@ typedef enum {
 static void * run(hashpipe_thread_args_t * args) {
     // Local aliases to shorten access to args fields
     flag_input_databuf_t * db_in = (flag_input_databuf_t *)args->ibuf;
-    flag_frb_gpu_input_databuf_t * db_out = (flag_frb_gpu_input_databuf_t *)args->obuf;
+    flag_pfb_gpu_input_databuf_t * db_out = (flag_pfb_gpu_input_databuf_t *)args->obuf;
     hashpipe_status_t st = args->st;
     const char * status_key = args->thread_desc->skey;
 
@@ -85,7 +85,7 @@ static void * run(hashpipe_thread_args_t * args) {
             if (next_state != CLEANUP) {
 
                 // Wait for output buffer block to be freed
-                while ((rv=flag_frb_gpu_input_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
+                while ((rv=flag_pfb_gpu_input_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
                     if (rv == HASHPIPE_TIMEOUT) {
                         //hashpipe_status_lock_safe(&st);
                         //hputs(st.buf, status_key, "waiting for free block");
@@ -126,17 +126,13 @@ static void * run(hashpipe_thread_args_t * args) {
                 uint64_t * in_p;
                 uint64_t * out_p;
                 uint64_t * block_in_p  = db_in->block[curblock_in].data;
-                int m2 = 0;
                 for (m = 0; m < Nm; m++) {
-                    m2 = m/N_MCNT_PER_FRB_BLOCK;
-                    uint64_t * block_out_p = db_out->block[curblock_out+m2].data;
                     for (t = 0; t < Nt; t++) {
                         for (f = 0; f < Nf; f++) {
                             for (c = c_start; c < c_end; c++) {
                             // for (c = 0; c < Nc; c++) {
                                 in_p  = block_in_p + flag_input_databuf_idx(m,f,t,c);
-                                out_p = block_out_p + flag_frb_gpu_input_databuf_idx(m % N_MCNT_PER_FRB_BLOCK,f,t,c % N_CHAN_PER_FRB_BLOCK);
-                                // out_p = block_out_p + flag_gpu_input_databuf_idx(m % N_MCNT_PER_FRB_BLOCK,f,t,c);
+                                out_p = block_out_p + flag_pfb_gpu_input_databuf_idx(m,f,t,c % N_CHAN_PER_FRB_BLOCK);
                                 memcpy(out_p, in_p, 128/8);
                             }
                         }
@@ -144,20 +140,9 @@ static void * run(hashpipe_thread_args_t * args) {
                 }
 
     
-                int j;
-                for (j = 0; j < N_FRB_BLOCKS_PER_BLOCK; j++) {
-                    // Add header information to output block
-                    db_out->block[curblock_out + j].header.mcnt = mcnt + j*N_MCNT_PER_FRB_BLOCK;
-                    db_out->block[curblock_out + j].header.good_data = db_in->block[curblock_in].header.good_data;
-                    // Set output block to filled
-                    #if VERBOSE==1
-                        printf("TRA: Marking output block %d as filled, mcnt=%lld\n", curblock_out + j, (long long int)mcnt + j*N_MCNT_PER_FRB_BLOCK);
-                    #endif
-
-                    // Mark block as filled
-                    flag_frb_gpu_input_databuf_set_filled(db_out, curblock_out + j);
-                }
-                curblock_out = (curblock_out + N_FRB_BLOCKS_PER_BLOCK) % db_out->header.n_block;
+                // Mark block as filled
+                flag_pfb_gpu_input_databuf_set_filled(db_out, curblock_out);
+                curblock_out = (curblock_out + 1) % db_out->header.n_block;
     
                 // Set input block to free
                 #if VERBOSE==1
@@ -202,7 +187,7 @@ static hashpipe_thread_desc_t t_thread = {
     init: NULL,
     run:  run,
     ibuf_desc: {flag_input_databuf_create},
-    obuf_desc: {flag_frb_gpu_input_databuf_create}
+    obuf_desc: {flag_pfb_gpu_input_databuf_create}
 };
 
 static __attribute__((constructor)) void ctor() {

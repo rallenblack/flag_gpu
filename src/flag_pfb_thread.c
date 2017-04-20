@@ -30,7 +30,7 @@ typedef enum {
 //         (2b) Print out some data in the block
 static void * run(hashpipe_thread_args_t * args) {
     // Local aliases to shorten access to args fields
-    flag_gpu_input_databuf_t * db_in = (flag_gpu_input_databuf_t *)args->ibuf;
+    flag_pfb_gpu_input_databuf_t * db_in = (flag_pfb_gpu_input_databuf_t *)args->ibuf;
     flag_gpu_pfb_output_databuf_t * db_out = (flag_gpu_pfb_output_databuf_t *)args->obuf;
     hashpipe_status_t st = args->st;
     const char * status_key = args->thread_desc->skey;
@@ -88,7 +88,7 @@ static void * run(hashpipe_thread_args_t * args) {
         if(cur_state == ACQUIRE){
             next_state = ACQUIRE;
 	    // Wait for input buffer block to be filled
-            while ((rv=flag_gpu_input_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
+            while ((rv=flag_pfb_gpu_input_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
 
 		// Take this time to update CHANSEL
 		int chk_chanSel = 0;
@@ -122,6 +122,9 @@ static void * run(hashpipe_thread_args_t * args) {
             flag_gpu_input_header_t tmp_header;
             memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_gpu_input_header_t));
             good_data = tmp_header.good_data;
+            hashpipe_status_lock_safe(&st);
+            hputi4(st.buf, "PFBMCNT", tmp_header.mcnt);
+            hashpipe_status_unlock_safe(&st);
 
             // Wait for output block to become free
             while ((rv=flag_gpu_pfb_output_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
@@ -161,7 +164,7 @@ static void * run(hashpipe_thread_args_t * args) {
                 printf("PFB: Attempting to mark block %d as free...\n", curblock_in);
             }
 
-            flag_gpu_input_databuf_set_free(db_in, curblock_in);
+            flag_pfb_gpu_input_databuf_set_free(db_in, curblock_in);
 
             if (VERBOSE) {
                 printf("PFB: Marked block %d as free...\n", curblock_in);
@@ -199,7 +202,7 @@ static hashpipe_thread_desc_t f_thread = {
     skey: "PFBSTAT",
     init: NULL,
     run:  run,
-    ibuf_desc: {flag_gpu_input_databuf_create},
+    ibuf_desc: {flag_pfb_gpu_input_databuf_create},
     obuf_desc: {flag_gpu_pfb_output_databuf_create}
 };
 

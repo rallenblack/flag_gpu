@@ -55,9 +55,7 @@ void * run_corrsave_thread(void * args) {
         // Get filename for output correlation file
         char filename[256];
         sprintf(filename, "corr_mcnt_%lld.out", (long long)start_mcnt);
-        if (start_mcnt % 200 == 0) {
-            fprintf(stderr, "SAV: Saving to %s\n", filename);
-        }
+        fprintf(stderr, "SAV: Saving to %s\n", filename);
 
         #if DISABLE_SAVE == 0
         // Get pointer to input buffer
@@ -112,9 +110,7 @@ void * run_beamsave_thread(void * args) {
         // Get filename for output correlation file
         char filename[256];
         sprintf(filename, "beam_mcnt_%lld.out", (long long)start_mcnt);
-        if (start_mcnt % 200 == 0) {
-            fprintf(stderr, "SAV: Saving to %s\n", filename);
-        }
+        fprintf(stderr, "SAV: Saving to %s\n", filename);
 
         #if DISABLE_SAVE == 0
         // Get pointer to input buffer
@@ -182,7 +178,7 @@ static void * run(hashpipe_thread_args_t * args) {
 // Thread description
 static hashpipe_thread_desc_t bxsave_thread = {
     name: "flag_bx_save_thread",
-    skey: "DUALSAVE",
+    skey: "BXSAVE",
     init: NULL,
     run:  run,
     ibuf_desc: {flag_frb_gpu_correlator_output_databuf_create},

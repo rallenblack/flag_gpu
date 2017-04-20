@@ -109,6 +109,10 @@ void * run_correlator_thread(void * args) {
 	            //printf("COR: Received block %d, starting mcnt = %lld\n", curblock_in, (long long int)tmp_header.mcnt);
                 my_args->good_data &= tmp_header.good_data;
 
+                hashpipe_status_lock_safe(&st);
+                hputi4(st.buf, "CORMCNT", tmp_header.mcnt);
+                hashpipe_status_unlock_safe(&st);
+
                 // Retrieve correlator integrator status
                 hashpipe_status_lock_safe(&st);
                 hgets(st.buf, "INTSTAT", 16, my_args->integ_status);
@@ -334,6 +338,9 @@ void  * run_beamformer_thread(void * args) {
             flag_gpu_input_header_t tmp_header;
             memcpy(&tmp_header, &db_in->block[my_args->curblock_in].header, sizeof(flag_gpu_input_header_t));
             my_args->good_data = tmp_header.good_data;
+            hashpipe_status_lock_safe(&st);
+            hputi4(st.buf, "BEAMMCNT", tmp_header.mcnt);
+            hashpipe_status_unlock_safe(&st);
 
             #if VERBOSE == 1
                 printf("BF: Received input block %d, starting mcnt %lld \n", my_args->curblock_in, (long long int)(tmp_header.mcnt));
@@ -426,8 +433,7 @@ static void * run(hashpipe_thread_args_t * args) {
     flag_frb_gpu_input_databuf_t * db_in = (flag_frb_gpu_input_databuf_t *)args->ibuf;
     flag_frb_gpu_correlator_output_databuf_t * db_out = (flag_frb_gpu_correlator_output_databuf_t *)args->obuf;
     hashpipe_status_t st = args->st;
-    int instance_id = args->instance_id;
-    printf("instance_id = %d\n", instance_id);
+    // int instance_id = args->instance_id;
 
     st_p = &st; // allow global (this source file) access to the status buffer
 
