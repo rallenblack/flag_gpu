@@ -17,14 +17,14 @@ function weight_file(weights,n_beams,F,M)
     offsets_xel = single([0, -1, -0.5, 0.5, 1, 0.5, -0.5]*2);
     offsets = [offsets_el; offsets_xel];
     offsets = offsets(:);
-    cal_filename = '2016_06_13_16:58:04A.fits';
+    cal_filename = 'DUMMY2';
     to_skip1 = 64 - length(cal_filename);
-    algorithm_name = 'Max Signal-to-Noise Ratio';
+    algorithm_name = 'ULA CFM w/ Chebwin 20dB';
     to_skip2 = 64 - length(algorithm_name);
-    xid = 3;
+    xid = 12;
 
     % Write to binary file
-    FID = fopen('weights_vec_C.bin','w');
+    FID = fopen('weights.in','w');
     % Write payload
     fwrite(FID,single(weights_H(:)),'float');
     % Write metadata
