@@ -46,7 +46,7 @@ static void * run(hashpipe_thread_args_t * args) {
     // Set the default frequency chunk index
     int n_chunk = 0;
     hashpipe_status_lock_safe(&st);
-    hputi4(st.buf, "NCHUNK", n_chunk);
+    hputi4(st.buf, "CHANSEL", n_chunk);
     hashpipe_status_unlock_safe(&st);
 
     int rv;
@@ -107,7 +107,7 @@ static void * run(hashpipe_thread_args_t * args) {
 
                 // Get the specified frequency channel chunk
                 hashpipe_status_lock_safe(&st);
-                hgeti4(st.buf, "NCHUNK", &n_chunk);
+                hgeti4(st.buf, "CHANSEL", &n_chunk);
                 hashpipe_status_unlock_safe(&st);
                 int c_start = n_chunk*N_CHAN_PER_FRB_BLOCK;
                 int c_end   = c_start + N_CHAN_PER_FRB_BLOCK;

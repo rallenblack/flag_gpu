@@ -13,7 +13,7 @@
 #include "flag_databuf.h"
 #include <xgpu.h>
 
-#define DISABLE_SAVE 1
+#define DISABLE_SAVE (SAVE == 0)
 
 typedef struct {
     flag_frb_gpu_correlator_output_databuf_t * db_in;
