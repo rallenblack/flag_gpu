@@ -11,7 +11,8 @@ c = 3e8; % speed of propagation (m/s)
 % User parameters
 theta = 90; % AOA in degrees
 Nele = 64; % Number of elements
-Nbeams = 200; % Number of beams
+Nele_real = 40; % Real number of elements
+Nbeams = 400; % Number of beams
 Nbins = 500; % Number of frequency bins
 
 % Derived parameters
@@ -33,7 +34,7 @@ my_a = squeeze(a(:,b_end,:));
 gain = zeros(Nbeams, 1);
 beam_idx = 90;
 for nb = 1:Nbeams
-    gain(nb) = abs(my_a(:,nb)'*(my_a(:,beam_idx)*my_a(:,beam_idx)')*my_a(:,nb));
+    gain(nb) = abs(my_a(1:Nele_real,nb)'*(my_a(1:Nele_real,beam_idx)*my_a(1:Nele_real,beam_idx)')*my_a(1:Nele_real,nb));
 end
 
 figure();
@@ -44,15 +45,65 @@ desired_beam_thetas = [85.5, 87, 88.5, 90, 91.5, 93, 94.5];
 d_idx = 1;
 indices = zeros(length(desired_beam_thetas), 1);
 for d_theta = desired_beam_thetas
-    [~,indices(d_idx)] = min(d_theta - thetas);
+    [~,indices(d_idx)] = min(abs(d_theta - thetas));
     d_idx = d_idx + 1;
 end
 
+
+% Plot the overlaid responses just for fun
+my_window = chebwin(Nele_real, 20);
+beams = zeros(Nbeams, length(indices));
+new_w = zeros(Nele_real, Nbins, length(indices));
+for t_idx = 1:length(indices)
+    for nb = 1:Nbeams
+        for nf = 1:Nbins
+            new_w(:,nf, t_idx) = my_window.*a(1:Nele_real, nf, indices(t_idx));
+        end
+        beams(nb,t_idx) = abs(new_w(:,end,t_idx)'*my_a(1:Nele_real,nb))^2;
+    end
+end
+figure();
+plot(10*log10(beams));
+
 final_w = zeros(Nele, Nbins, 14);
-final_w(:,:,1:7) = a(:,:,indices);
-final_w(:,:,8:14) = a(:,:,indices);
+final_w(1:Nele_real,:,1:7) = new_w;
+final_w(1:Nele_real,:,8:14) = new_w;
 
 % Get dimensions in correct order
 weights = permute(final_w, [3, 2, 1]);
 
-weight_file(weights, 14, Nbins, Nele);
+% Select out frequencies of interest
+xid = 12; % zero-indexed
+freq_idxs = xid*5 + [1:5, 101:105, 201:205, 301:305, 401:405];
+final_weights = weights(:,freq_idxs,:);
+
+weight_file(final_weights, 14, 25, Nele);
+
+% Open weight file and confirm
+FID = fopen('weights.in','rb');
+% First 64x25x2 floats are beam X0
+% Next are beam X1...X7
+% Them beams Y0...Y7
+% Internally, each beam has ordering (fast->slow), re/im, elements, frequency
+X = zeros(64, 25, 7);
+Y = zeros(64, 25, 7);
+for nb = 1:7
+    Xtmp = fread(FID, 25*64*2, 'single');
+    Xtmp = Xtmp(1:2:end) + 1j*Xtmp(2:2:end);
+    X(:,:,nb) = reshape(Xtmp, 64, 25);
+end
+for nb = 1:7
+    Ytmp = fread(FID, 25*64*2, 'single');
+    Ytmp = Ytmp(1:2:end) + 1j*Ytmp(2:2:end);
+    Y(:,:,nb) = reshape(Ytmp, 64, 25);
+end
+
+% Plot beam patterns
+beams = zeros(Nbeams, length(indices));
+for t_idx = 1:7
+    for nb = 1:Nbeams
+        beams(nb,t_idx) = abs(X(:,end,t_idx)'*my_a(1:Nele,nb))^2;
+    end
+end
+figure();
+plot(10*log10(beams));
