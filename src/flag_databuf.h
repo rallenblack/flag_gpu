@@ -8,7 +8,7 @@
 #include "pfb.h"
 #include "config.h"
 
-#define VERBOSE 0
+#define VERBOSE 1
 #define SAVE 0
 
 // Total number of antennas (nominally 40)
@@ -144,6 +144,7 @@
 #define N_TIME_PER_PFB_BLOCK XGPU_PFB_NTIME
 #define N_CHAN_PER_PFB_BLOCK XGPU_PFB_NFREQUENCY
 #define N_PFB_COR_MATRIX (N_INPUTS/2*(N_INPUTS/2 + 1)/2*N_CHAN_PER_PFB_BLOCK*4)
+#define N_BYTES_PER_PFB_BLOCK (N_TIME_PER_BLOCK * N_CHAN_PER_PFB_BLOCK * N_INPUTS * N_BITS_IQ * 2 / 8)
 
 // Macros to maintain cache alignment
 #define CACHE_ALIGNMENT (128)
@@ -234,6 +235,23 @@ typedef struct flag_frb_gpu_input_databuf {
 } flag_frb_gpu_input_databuf_t;
 
 
+/*
+ * PFB GPU INPUT BUFFER STRUCTURES
+ */
+
+// A typedef for a block of data in the buffer
+typedef struct flag_pfb_gpu_input_block {
+    flag_gpu_input_header_t header;
+    flag_gpu_input_header_cache_alignment padding;
+    uint64_t data[N_BYTES_PER_PFB_BLOCK/sizeof(uint64_t)];
+} flag_pfb_gpu_input_block_t;
+
+// The data buffer structure
+typedef struct flag_pfb_gpu_input_databuf {
+    hashpipe_databuf_t header;
+    hashpipe_databuf_cache_alignment padding;
+    flag_pfb_gpu_input_block_t block[N_GPU_INPUT_BLOCKS];
+} flag_pfb_gpu_input_databuf_t;
 
 /*
  * GPU OUTPUT BUFFER STRUCTURES
@@ -370,6 +388,12 @@ int flag_frb_gpu_input_databuf_wait_free   (flag_frb_gpu_input_databuf_t * d, in
 int flag_frb_gpu_input_databuf_wait_filled (flag_frb_gpu_input_databuf_t * d, int block_id);
 int flag_frb_gpu_input_databuf_set_free    (flag_frb_gpu_input_databuf_t * d, int block_id);
 int flag_frb_gpu_input_databuf_set_filled  (flag_frb_gpu_input_databuf_t * d, int block_id);
+
+hashpipe_databuf_t * flag_pfb_gpu_input_databuf_create(int instance_id, int databuf_id);
+int flag_pfb_gpu_input_databuf_wait_free   (flag_pfb_gpu_input_databuf_t * d, int block_id);
+int flag_pfb_gpu_input_databuf_wait_filled (flag_pfb_gpu_input_databuf_t * d, int block_id);
+int flag_pfb_gpu_input_databuf_set_free    (flag_pfb_gpu_input_databuf_t * d, int block_id);
+int flag_pfb_gpu_input_databuf_set_filled  (flag_pfb_gpu_input_databuf_t * d, int block_id);
 
 /********************
  * GPU Output Buffer Functions
