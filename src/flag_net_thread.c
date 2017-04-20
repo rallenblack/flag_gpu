@@ -207,9 +207,9 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
         printf("NET: Bad Block! mcnt = %lld, %d/%d\n", (long long int)db->block[block_idx].header.mcnt_start, binfo->packet_count[block_idx], N_REAL_PACKETS_PER_BLOCK);
     }
     //int num_missed_packets = N_REAL_PACKETS_PER_BLOCK - binfo->packet_count[block_idx];
-    //hashpipe_status_lock_safe(st_p);
-    //hputi4(st_p->buf, "MISSPKTS", num_missed_packets);
-    //hashpipe_status_unlock_safe(st_p);
+    hashpipe_status_lock_safe(st_p);
+    hputi4(st_p->buf, "NETMCNT", db->block[block_idx].header.mcnt_start);
+    hashpipe_status_unlock_safe(st_p);
     
 
     // Mark block as filled so next thread can process it
@@ -269,6 +269,13 @@ static inline int64_t process_packet(flag_input_databuf_t * db, struct hashpipe_
         binfo.packet_count[dest_block_idx] = 0;
     }
     else if (pkt_mcnt_dist >= (N_INPUT_BLOCKS-1)*Nm) { // > current block + 2
+        char msg[60];
+        sprintf(msg, "Late Packet! - %lld", (long long int)pkt_mcnt);
+        hashpipe_status_lock_safe(st_p);
+        hputs(st_p->buf, "NETERR", msg);
+        hashpipe_status_unlock_safe(st_p);
+
+
         /*
         // The x-engine is lagging behind the f-engine, or the x-engine
         // has just started. Reinitialize the current block

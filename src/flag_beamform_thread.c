@@ -122,6 +122,10 @@ static void * run(hashpipe_thread_args_t * args) {
             memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_gpu_input_header_t));
             good_data = tmp_header.good_data;
 
+            hashpipe_status_lock_safe(&st);
+            hputi4(st.buf, "BEAMMCNT", tmp_header.mcnt);
+            hashpipe_status_unlock_safe(&st);
+
             // Wait for output block to become free
             while ((rv=flag_gpu_beamformer_output_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
                 if (rv==HASHPIPE_TIMEOUT) {

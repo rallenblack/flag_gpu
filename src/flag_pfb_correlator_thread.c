@@ -142,6 +142,9 @@ static void * run(hashpipe_thread_args_t * args) {
     	        printf("COR: Received block %d, starting mcnt = %lld\n", curblock_in, (long long int)tmp_header.mcnt);
 	    #endif
             good_data &= tmp_header.good_data;
+            hashpipe_status_lock_safe(&st);
+            hputi4(st.buf, "CORMCNT", tmp_header.mcnt);
+            hashpipe_status_unlock_safe(&st);
 
             // Retrieve correlator integrator status
             hashpipe_status_lock_safe(&st);
