@@ -37,7 +37,7 @@ sigma2 = kb*Tsys*BW;    % Noise power per channel
 % 6 -> Send complex sinusodial data
 % 7 -> Send ULA data
 % else -> Send all zeros
-data_flag = 1;
+data_flag = 7;
 
 % Sinusoid parameters (only used if data_flag = 2)
 % It should be noted that the phase of the sinusoid will not change between
@@ -114,7 +114,7 @@ cs_im = 127 * (0.1 * sin(2*pi*cs_freq*cs_n)) + sigma^2*randn();
 % Case 7 - ULA
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ULA_sigma2 = 8;
-ULA_theta = 90; % Degrees
+ULA_theta = 91.5; % Degrees
 ULA_freqs = (0:499)*(303e3) + 1300e6; % All frequencies
 ULA_c = 3e8; % speed of propagation (m/s)
 ULA_d = ULA_c/ULA_freqs(end); % Element spacing
@@ -123,8 +123,9 @@ ULA_N = 4000; % Number of samples
 ULA_complex = zeros(ULA_N, 40, length(ULA_freqs)); % time x freq x elements
 for ULA_b = 1:length(ULA_freqs) % Iterate over frequency
         ULA_a = exp(1j*(1:40)*ULA_phi(ULA_b)); % Steering vector
-        ULA_complex(:, :, ULA_b) = ...
-            kron(ULA_a, sqrt(ULA_sigma2/2)*(randn(ULA_N, 1) + 1j*randn(ULA_N, 1)));
+        %ULA_complex(:, :, ULA_b) = ...
+        %    kron(ULA_a, sqrt(ULA_sigma2/2)*(randn(ULA_N, 1) + 1j*randn(ULA_N, 1)));
+        ULA_complex(:,:,ULA_b) = kron(ULA_a, sqrt(ULA_sigma2)*ones(ULA_N, 1));
 end
 
 
