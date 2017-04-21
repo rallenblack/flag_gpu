@@ -47,7 +47,7 @@ flag_b_threads = flag_net_thread.c \
                  flag_beamsave_thread.c
 
 flag_f_threads = flag_net_thread.c \
-                 flag_transpose_thread.c \
+                 flag_pfb_transpose_thread.c \
                  flag_pfb_thread.c \
                  flag_pfbsave_thread.c
 
@@ -62,7 +62,7 @@ flag_x_frb_threads = flag_net_thread.c \
                      flag_frb_corsave_thread.c
 
 flag_fx_threads = flag_net_thread.c \
-                     flag_transpose_thread.c \
+                     flag_pfb_transpose_thread.c \
                      flag_pfb_thread.c \
                      flag_pfb_correlator_thread.c \
                      flag_pfb_corsave_thread.c
