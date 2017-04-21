@@ -112,8 +112,8 @@ static void * run(hashpipe_thread_args_t * args) {
                 hashpipe_status_lock_safe(&st);
                 hgeti4(st.buf, "CHANSEL", &n_chunk);
                 hashpipe_status_unlock_safe(&st);
-                int c_start = n_chunk*N_CHAN_PER_FRB_BLOCK;
-                int c_end   = c_start + N_CHAN_PER_FRB_BLOCK;
+                int c_start = n_chunk*N_CHAN_PER_PFB_BLOCK;
+                int c_end   = c_start + N_CHAN_PER_PFB_BLOCK;
                 #if VERBOSE == 1
                 printf("TRA: c_start = %d, c_end = %d\n", c_start, c_end);
                 #endif
@@ -133,7 +133,7 @@ static void * run(hashpipe_thread_args_t * args) {
                             for (c = c_start; c < c_end; c++) {
                             // for (c = 0; c < Nc; c++) {
                                 in_p  = block_in_p + flag_input_databuf_idx(m,f,t,c);
-                                out_p = block_out_p + flag_gpu_input_databuf_idx(m,f,t,c % N_CHAN_PER_FRB_BLOCK);
+                                out_p = block_out_p + flag_gpu_input_databuf_idx(m,f,t,c % N_CHAN_PER_PFB_BLOCK);
                                 memcpy(out_p, in_p, 128/8);
                             }
                         }
