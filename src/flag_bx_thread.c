@@ -106,7 +106,9 @@ void * run_correlator_thread(void * args) {
                 // Print out the header information for this block 
                 flag_gpu_input_header_t tmp_header;
                 memcpy(&tmp_header, &db_in->block[my_args->curblock_in].header, sizeof(flag_gpu_input_header_t));
-	            //printf("COR: Received block %d, starting mcnt = %lld\n", curblock_in, (long long int)tmp_header.mcnt);
+                #if VERBOSE == 1
+	        printf("COR: Received block %d, starting mcnt = %lld\n", my_args->curblock_in, (long long int)tmp_header.mcnt);
+                #endif
                 my_args->good_data &= tmp_header.good_data;
 
                 hashpipe_status_lock_safe(&st);
@@ -183,6 +185,7 @@ void * run_correlator_thread(void * args) {
 
 	            // Check to see if a stop is issued
         	    if (strcmp(my_args->integ_status, "stop") == 0) {
+                        printf("COR: We're in a STOP state\n");
 	                continue;
 	            }
 
@@ -193,6 +196,7 @@ void * run_correlator_thread(void * args) {
             
                 int doDump = 0;
                 if ((db_in->block[my_args->curblock_in].header.mcnt + my_args->int_count*N_MCNT_PER_FRB_BLOCK - 1) >= my_args->last_mcnt) {
+                    printf("COR: Preparing to dump with mcnt %lld\n", (long long int)tmp_header.mcnt);
                     doDump = 1;
 
                     // Wait for new output block to be free
@@ -221,10 +225,11 @@ void * run_correlator_thread(void * args) {
                     }
                 }
            
+                printf("COR: Starting xGPU for mcnt %lld\n", (long long int)tmp_header.mcnt);
                 xgpuCudaXengine(&(my_args->context), doDump ? SYNCOP_DUMP : SYNCOP_SYNC_TRANSFER);
            
                 #if VERBOSE==1
-                printf("COR: start_mcnt = %lld, last_mcnt = %lld\n", (long long int)(my_args->start_mcnt), (long long int)(my_args->last_mcnt));
+                //printf("COR: start_mcnt = %lld, last_mcnt = %lld\n", (long long int)(my_args->start_mcnt), (long long int)(my_args->last_mcnt));
                 #endif
                 if (doDump) {
                     xgpuClearDeviceIntegrationBuffer(&(my_args->context));
@@ -242,17 +247,18 @@ void * run_correlator_thread(void * args) {
                     my_args->curblock_out = (my_args->curblock_out + 1) % db_out->header.n_block;
                     my_args->start_mcnt = my_args->last_mcnt + 1;
                     my_args->last_mcnt = my_args->start_mcnt + my_args->int_count*N_MCNT_PER_FRB_BLOCK -1;
+                    printf("COR: DUMP COMPLETE. Next start_mcnt = %lld, last_mcnt = %lld\n", (long long int)my_args->start_mcnt, (long long int)my_args->last_mcnt);
                     // Reset good_data flag for next block
                     my_args->good_data = 1;
                 }
 
                 #if VERBOSE==1
-                printf("COR: Marking input block %d as free\n", my_args->curblock_in);
+                //printf("COR: Marking input block %d as free\n", my_args->curblock_in);
                 #endif
                 flag_frb_gpu_input_databuf_set_free(db_in, my_args->curblock_in);
                 my_args->curblock_in = (my_args->curblock_in + 1) % db_in->header.n_block;
                 #if VERBOSE==1
-                printf("COR: Will now look for input block %d, mcnt=%lld\n", my_args->curblock_in, (long long int)(my_args->start_mcnt));
+                //printf("COR: Will now look for input block %d, mcnt=%lld\n", my_args->curblock_in, (long long int)tmp_header.mcnt + N_MCNT_PER_FRB_BLOCK);
                 #endif
             }
         }
@@ -338,6 +344,7 @@ void  * run_beamformer_thread(void * args) {
             flag_gpu_input_header_t tmp_header;
             memcpy(&tmp_header, &db_in->block[my_args->curblock_in].header, sizeof(flag_gpu_input_header_t));
             my_args->good_data = tmp_header.good_data;
+            my_args->start_mcnt = tmp_header.mcnt;
             hashpipe_status_lock_safe(&st);
             hputi4(st.buf, "BEAMMCNT", tmp_header.mcnt);
             hashpipe_status_unlock_safe(&st);
@@ -385,8 +392,6 @@ void  * run_beamformer_thread(void * args) {
             // Mark output block as full and advance
             flag_gpu_beamformer_output_databuf_set_filled(db_out, my_args->curblock_out);
             my_args->curblock_out = (my_args->curblock_out + 1) % db_out->header.n_block;
-            my_args->start_mcnt = my_args->last_mcnt + 1;
-            my_args->last_mcnt = my_args->start_mcnt + Nm - 1;
             
             #if VERBOSE == 1
                 printf("BF: Marking input block %d as free\n", my_args->curblock_in);
@@ -640,7 +645,7 @@ static void * run(hashpipe_thread_args_t * args) {
             if (args->instance_id % 2 == 0) {
                 pthread_create(&corr_thread, NULL, run_correlator_thread, &my_x_args);
             }
-            pthread_create(&beam_thread, NULL, run_beamformer_thread, &my_b_args);
+            //pthread_create(&beam_thread, NULL, run_beamformer_thread, &my_b_args);
         }
         else if (my_x_args.cur_state == ERROR || my_b_args.cur_state == ERROR) {
             printf("BX: ERROR state reached. Terminating!\n");

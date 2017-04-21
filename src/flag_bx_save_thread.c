@@ -64,7 +64,7 @@ void * run_corrsave_thread(void * args) {
         // Open file and save
         FILE * filePtr = fopen(filename, "w");
         int j;
-        for (j = 0; j < N_COR_MATRIX; j++) {
+        for (j = 0; j < N_FRB_COR_MATRIX; j++) {
             float p_re = p[j].real;
             float p_im = p[j].imag;
             fprintf(filePtr, "%g\n", p_re);

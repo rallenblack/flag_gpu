@@ -87,18 +87,21 @@ static void * run(hashpipe_thread_args_t * args) {
 
             if (next_state != CLEANUP) {
 
-                // Wait for output buffer block to be freed
-                while ((rv=flag_frb_gpu_input_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
-                    if (rv == HASHPIPE_TIMEOUT) {
-                        //hashpipe_status_lock_safe(&st);
-                        //hputs(st.buf, status_key, "waiting for free block");
-                        //hashpipe_status_unlock_safe(&st);
-                        continue;
-                    }
-                    else {
-                        hashpipe_error(__FUNCTION__, "error waiting for free databuf block");
-                        pthread_exit(NULL);
-                        break;
+                // Wait for output buffer blocks to be freed
+                int z;
+                for (z = 0; z < N_FRB_BLOCKS_PER_BLOCK; z++) {
+                    while ((rv=flag_frb_gpu_input_databuf_wait_free(db_out, curblock_out+z)) != HASHPIPE_OK) {
+                        if (rv == HASHPIPE_TIMEOUT) {
+                            //hashpipe_status_lock_safe(&st);
+                            //hputs(st.buf, status_key, "waiting for free block");
+                            //hashpipe_status_unlock_safe(&st);
+                            continue;
+                        }
+                        else {
+                            hashpipe_error(__FUNCTION__, "error waiting for free databuf block");
+                            pthread_exit(NULL);
+                            break;
+                        }
                     }
                 }
 
@@ -198,7 +201,7 @@ static void * run(hashpipe_thread_args_t * args) {
                 curblock_out = (curblock_out + N_FRB_BLOCKS_PER_BLOCK) % db_out->header.n_block;
                 
                 #if VERBOSE==1
-                    printf("TRA: Marking BF output block %d as filled, mcnt=%lld\n", b_curblock_out, (long long int)mcnt);
+                printf("TRA: Marking BF output block %d as filled, mcnt=%lld\n", b_curblock_out, (long long int)mcnt);
                 #endif
                 b_curblock_out = (b_curblock_out + 1) % b_db_out->header.n_block;
     
