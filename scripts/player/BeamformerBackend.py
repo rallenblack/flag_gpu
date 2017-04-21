@@ -201,6 +201,10 @@ class BeamformerBackend(VegasBackend):
         # Extract the list of cpu cores on which to run the threads
         self.cpus = config.get(bank, 'cpus')
         self.core = [int(x) for x in self.cpus.split(',') if x.strip().isdigit()]
+	print("The mode is: %s" % mode)	
+	# If PFB mode set coeff dir
+	if mode.lower() == "flag_pfb_mode" or mode.lower() == "flag_pfbcorr_mode":
+		self.coeffdir = config.get(mode, "COEFFDIR")
 
         # Get the 10 GbE BINDHOST and BINDPORT for this player
         self.bindhost = int2ip(theBank.dest_ip)
@@ -542,11 +546,11 @@ class BeamformerBackend(VegasBackend):
             thread1 = "-c %d flag_net_thread" % (self.core[0])
             thread2 = "-c %d flag_transpose_thread" % (self.core[1])
             thread3 = "-c %d flag_beamform_thread" % (self.core[2])
-            #thread4 = "-c %d flag_beamsave_thread" % (self.core[3])
+            thread4 = "-c %d flag_beamsave_thread" % (self.core[3])
             process_list = process_list + thread1.split()
             process_list = process_list + thread2.split()
             process_list = process_list + thread3.split()
-            #process_list = process_list + thread4.split()
+            process_list = process_list + thread4.split()
         elif self.name == "flag_total_power":
             # Add threads
             thread1 = "-c %d flag_net_thread" % (self.core[0])
@@ -569,8 +573,10 @@ class BeamformerBackend(VegasBackend):
             process_list = process_list + thread4.split()
     	elif self.name == "flag_pfb":
     	    # Add threads
+	    coeffdir_str = "-o COEFFDIR=" + str(self.coeffdir)
+	    process_list = process_list + coeffdir_str.split()
     	    thread1 = "-c %d flag_net_thread" % (self.core[0])
-    	    thread2 = "-c %d flag_transpose_thread" % (self.core[1])
+    	    thread2 = "-c %d flag_pfb_transpose_thread" % (self.core[1])
     	    thread3 = "-c %d flag_pfb_thread" % (self.core[2])
     	    thread4 = "-c %d flag_pfbsave_thread" % (self.core[3])
     	    process_list = process_list + thread1.split()
@@ -579,8 +585,10 @@ class BeamformerBackend(VegasBackend):
     	    process_list = process_list + thread4.split()
         elif self.name == "flag_pfb_corr":
             # Add threads
+	    coeffdir_str = "-o COEFFDIR=" + str(self.coeffdir)
+	    process_list = process_list + coeffdir_str.split()
             thread1 = "-c %d flag_net_thread" % (self.core[0])
-            thread2 = "-c %d flag_transpose_thread" % (self.core[1])
+            thread2 = "-c %d flag_pfb_transpose_thread" % (self.core[1])
             thread3 = "-c %d flag_pfb_thread" % (self.core[2])
             thread4 = "-c %d flag_pfb_correlator_thread" % (self.core[3])
             thread5 = "-c %d flag_pfb_corsave_thread" % (self.core[1])
