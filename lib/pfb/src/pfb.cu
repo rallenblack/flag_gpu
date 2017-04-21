@@ -56,13 +56,15 @@ int runPFB(signed char* inputData_h, float* outputData_h, params pfbParams) {
 	long ltotData = pfbParams.fine_channels*pfbParams.elements*(pfbParams.samples + pfbParams.nfft*pfbParams.taps);
 	int start = pfbParams.fine_channels*pfbParams.elements*pfbParams.nfft*pfbParams.taps;
 	int countFFT = 0;
+	int cpySize = pfbParams.fine_channels*pfbParams.elements*pfbParams.samples*(2*sizeof(char));
 
 	// copy data to device
-	CUDASafeCallWithCleanUp(cudaMemcpy(g_pcInputData_d, inputData_h, g_iSizeRead, cudaMemcpyHostToDevice)); //g_iSizeRead = samples*coarse_channels*elements*(2*sizeof(char));
+	//CUDASafeCallWithCleanUp(cudaMemcpy(g_pcInputData_d, inputData_h, g_iSizeRead, cudaMemcpyHostToDevice)); //g_iSizeRead = samples*coarse_channels*elements*(2*sizeof(char));
+	CUDASafeCallWithCleanUp(cudaMemcpy(&g_pc2Data_d[start], inputData_h, cpySize, cudaMemcpyHostToDevice));
 
 	// map - extract channel data from full data stream and load into buffer.
-	map<<<mapGSize, mapBSize>>>(g_pcInputData_d, &g_pc2Data_d[start], pfbParams.select, pfbParams);
-	CUDASafeCallWithCleanUp(cudaGetLastError());
+	//map<<<mapGSize, mapBSize>>>(g_pcInputData_d, &g_pc2Data_d[start], pfbParams.select, pfbParams);
+	//CUDASafeCallWithCleanUp(cudaGetLastError());
 
 	// Begin PFB
 	g_pc2DataRead_d = g_pc2Data_d; // p_pc2Data_d contains all the data. DataRead will update with each pass through the PFB.

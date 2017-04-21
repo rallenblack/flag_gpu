@@ -126,13 +126,14 @@ static void * run(hashpipe_thread_args_t * args) {
                 uint64_t * in_p;
                 uint64_t * out_p;
                 uint64_t * block_in_p  = db_in->block[curblock_in].data;
+		uint64_t * block_out_p = db_out->block[curblock_out].data;
                 for (m = 0; m < Nm; m++) {
                     for (t = 0; t < Nt; t++) {
                         for (f = 0; f < Nf; f++) {
                             for (c = c_start; c < c_end; c++) {
                             // for (c = 0; c < Nc; c++) {
                                 in_p  = block_in_p + flag_input_databuf_idx(m,f,t,c);
-                                out_p = block_out_p + flag_pfb_gpu_input_databuf_idx(m,f,t,c % N_CHAN_PER_FRB_BLOCK);
+                                out_p = block_out_p + flag_gpu_input_databuf_idx(m,f,t,c % N_CHAN_PER_FRB_BLOCK);
                                 memcpy(out_p, in_p, 128/8);
                             }
                         }
@@ -182,8 +183,8 @@ static void * run(hashpipe_thread_args_t * args) {
 
 // Thread description
 static hashpipe_thread_desc_t t_thread = {
-    name: "flag_frb_transpose_thread",
-    skey: "FTRASTAT",
+    name: "flag_pfb_transpose_thread",
+    skey: "PTRASTAT",
     init: NULL,
     run:  run,
     ibuf_desc: {flag_input_databuf_create},
