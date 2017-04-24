@@ -146,7 +146,7 @@ static void * run(hashpipe_thread_args_t * args) {
             runPFB((signed char *)&db_in->block[curblock_in].data, (float *)&db_out->block[curblock_out].data, pfbParams);
 
 	        // Get block's starting mcnt for output block
-            db_out->block[curblock_out].header.mcnt = start_mcnt;
+            db_out->block[curblock_out].header.mcnt = tmp_header.mcnt;
             db_out->block[curblock_out].header.good_data = good_data;
                 
             // Mark output block as full and advance

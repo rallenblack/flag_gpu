@@ -106,6 +106,10 @@ static void * run(hashpipe_thread_args_t * args) {
                 hashpipe_status_lock_safe(&st);
                 hputi4(st.buf, "TRAMCNT", mcnt);
                 hashpipe_status_unlock_safe(&st);
+
+                // Set metadata for output block
+                db_out->block[curblock_out].header.mcnt = mcnt;
+                db_out->block[curblock_out].header.good_data = tmp_header.good_data;
                 //printf("TRA: Receiving block %d with starting mcnt = %lld\n", curblock_in, (long long int)mcnt);
 
                 // Get the specified frequency channel chunk
@@ -114,9 +118,6 @@ static void * run(hashpipe_thread_args_t * args) {
                 hashpipe_status_unlock_safe(&st);
                 int c_start = n_chunk*N_CHAN_PER_FRB_BLOCK;
                 int c_end   = c_start + N_CHAN_PER_FRB_BLOCK;
-                #if VERBOSE == 1
-                printf("TRA: c_start = %d, c_end = %d\n", c_start, c_end);
-                #endif
 
                 /**********************************************
                  * Perform transpose
