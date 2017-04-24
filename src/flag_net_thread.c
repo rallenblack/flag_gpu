@@ -207,16 +207,14 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
         printf("NET: Bad Block! mcnt = %lld, %d/%d\n", (long long int)db->block[block_idx].header.mcnt_start, binfo->packet_count[block_idx], N_REAL_PACKETS_PER_BLOCK);
     }
     //int num_missed_packets = N_REAL_PACKETS_PER_BLOCK - binfo->packet_count[block_idx];
-    hashpipe_status_lock_safe(st_p);
-    hputi4(st_p->buf, "NETMCNT", db->block[block_idx].header.mcnt_start);
-    hashpipe_status_unlock_safe(st_p);
+    //hashpipe_status_lock_safe(st_p);
+    //hputi4(st_p->buf, "MCNT", db->block[block_idx].header.mcnt_start);
+    //hashpipe_status_unlock_safe(st_p);
     
 
     // Mark block as filled so next thread can process it
     last_filled = block_idx;
-    #if VERBOSE == 1
-    printf("NET: Filling block %d, starting mcnt = %lld\n", block_idx, (long long int)binfo->mcnt_start);
-    #endif
+    //printf("NET: Filling block %d, starting mcnt = %lld\n", block_idx, (long long int)binfo->mcnt_start);
     flag_input_databuf_set_filled(db, block_idx);
 
     //binfo->self_xid = -1;
