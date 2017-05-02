@@ -84,7 +84,9 @@ static void * run(hashpipe_thread_args_t * args) {
     state cur_state = ACQUIRE;
     state next_state = ACQUIRE;
     int64_t good_data = 1;
+    char weight_flag[8];
     char netstat[17];
+    char weight_file[17];
 
     // Indicate in shared memory buffer that this thread is ready to start
     hashpipe_status_lock_safe(&st);
@@ -104,10 +106,52 @@ static void * run(hashpipe_thread_args_t * args) {
                     hashpipe_status_lock_safe(&st);
                     hgetl(st.buf, "CLEANB", &cleanb);
                     hgets(st.buf, "NETSTAT", 16, netstat);
+                    hgets(st.buf, "WFLAG", 8, weight_flag);
                     hashpipe_status_unlock_safe(&st);
                     if (cleanb == 0 && strcmp(netstat, "CLEANUP") == 0) {
                         next_state = CLEANUP;
                         break;
+                    }
+                    if (strcmp(weight_flag,"1") == 0){
+                        hashpipe_status_lock_safe(&st);
+                        hgets(st.buf,"BWEIFILE",16,weight_file);
+                        hashpipe_status_unlock_safe(&st);
+
+                        printf("RTB: Initializing beamformer weights...\n");
+                        update_weights(weight_file);
+                       // Put metadata into status shared memory
+                       float offsets[BN_BEAM];
+                       char cal_filename[65];
+                       char algorithm[65];
+                       char weight_filename[65];
+                       long long unsigned int bf_xid;
+                       int act_xid;
+
+                       bf_get_offsets(offsets);
+                       bf_get_cal_filename(cal_filename);
+                       bf_get_algorithm(algorithm);
+                       bf_get_weight_filename(weight_filename);
+                       bf_xid = bf_get_xid();
+                     
+                       int i;
+                       hashpipe_status_lock_safe(&st);
+                       for (i = 0; i < BN_BEAM/2; i++) {
+                           char keyword1[9];
+                           snprintf(keyword1,8,"ELOFF%d",i);
+                           hputr4(st.buf, keyword1, offsets[2*i]);
+                           char keyword2[9];
+                           snprintf(keyword2,8,"AZOFF%d",i);
+                           hputr4(st.buf, keyword2, offsets[2*i+1]);
+                       }
+                       hputs(st.buf, "BCALFILE", cal_filename);
+                       hputs(st.buf, "BALGORIT", algorithm);
+                       hputs(st.buf, "BWEIFILE", weight_filename);
+                       hgeti4(st.buf, "XID", &act_xid);
+                       hashpipe_status_unlock_safe(&st);
+                        
+                       hashpipe_status_lock_safe(&st);
+                       hputs(st.buf,"WFLAG","0");
+                       hashpipe_status_unlock_safe(&st); 
                     }
                 }
                 else {
