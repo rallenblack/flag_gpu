@@ -1,6 +1,6 @@
 % Read correlations
 clearvars;
-close all;
+%close all;
 
 % White noise
 % filename = '/lustre/pulsar/users/rprestag/FLAG/JUNK/JUNK/BF/2016_07_25_02:45:31A.fits';

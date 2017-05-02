@@ -36,8 +36,9 @@ sigma2 = kb*Tsys*BW;    % Noise power per channel
 % 5 -> Send spatially correlated data in a single bin
 % 6 -> Send complex sinusodial data
 % 7 -> Send ULA data
+% 8 -> Send exponentially correlated noise.
 % else -> Send all zeros
-data_flag = 7;
+data_flag = 8;
 
 % Sinusoid parameters (only used if data_flag = 2)
 % It should be noted that the phase of the sinusoid will not change between
@@ -128,6 +129,29 @@ for ULA_b = 1:length(ULA_freqs) % Iterate over frequency
         ULA_complex(:,:,ULA_b) = kron(ULA_a, sqrt(ULA_sigma2)*ones(ULA_N, 1));
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Case 8 - Correlated Exponential Noise (CEN)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+CEN_rho = 0.9;
+CEN_stdG = 0.05;
+
+CEN_A = toeplitz(CEN_rho.^(0:Ninputs-1));
+CEN_G = diag(max(.2, 1+CEN_stdG*randn(Ninputs,1)));
+CEN_Asqr = sqrtm(CEN_G*CEN_A*CEN_G');
+
+CEN_N = 4000;
+CEN = CEN_Asqr/sqrt(2)*(randn(Ninputs, CEN_N) + 1j*randn(Ninputs, CEN_N));
+
+CEN_R = 1/CEN_N*(CEN*CEN');
+figure(99);
+imagesc(abs(CEN_R));
+
+c_max = 4;
+c_min = -4;
+CEN_real = int8(((real(CEN) - c_min)/(c_max - c_min) - 0.5) * 256);
+CEN_imag = int8(((imag(CEN) - c_min)/(c_max - c_min) - 0.5) * 256);
+
+
 
 % Create UDP sockets - 1 IP address per Xengine (xid)
 for xid = 1:Nxengines
@@ -148,7 +172,7 @@ end
 mcnt = 0; % Each mcnt represents 20 packets across all F-engines in the
           % same time frame
   
-for mcnt = [0:10000] %while mcnt <= 10000
+for mcnt = [0:201, 400:50:20000] %while mcnt <= 10000
     disp(['Sending mcnt = ', num2str(mcnt)]);
     for xid = 13:13 % Set to a single X-engine for single HPC testing (Richard B.)
         for fid = 1:Nfengines
@@ -253,7 +277,16 @@ for mcnt = [0:10000] %while mcnt <= 10000
                     data(:,1,:,:) = real(tmp2);
                     data(:,2,:,:) = imag(tmp2);
                     data(data < 0) = 2^8 + data(data < 0);
-                    
+                case 8
+                    f_idxs = (fid - 1)*8+1:fid*8;
+                    t_idxs = mod(mcnt*20 + 1:(mcnt+1)*20, CEN_N);
+                    t_idxs(t_idxs == 0) = CEN_N;
+                    for bin_idx = 1:Nbin_per_x
+                        data(:, 1, bin_idx, :) = CEN_real(f_idxs,t_idxs);
+                        data(:, 2, bin_idx, :) = CEN_imag(f_idxs,t_idxs);
+                        data(data < 0) = 2^8 + data(data < 0);
+                    end
+                  
                 otherwise % Send all zeros
             end
             data = uint8(data);
