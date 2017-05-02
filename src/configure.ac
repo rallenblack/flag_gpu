@@ -52,8 +52,8 @@ AC_TYPE_UINT64_T
 AC_TYPE_UINT8_T
 
 # Checks for library functions.
-AC_FUNC_MALLOC
-AC_CHECK_FUNCS([clock_gettime memset socket crc32])
+#AC_FUNC_MALLOC
+AC_CHECK_FUNCS([clock_gettime memset socket crc32 malloc])
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

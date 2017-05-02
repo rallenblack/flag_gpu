@@ -19,8 +19,8 @@ function [ R, dmjd, xid ] = extract_covariances( fits_filename )
     
     
     Nel = 64;
-    Nbin = 25;
-    Nsamp = 4000;
+    Nbin = 5;
+    Nsamp = 40;
 
     R = reconstruct_covariances_bdj(data, Nel, Nbin, Nsamp);
     R = R(1:40, 1:40, :, :);

@@ -9,7 +9,7 @@ else
 fi
 
 # Change this to match your destination directory
-prefix=$HOME/hash
+prefix=/home/groups/flag/hash/
 
 # Add prefix to PATH
 if [[ "$PATH" == ?(*:)"$prefix/bin"?(:*) ]]
