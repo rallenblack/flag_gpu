@@ -9,7 +9,7 @@
 #include "config.h"
 
 #define VERBOSE 0
-#define SAVE 0
+#define SAVE 1
 
 // Total number of antennas (nominally 40)
 #define N_INPUTS 64

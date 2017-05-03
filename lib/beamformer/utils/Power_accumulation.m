@@ -15,7 +15,8 @@ N_data = N_pol*N_beam*N_bin*N_time;
 
 % Load data
 % power_acc = fopen('power_data.data', 'r');
-power_acc = fopen('power_mcnt_0.out', 'r');
+% power_acc = fopen('power_mcnt_0.out', 'r');
+power_acc = fopen('/home/groups/flag/beamformer_0_mcnt_0.out', 'r');
 [data, count] = fread(power_acc, N_data, 'float');
 fclose(power_acc);
 

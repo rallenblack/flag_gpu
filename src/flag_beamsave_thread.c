@@ -64,14 +64,18 @@ static void * run(hashpipe_thread_args_t * args) {
         uint64_t start_mcnt = db_in->block[curblock_in].header.mcnt;
         int good_data = (int)(db_in->block[curblock_in].header.good_data);
 
+        hashpipe_status_lock_safe(&st);
+        hgets(st.buf, "DATADIR", 127, data_dir);
+        hashpipe_status_unlock_safe(&st);
+
         char filename[256];
         sprintf(filename, "%s/beamformer_%d_mcnt_%lld.out", data_dir, instance_id, (long long)start_mcnt);
         fprintf(stderr, "Saving to %s\n", filename);
         if (SAVE) {
             float * p = (float *)db_in->block[curblock_in].data;
             FILE * filePtr = fopen(filename, "w");
-            fwrite(&good_data, sizeof(int), 1, filePtr);
             fwrite(p, sizeof(float), N_BEAM_SAMPS, filePtr);
+            fwrite(&good_data, sizeof(int), 1, filePtr);
             fclose(filePtr);
         }
 
