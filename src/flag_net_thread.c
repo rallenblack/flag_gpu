@@ -398,6 +398,7 @@ static void *run(hashpipe_thread_args_t * args) {
     hashpipe_status_unlock_safe(&st);
 
     struct hashpipe_udp_packet p;
+    struct hashpipe_udp_packet bh; // blackhole packet to suck up data that isnt processed
 
     /* Give all the threads a chance to start before opening network socket */
     /*
@@ -505,7 +506,14 @@ static void *run(hashpipe_thread_args_t * args) {
          ************************************************************/
         // If in IDLE state, look for START command
         if (cur_state == IDLE) {
-             // cmd = check_cmd(gpu_fifo_id);
+            // cmd = check_cmd(gpu_fifo_id);
+             
+	    // keep receiving packets but send them to a blackhole packet, these wont be processed
+	    
+            bh.packet_size = recv(up.sock, bh.data, HASHPIPE_MAX_PACKET_SIZE, 0);
+	    if(bh.packet_size != -1) {
+		//printf("blackhole!!!\n");
+	    }
 
 
             // If command is START, proceed to ACQUIRE state
