@@ -559,7 +559,9 @@ static void *run(hashpipe_thread_args_t * args) {
             if ((last_filled_mcnt != -1 && last_filled_mcnt >= scan_last_mcnt) || cmd == STOP) {
                 int cleanA = 1;
                 int cleanB = 1;
-		printf("Clean up!\n");
+		printf("NET: CLEANUP condition met!\n");
+                sleep(1);
+                printf("NET: Informing other threads of cleanup condition\n");
                 while (cleanA != 0 && cleanB != 0) {
                     hashpipe_status_lock_safe(&st);
                     hputl(st.buf, "CLEANA", 0);
@@ -573,6 +575,7 @@ static void *run(hashpipe_thread_args_t * args) {
                     hashpipe_status_unlock_safe(&st);
                 }
                 next_state = CLEANUP;
+                printf("NET: All other threads have been informed\n");
             }
         }
 
@@ -595,6 +598,7 @@ static void *run(hashpipe_thread_args_t * args) {
             
             if (netready) {
                 next_state = IDLE;
+                printf("NET: CLEANUP complete; returning to IDLE\n");
             }
             else {
                 next_state = CLEANUP;

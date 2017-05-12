@@ -65,6 +65,7 @@ static void * run(hashpipe_thread_args_t * args) {
                     hgets(st.buf, "NETSTAT", 16, netstat);
                     hashpipe_status_unlock_safe(&st);
                     if (traclean == 0 && strcmp(netstat, "CLEANUP") == 0) {
+                        printf("TRA: Entering CLEANUP state \n");
                         next_state = CLEANUP;
                         break;
                     }
@@ -145,7 +146,6 @@ static void * run(hashpipe_thread_args_t * args) {
             }
         }
         else if (cur_state == CLEANUP) {
-            printf("TRA: In Clean up \n");
             curblock_in = 0;
             curblock_out = 0;
             next_state = ACQUIRE;
@@ -153,6 +153,7 @@ static void * run(hashpipe_thread_args_t * args) {
             hashpipe_status_lock_safe(&st);
             hputl(st.buf, "CLEANA", 1);
             hashpipe_status_unlock_safe(&st);
+            printf("TRA: Finished CLEANUP, returning to ACQUIRE\n");
         }
 
         // Next state processing

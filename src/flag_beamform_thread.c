@@ -50,7 +50,17 @@ static void * run(hashpipe_thread_args_t * args) {
     // Update weights
     // TODO: allow update of weights during runtime
     printf("RTB: Initializing beamformer weights...\n");
-    update_weights("./weights.in");
+    char weightdir[65];
+    hashpipe_status_lock_safe(&st);
+    hgets(st.buf,"WEIGHTD", 65, weightdir);
+    hashpipe_status_unlock_safe(&st);
+    
+    char w_dir[70];
+    sprintf(w_dir, "%s/weights.in", weightdir);
+    printf("BF: Weight file name: %s\n", w_dir);
+
+    // update_weights("./weights.in");
+    update_weights(w_dir);
     // Put metadata into status shared memory
     float offsets[BN_BEAM];
     char cal_filename[65];
@@ -77,7 +87,7 @@ static void * run(hashpipe_thread_args_t * args) {
     }
     hputs(st.buf, "BCALFILE", cal_filename);
     hputs(st.buf, "BALGORIT", algorithm);
-    hputs(st.buf, "BWEIFILE", weight_filename);
+    hputs(st.buf, "BWFILE", weight_filename);
     hgeti4(st.buf, "XID", &act_xid);
     hashpipe_status_unlock_safe(&st);
 
@@ -110,6 +120,7 @@ static void * run(hashpipe_thread_args_t * args) {
                     hashpipe_status_unlock_safe(&st);
                     if (cleanb == 0 && strcmp(netstat, "CLEANUP") == 0) {
                         next_state = CLEANUP;
+                        printf("BF: Entering CLEANUP state\n");
                         break;
                     }
                     if (strcmp(weight_flag,"1") == 0){
@@ -117,8 +128,13 @@ static void * run(hashpipe_thread_args_t * args) {
                         hgets(st.buf,"BWEIFILE",16,weight_file);
                         hashpipe_status_unlock_safe(&st);
 
+                        sprintf(w_dir, "%s\%s", weightdir, weight_file);
+                        printf("BF: Weight file name: %s\n", w_dir);
+                        
+
                         printf("RTB: Initializing beamformer weights...\n");
-                        update_weights(weight_file);
+                        // update_weights(weight_file);
+                        update_weights(w_dir);
                        // Put metadata into status shared memory
                        float offsets[BN_BEAM];
                        char cal_filename[65];
@@ -145,7 +161,7 @@ static void * run(hashpipe_thread_args_t * args) {
                        }
                        hputs(st.buf, "BCALFILE", cal_filename);
                        hputs(st.buf, "BALGORIT", algorithm);
-                       hputs(st.buf, "BWEIFILE", weight_filename);
+                       hputs(st.buf, "BWFILE", weight_filename);
                        hgeti4(st.buf, "XID", &act_xid);
                        hashpipe_status_unlock_safe(&st);
                         
@@ -186,10 +202,9 @@ static void * run(hashpipe_thread_args_t * args) {
             run_beamformer((signed char *)&db_in->block[curblock_in].data, (float *)&db_out->block[curblock_out].data);
             check_count++;
            // if(check_count == 1000){
-                 printf("RTBF: dumping mcnt = %lld\n", (long long int)start_mcnt);
            // }
 	        // Get block's starting mcnt for output block
-            db_out->block[curblock_out].header.mcnt = start_mcnt;
+            db_out->block[curblock_out].header.mcnt = tmp_header.mcnt;
             db_out->block[curblock_out].header.good_data = good_data;
                 
             // Mark output block as full and advance
@@ -209,6 +224,7 @@ static void * run(hashpipe_thread_args_t * args) {
             hashpipe_status_lock_safe(&st);
             hputl(st.buf, "CLEANB",1);
             hashpipe_status_unlock_safe(&st);
+            printf("BF: Finished CLEANUP, returning to ACQUIRE\n");
         }
 
         // Next state processing
