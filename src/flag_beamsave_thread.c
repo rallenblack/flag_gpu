@@ -27,7 +27,7 @@ static void * run(hashpipe_thread_args_t * args) {
 
     st_p = &st; // allow global (this source file) access to the status buffer
 
-    int instance_id = args[0].instance_id;
+    //int instance_id = args[0].instance_id;
     char data_dir[128];
     hashpipe_status_lock_safe(&st);
     hgets(st.buf, "DATADIR", 127, data_dir);
@@ -64,12 +64,14 @@ static void * run(hashpipe_thread_args_t * args) {
         uint64_t start_mcnt = db_in->block[curblock_in].header.mcnt;
         int good_data = (int)(db_in->block[curblock_in].header.good_data);
 
+        char BANK[5];
         hashpipe_status_lock_safe(&st);
         hgets(st.buf, "DATADIR", 127, data_dir);
+        hgets(st.buf, "BANKNAM", 4, BANK);
         hashpipe_status_unlock_safe(&st);
 
         char filename[256];
-        sprintf(filename, "%s/beamformer_%d_mcnt_%lld.out", data_dir, instance_id, (long long)start_mcnt);
+        sprintf(filename, "%s/TGBT16A_508_01/TMP/BF/beamformer_%s_mcnt_%lld.out", data_dir, BANK, (long long)start_mcnt);
         fprintf(stderr, "Saving to %s\n", filename);
         if (SAVE) {
             float * p = (float *)db_in->block[curblock_in].data;
