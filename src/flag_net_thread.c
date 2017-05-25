@@ -250,7 +250,7 @@ static inline int64_t process_packet(flag_input_databuf_t * db, struct hashpipe_
    
     // If packet is for the current block + 2, then mark current block as full
     // and increment current block
-    if (pkt_mcnt_dist >= (N_INPUT_BLOCKS-2)*Nm && pkt_mcnt_dist < (N_INPUT_BLOCKS-1)*Nm) { // 2nd next block (Current block + 2)
+    if (pkt_mcnt_dist >= (N_INPUT_BLOCKS-30)*Nm && pkt_mcnt_dist < (N_INPUT_BLOCKS-1)*Nm) { // 2nd next block (Current block + 2)
         set_block_filled(db, &binfo);
 
         // Advance mcnt_start to next block
@@ -292,6 +292,7 @@ static inline int64_t process_packet(flag_input_databuf_t * db, struct hashpipe_
         hputi4(st_p->buf, "NETMCNT", new_mcnt);
         hashpipe_status_unlock_safe(st_p);
         */
+        
         // printf("Net: Late packet... mcnt = %lld\n", (long long int)pkt_mcnt);
         return -1;
     
@@ -418,9 +419,21 @@ static void *run(hashpipe_thread_args_t * args) {
     */
 
     // Create clean flags for other threads
+    char modename[25];
+    int useC = 0;
+    hashpipe_status_lock_safe(&st);
+    hgets(st.buf, "MODENAME", 24, modename);
+    hashpipe_status_unlock_safe(&st);
+    if (strcmp(modename, "FLAG_PFBCORR_MODE") == 0) {
+        useC = 1;
+    }
+
     hashpipe_status_lock_safe(&st);
     hputl(st.buf, "CLEANA", 1);
     hputl(st.buf, "CLEANB", 1);
+    if (useC) {
+        hputl(st.buf, "CLEANC", 1);
+    }
     hashpipe_status_unlock_safe(&st);
 
     // Set correlator's starting mcnt to 0
@@ -529,7 +542,8 @@ static void *run(hashpipe_thread_args_t * args) {
             // Loop over (non-blocking) packet receive
             do {
                 p.packet_size = recv(up.sock, p.data, HASHPIPE_MAX_PACKET_SIZE, 0);
-                cmd = check_cmd(gpu_fifo_id);       
+                cmd = check_cmd(gpu_fifo_id);
+                if (cmd == STOP || cmd == QUIT) break;
             } while (p.packet_size == -1 && (errno == EAGAIN || errno == EWOULDBLOCK) && run_threads() && cmd==INVALID);
             if (!run_threads() || cmd == QUIT) break;
             // Check packet size and report errors
@@ -559,19 +573,26 @@ static void *run(hashpipe_thread_args_t * args) {
             if ((last_filled_mcnt != -1 && last_filled_mcnt >= scan_last_mcnt) || cmd == STOP) {
                 int cleanA = 1;
                 int cleanB = 1;
+                int cleanC = 1;
 		printf("NET: CLEANUP condition met!\n");
                 sleep(1);
                 printf("NET: Informing other threads of cleanup condition\n");
-                while (cleanA != 0 && cleanB != 0) {
+                while (cleanA != 0 && cleanB != 0 && cleanC != 0) {
                     hashpipe_status_lock_safe(&st);
                     hputl(st.buf, "CLEANA", 0);
                     hputl(st.buf, "CLEANB", 0);
+                    if (useC) {
+                        hputl(st.buf, "CLEANC", 0);
+                    }
                     hashpipe_status_unlock_safe(&st);
 
                     sleep(1);
                     hashpipe_status_lock_safe(&st);
                     hgetl(st.buf, "CLEANA", &cleanA);
                     hgetl(st.buf, "CLEANB", &cleanB);
+                    if (useC) {
+                        hgetl(st.buf, "CLEANC", &cleanC);
+                    }
                     hashpipe_status_unlock_safe(&st);
                 }
                 next_state = CLEANUP;
@@ -585,16 +606,30 @@ static void *run(hashpipe_thread_args_t * args) {
         // If in CLEANUP state, cleanup and reinitialize. Proceed to IDLE state.
         if (cur_state == CLEANUP) {
             cleanup_blocks(db);
+            // Set correlator's starting mcnt to 0
+            hashpipe_status_lock_safe(&st);
+            hputi4(st.buf, "NETMCNT", 0);
+            hashpipe_status_unlock_safe(&st);
 
             // Check other threads to make sure they've finished cleaning up
             int traclean = 0;
             int corclean = 0;
             int netready = 0;
+            int lastclean;
+            if (useC) {
+                lastclean = 0;   
+            }
+            else {
+                lastclean = 1;
+            }
             hashpipe_status_lock_safe(&st);
             hgetl(st.buf, "CLEANA",  &traclean);
             hgetl(st.buf, "CLEANB",  &corclean);
+            if (useC) {
+                hgetl(st.buf, "CLEANC", &lastclean);
+            }
             hashpipe_status_unlock_safe(&st);
-            netready = traclean & corclean;
+            netready = traclean & corclean & lastclean;
             
             if (netready) {
                 next_state = IDLE;
