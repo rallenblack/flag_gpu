@@ -77,6 +77,7 @@ static void * run(hashpipe_thread_args_t * args) {
                 }
             }
 
+            //printf("TRA: Rx %lld, curblock_in %d\n", (long long int)db_in->block[curblock_in].header.mcnt_start, curblock_in);
             if (next_state != CLEANUP) {
 
                 // Wait for output buffer block to be freed

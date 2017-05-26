@@ -96,8 +96,12 @@ static void * run(hashpipe_thread_args_t * args) {
 		hgeti4(st.buf, "CHANSEL", &chk_chanSel);
 		hashpipe_status_unlock_safe(&st);
 		if( (chanSel - chk_chanSel) != 0) {
-		    printf("PFB: Channel Selection detected. Switching channel...");
+		    printf("PFB: Channel Selection detected. Switching channel...\n");
 		    pfbParams.select = chk_chanSel;
+		    chanSel = chk_chanSel;
+		    hashpipe_status_lock_safe(&st);
+		    hputi4(st.buf, "CHANSEL", chanSel);
+		    hashpipe_status_unlock_safe(&st);
 		}
 
                 if (rv==HASHPIPE_TIMEOUT) {
