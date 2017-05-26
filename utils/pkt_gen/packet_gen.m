@@ -155,10 +155,10 @@ CEN_imag = int8(((imag(CEN) - c_min)/(c_max - c_min) - 0.5) * 256);
 
 % Create UDP sockets - 1 IP address per Xengine (xid)
 for xid = 1:Nxengines
-    remoteHost = ['10.10.1.', num2str(xid)];
-    %if xid == 1
-    %    remoteHost = '10.10.1.14';
-    %end
+    %remoteHost = ['10.10.1.', num2str(xid)];
+    if xid == 1
+        remoteHost = '10.17.16.208';
+    end
     %if xid == 14
     %    remoteHost = '10.10.1.1';
     %end
@@ -174,7 +174,7 @@ mcnt = 0; % Each mcnt represents 20 packets across all F-engines in the
   
 for mcnt = [0:201, 400:50:20000] %while mcnt <= 10000
     disp(['Sending mcnt = ', num2str(mcnt)]);
-    for xid = 13:13 % Set to a single X-engine for single HPC testing (Richard B.)
+    for xid = 1:1 % Set to a single X-engine for single HPC testing (Richard B.)
         for fid = 1:Nfengines
             w_idx = 1;
             
