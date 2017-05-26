@@ -41,7 +41,8 @@ figure();
 plot(10*log10(gain));
 
 % Get the responses in the AOAs of interest
-desired_beam_thetas = [85.5, 87, 88.5, 90, 91.5, 93, 94.5];
+% desired_beam_thetas = [85.5, 87, 88.5, 90, 91.5, 93, 94.5];
+desired_beam_thetas = [90.05, 87, 88.5, 90, 91.5, 93, 89.95];
 d_idx = 1;
 indices = zeros(length(desired_beam_thetas), 1);
 for d_theta = desired_beam_thetas
@@ -63,7 +64,7 @@ for t_idx = 1:length(indices)
     end
 end
 figure();
-plot(10*log10(beams));
+plot(thetas, 10*log10(beams));
 
 final_w = zeros(Nele, Nbins, 14);
 final_w(1:Nele_real,:,1:7) = new_w;
@@ -106,4 +107,4 @@ for t_idx = 1:7
     end
 end
 figure();
-plot(10*log10(beams));
+plot(thetas, 10*log10(beams));

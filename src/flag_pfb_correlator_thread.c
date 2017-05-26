@@ -116,12 +116,12 @@ static void * run(hashpipe_thread_args_t * args) {
 	    // Wait for input buffer block to be filled
             while ((rv=flag_gpu_pfb_output_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
                 if (rv==HASHPIPE_TIMEOUT) {
-                    int cleanb;
+                    int cleanc;
                     hashpipe_status_lock_safe(&st);
-                    hgetl(st.buf, "CLEANB", &cleanb);
+                    hgetl(st.buf, "CLEANC", &cleanc);
                     hgets(st.buf, "NETSTAT", 16, netstat);
                     hashpipe_status_unlock_safe(&st);
-                    if (cleanb == 0 && strcmp(netstat, "CLEANUP") == 0) {
+                    if (cleanc == 0 && strcmp(netstat, "CLEANUP") == 0) {
                        printf("COR: Cleanup condition met!\n");
                        next_state = CLEANUP;
                        break;
@@ -234,16 +234,18 @@ static void * run(hashpipe_thread_args_t * args) {
                 // Wait for new output block to be free
                 while ((rv=flag_pfb_gpu_correlator_output_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
                     if (rv==HASHPIPE_TIMEOUT) {
-                        int cleanb;
+                        /*
+                        int cleanc;
                         hashpipe_status_lock_safe(&st);
-                        hgetl(st.buf, "CLEANB", &cleanb);
+                        hgetl(st.buf, "CLEANC", &cleanc);
                         hgets(st.buf, "NETSTAT", 16, netstat);
                         hashpipe_status_unlock_safe(&st);
-                        if (cleanb == 0 && strcmp(netstat, "CLEANUP") == 0) {
+                        if (cleanc == 0 && strcmp(netstat, "CLEANUP") == 0) {
                            printf("COR: Cleanup condition met!\n");
                            next_state = CLEANUP;
                            break;
                         }
+                        */
                         continue;
                     } else {
                         hashpipe_error(__FUNCTION__, "error waiting for free databuf");
@@ -311,7 +313,7 @@ static void * run(hashpipe_thread_args_t * args) {
             //last_mcnt = 0;
             good_data = 1;
             hashpipe_status_lock_safe(&st);
-            hputl(st.buf, "CLEANB", 1);
+            hputl(st.buf, "CLEANC", 1);
             hashpipe_status_unlock_safe(&st);
         }
         

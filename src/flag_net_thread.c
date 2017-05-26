@@ -186,7 +186,8 @@ static inline void cleanup_blocks(flag_input_databuf_t * db) {
 static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
 
     uint32_t block_idx = get_block_idx(binfo->mcnt_start);
-    
+    flag_input_databuf_wait_free(db, block_idx);
+ 
     // Validate that we're filling blocks in the proper sequence
     int next_filled = (last_filled + 1)% N_INPUT_BLOCKS;
     if (next_filled != block_idx) {
@@ -223,6 +224,7 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
     //hashpipe_status_unlock_safe(st_p);
 }
 
+#define WINDOW_SIZE 50
 
 // Method to process a received packet
 // Processing involves the following
@@ -240,7 +242,7 @@ static inline int64_t process_packet(flag_input_databuf_t * db, struct hashpipe_
     // Parse packet header
     get_header(p, &pkt_header);
     uint64_t pkt_mcnt  = pkt_header.mcnt;
-    int64_t cur_mcnt  = binfo.mcnt_start;
+    uint64_t cur_mcnt  = binfo.mcnt_start;
     int dest_block_idx = get_block_idx(pkt_mcnt);
     // int cur_block_idx = get_block_idx(cur_mcnt);
 
@@ -250,18 +252,23 @@ static inline int64_t process_packet(flag_input_databuf_t * db, struct hashpipe_
    
     // If packet is for the current block + 2, then mark current block as full
     // and increment current block
-    if (pkt_mcnt_dist >= (N_INPUT_BLOCKS-2)*Nm && pkt_mcnt_dist < (N_INPUT_BLOCKS-1)*Nm) { // 2nd next block (Current block + 2)
+    if (pkt_mcnt_dist >= (N_INPUT_BLOCKS-WINDOW_SIZE)*Nm && pkt_mcnt_dist < (N_INPUT_BLOCKS)*Nm) { // 2nd next block (Current block + 2)
+        //printf("NET: Rx mcnt %lld, dist = %lld, binfo.mcnt_start = %lld\n", (long long int)pkt_mcnt, (long long int) pkt_mcnt_dist, (long long int) binfo.mcnt_start);
         set_block_filled(db, &binfo);
+
+
+        // Initialize next block
+        uint64_t  b;
+        for (b = (N_INPUT_BLOCKS - WINDOW_SIZE + 1)*Nm + cur_mcnt; b < (N_INPUT_BLOCKS + 1)*Nm + cur_mcnt; b++) {
+            flag_input_databuf_wait_free(db, get_block_idx(b) );
+            initialize_block(db, b);
+        }
 
         // Advance mcnt_start to next block
         cur_mcnt += Nm;
         last_filled_mcnt = cur_mcnt;
         binfo.mcnt_start += Nm;
         binfo.block_i = (binfo.block_i + 1) % N_INPUT_BLOCKS;
-
-        // Initialize next block
-        flag_input_databuf_wait_free(db, dest_block_idx);
-        initialize_block(db, pkt_mcnt);
 
         // Reset packet counter for this block
         binfo.packet_count[dest_block_idx] = 0;
@@ -292,6 +299,7 @@ static inline int64_t process_packet(flag_input_databuf_t * db, struct hashpipe_
         hputi4(st_p->buf, "NETMCNT", new_mcnt);
         hashpipe_status_unlock_safe(st_p);
         */
+        
         // printf("Net: Late packet... mcnt = %lld\n", (long long int)pkt_mcnt);
         return -1;
     
@@ -312,6 +320,7 @@ static inline int64_t process_packet(flag_input_databuf_t * db, struct hashpipe_
 
     // Calculate starting points for writing packet payload into buffer
     // POSSIBLE RACE CONDITION!!!! Need to lock db->block access with semaphore
+    flag_input_databuf_wait_free(db, dest_block_idx);    
     uint64_t * dest_p  = db->block[dest_block_idx].data + flag_input_databuf_idx(binfo.m, binfo.f, 0, 0);
     const uint64_t * payload_p = (uint64_t *)(p->data+8); // Ignore header
 
@@ -419,9 +428,21 @@ static void *run(hashpipe_thread_args_t * args) {
     */
 
     // Create clean flags for other threads
+    char modename[25];
+    int useC = 0;
+    hashpipe_status_lock_safe(&st);
+    hgets(st.buf, "MODENAME", 24, modename);
+    hashpipe_status_unlock_safe(&st);
+    if (strcmp(modename, "FLAG_PFBCORR_MODE") == 0) {
+        useC = 1;
+    }
+
     hashpipe_status_lock_safe(&st);
     hputl(st.buf, "CLEANA", 1);
     hputl(st.buf, "CLEANB", 1);
+    if (useC) {
+        hputl(st.buf, "CLEANC", 1);
+    }
     hashpipe_status_unlock_safe(&st);
 
     // Set correlator's starting mcnt to 0
@@ -463,6 +484,7 @@ static void *run(hashpipe_thread_args_t * args) {
 
     // Set up FIFO controls
     int cmd = INVALID;
+    int master_cmd = INVALID;
     int gpu_fifo_id = open_fifo("/tmp/bogus.fifo");
     state cur_state = IDLE;
     state next_state = IDLE;
@@ -483,18 +505,25 @@ static void *run(hashpipe_thread_args_t * args) {
     int n_loop = 1000;
     fprintf(stdout, "NET: Starting Thread!!!\n");
     while (run_threads()) {
+
+        master_cmd = INVALID;
         
 	// Get command from Dealer/Player
 	if (n++ >= n_loop) {
-            cmd = check_cmd(gpu_fifo_id);
-           // if(cmd != INVALID){
-           //	printf("OOPS!!\n");
-	   // }
+            master_cmd = check_cmd(gpu_fifo_id);
+            if(master_cmd != INVALID){
+               hashpipe_status_lock_safe(&st);
+               if (master_cmd == START) hputs(st.buf, "MASTRCMD", "START");
+               if (master_cmd == STOP)  hputs(st.buf, "MASTRCMD", "STOP");
+               if (master_cmd == QUIT)  hputs(st.buf, "MASTRCMD", "QUIT");
+               hashpipe_status_unlock_safe(&st);
+               
+            }
             n = 0;
         }
         
         // If command is QUIT, stop all processing
-        if (cmd == QUIT) break;
+        if (master_cmd == QUIT) break;
 
 
         // If pipeline terminated somewhere else, stop processing
@@ -517,7 +546,7 @@ static void *run(hashpipe_thread_args_t * args) {
 
 
             // If command is START, proceed to ACQUIRE state
-            if (cmd == START) {
+            if (master_cmd == START) {
                 next_state = ACQUIRE;
                 // Get scan length from shared memory (set by BeamformerBackend.py)
                 int scanlen;
@@ -536,8 +565,15 @@ static void *run(hashpipe_thread_args_t * args) {
         if (cur_state == ACQUIRE) {
             // Loop over (non-blocking) packet receive
             do {
+                if (master_cmd == STOP) break;
                 p.packet_size = recv(up.sock, p.data, HASHPIPE_MAX_PACKET_SIZE, 0);
-                cmd = check_cmd(gpu_fifo_id);       
+                cmd = check_cmd(gpu_fifo_id);
+                hashpipe_status_lock_safe(&st);
+                if (cmd == START) hputs(st.buf, "FIFOCMD", "START");
+                if (cmd == STOP)  hputs(st.buf, "FIFOCMD", "STOP");
+                if (cmd == QUIT)  hputs(st.buf, "FIFOCMD", "QUIT");
+                hashpipe_status_unlock_safe(&st);
+                if (cmd == STOP || cmd == QUIT) break;
             } while (p.packet_size == -1 && (errno == EAGAIN || errno == EWOULDBLOCK) && run_threads() && cmd==INVALID);
             if (!run_threads() || cmd == QUIT) break;
             // Check packet size and report errors
@@ -564,23 +600,33 @@ static void *run(hashpipe_thread_args_t * args) {
 
             // Next state processing
             next_state = ACQUIRE;
-            if ((last_filled_mcnt != -1 && last_filled_mcnt >= scan_last_mcnt) || cmd == STOP) {
+            if ((last_filled_mcnt != -1 && last_filled_mcnt >= scan_last_mcnt) || cmd == STOP || master_cmd == STOP) {
                 int cleanA = 1;
                 int cleanB = 1;
-		printf("Clean up!\n");
-                while (cleanA != 0 && cleanB != 0) {
+                int cleanC = 1;
+		printf("NET: CLEANUP condition met!\n");
+                sleep(1);
+                printf("NET: Informing other threads of cleanup condition\n");
+                while (cleanA != 0 && cleanB != 0 && cleanC != 0) {
                     hashpipe_status_lock_safe(&st);
                     hputl(st.buf, "CLEANA", 0);
                     hputl(st.buf, "CLEANB", 0);
+                    if (useC) {
+                        hputl(st.buf, "CLEANC", 0);
+                    }
                     hashpipe_status_unlock_safe(&st);
 
                     sleep(1);
                     hashpipe_status_lock_safe(&st);
                     hgetl(st.buf, "CLEANA", &cleanA);
                     hgetl(st.buf, "CLEANB", &cleanB);
+                    if (useC) {
+                        hgetl(st.buf, "CLEANC", &cleanC);
+                    }
                     hashpipe_status_unlock_safe(&st);
                 }
                 next_state = CLEANUP;
+                printf("NET: All other threads have been informed\n");
             }
         }
 
@@ -590,19 +636,34 @@ static void *run(hashpipe_thread_args_t * args) {
         // If in CLEANUP state, cleanup and reinitialize. Proceed to IDLE state.
         if (cur_state == CLEANUP) {
             cleanup_blocks(db);
+            // Set correlator's starting mcnt to 0
+            hashpipe_status_lock_safe(&st);
+            hputi4(st.buf, "NETMCNT", 0);
+            hashpipe_status_unlock_safe(&st);
 
             // Check other threads to make sure they've finished cleaning up
             int traclean = 0;
             int corclean = 0;
             int netready = 0;
+            int lastclean;
+            if (useC) {
+                lastclean = 0;   
+            }
+            else {
+                lastclean = 1;
+            }
             hashpipe_status_lock_safe(&st);
             hgetl(st.buf, "CLEANA",  &traclean);
             hgetl(st.buf, "CLEANB",  &corclean);
+            if (useC) {
+                hgetl(st.buf, "CLEANC", &lastclean);
+            }
             hashpipe_status_unlock_safe(&st);
-            netready = traclean & corclean;
+            netready = traclean & corclean & lastclean;
             
             if (netready) {
                 next_state = IDLE;
+                printf("NET: CLEANUP complete; returning to IDLE\n");
             }
             else {
                 next_state = CLEANUP;

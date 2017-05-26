@@ -1,1 +1,1 @@
-#define XGPU_VERSION 
+#define XGPU_VERSION +dirty

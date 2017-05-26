@@ -51,8 +51,14 @@ static void * run(hashpipe_thread_args_t * args) {
 
         uint64_t start_mcnt = db_in->block[curblock_in].header.mcnt;
 
+        char directory[128];
+        hashpipe_status_lock_safe(&st);
+        hgets(st.buf, "DATADIR", 127, directory);
+        hashpipe_status_unlock_safe(&st);
+
+
         char filename[128];
-        sprintf(filename, "cor_mcnt_%lld.out", (long long)start_mcnt);
+        sprintf(filename, "%s/cor_mcnt_%lld.out", directory, (long long)start_mcnt);
         fprintf(stderr, "SAV: Saving to %s\n", filename);
         
         if (SAVE) {

@@ -65,7 +65,7 @@ c_time_per_bin = c_ntime/c_num_bins;
 
 % Correlated data parameters (only used if data_flag = 5)
 % kw = Karl Warnick
-kw_bin = 1;
+kw_bin = 6;
 kw_xid = floor((kw_bin - 1)/Nbin_per_x) + 1;
 kw_bin_r = mod(kw_bin - 1, Nbin_per_x) + 1;
 
@@ -115,7 +115,7 @@ cs_im = 127 * (0.1 * sin(2*pi*cs_freq*cs_n)) + sigma^2*randn();
 % Case 7 - ULA
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ULA_sigma2 = 8;
-ULA_theta = 91.5; % Degrees
+ULA_theta = 90; % Degrees
 ULA_freqs = (0:499)*(303e3) + 1300e6; % All frequencies
 ULA_c = 3e8; % speed of propagation (m/s)
 ULA_d = ULA_c/ULA_freqs(end); % Element spacing
@@ -155,7 +155,9 @@ CEN_imag = int8(((imag(CEN) - c_min)/(c_max - c_min) - 0.5) * 256);
 
 % Create UDP sockets - 1 IP address per Xengine (xid)
 for xid = 1:Nxengines
-    %remoteHost = ['10.10.1.', num2str(xid)];
+
+    remoteHost = ['10.10.1.', num2str(xid)];
+
     if xid == 1
         remoteHost = '10.17.16.208';
     end
