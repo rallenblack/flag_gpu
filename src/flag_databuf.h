@@ -190,7 +190,7 @@ typedef struct flag_input_databuf {
  * It is the output buffer of the flag_transpose_thread.
  * It is the input buffer of the flag_correlator_thread.
  */
-#define N_GPU_INPUT_BLOCKS 2
+#define N_GPU_INPUT_BLOCKS 20
 
 // A typedef for a GPU input block header
 typedef struct flag_gpu_input_header {
@@ -256,7 +256,7 @@ typedef struct flag_pfb_gpu_input_databuf {
 /*
  * GPU OUTPUT BUFFER STRUCTURES
  */
-#define N_GPU_OUT_BLOCKS 2
+#define N_GPU_OUT_BLOCKS 20
 
 // A typedef for a correlator output block header
 typedef struct flag_gpu_output_header {
