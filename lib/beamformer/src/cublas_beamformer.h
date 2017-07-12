@@ -38,6 +38,7 @@ void bf_get_weight_filename(char * weight_filename);
 long long unsigned int bf_get_xid();
 void update_weights(char * filename);
 void init_beamformer();
+void rtbfCleanup(); 
 void run_beamformer(signed char * data_in, float * data_out);
 #ifdef __cplusplus
 }

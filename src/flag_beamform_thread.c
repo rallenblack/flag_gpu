@@ -111,7 +111,7 @@ static void * run(hashpipe_thread_args_t * args) {
         if(cur_state == ACQUIRE){
             next_state = ACQUIRE;
 	        // Wait for input buffer block to be filled
-            while ((rv=flag_gpu_input_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
+            while ((rv=flag_gpu_input_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK && run_threads()) {
                 if (rv==HASHPIPE_TIMEOUT) {
                     int cleanb;
                     hashpipe_status_lock_safe(&st);
@@ -136,39 +136,44 @@ static void * run(hashpipe_thread_args_t * args) {
                         printf("RTB: Initializing beamformer weights...\n");
                         // update_weights(weight_file);
                         update_weights(w_dir);
-                       // Put metadata into status shared memory
-                       float offsets[BN_BEAM];
-                       char cal_filename[65];
-                       char algorithm[65];
-                       char weight_filename[65];
-                       long long unsigned int bf_xid;
-                       int act_xid;
+                        printf("RTB: Finished updating weights...\n");
+                        // Put metadata into status shared memory
+                        float offsets[BN_BEAM];
+                        char cal_filename[65];
+                        char algorithm[65];
+                        char weight_filename[65];
+                        long long unsigned int bf_xid;
+                        int act_xid;
 
-                       bf_get_offsets(offsets);
-                       bf_get_cal_filename(cal_filename);
-                       bf_get_algorithm(algorithm);
-                       bf_get_weight_filename(weight_filename);
-                       bf_xid = bf_get_xid();
+                        printf("RTBF: setting offsets...\n");
+                        bf_get_offsets(offsets);
+                        printf("RTBF: getting cal filename...\n");
+                        bf_get_cal_filename(cal_filename);
+                        printf("RTBF: getting algorithm...\n");
+                        bf_get_algorithm(algorithm);
+                        printf("RTBF: getting weight filename...\n");
+                        bf_get_weight_filename(weight_filename);
+                        bf_xid = bf_get_xid();
                      
-                       int i;
-                       hashpipe_status_lock_safe(&st);
-                       for (i = 0; i < BN_BEAM/2; i++) {
-                           char keyword1[9];
-                           snprintf(keyword1,8,"ELOFF%d",i);
-                           hputr4(st.buf, keyword1, offsets[2*i]);
-                           char keyword2[9];
-                           snprintf(keyword2,8,"AZOFF%d",i);
-                           hputr4(st.buf, keyword2, offsets[2*i+1]);
-                       }
-                       hputs(st.buf, "BCALFILE", cal_filename);
-                       hputs(st.buf, "BALGORIT", algorithm);
-                       hputs(st.buf, "BWFILE", weight_filename);
-                       hgeti4(st.buf, "XID", &act_xid);
-                       hashpipe_status_unlock_safe(&st);
-                        
-                       hashpipe_status_lock_safe(&st);
-                       hputs(st.buf,"WFLAG","0");
-                       hashpipe_status_unlock_safe(&st); 
+                        int i;
+                        hashpipe_status_lock_safe(&st);
+                        for (i = 0; i < BN_BEAM/2; i++) {
+                            char keyword1[9];
+                            snprintf(keyword1,8,"ELOFF%d",i);
+                            hputr4(st.buf, keyword1, offsets[2*i]);
+                            char keyword2[9];
+                            snprintf(keyword2,8,"AZOFF%d",i);
+                            hputr4(st.buf, keyword2, offsets[2*i+1]);
+                        }
+                        hputs(st.buf, "BCALFILE", cal_filename);
+                        hputs(st.buf, "BALGORIT", algorithm);
+                        hputs(st.buf, "BWFILE", weight_filename);
+                        hgeti4(st.buf, "XID", &act_xid);
+                        hashpipe_status_unlock_safe(&st);
+                         
+                        hashpipe_status_lock_safe(&st);
+                        hputs(st.buf,"WFLAG","0");
+                        hashpipe_status_unlock_safe(&st); 
                     }
                 }
                 else {
@@ -177,6 +182,7 @@ static void * run(hashpipe_thread_args_t * args) {
                     break;
                 }
             }
+            if (!run_threads()) break;
 
             // If CLEANUP, don't continue processing
             if (next_state != CLEANUP) {
@@ -212,6 +218,7 @@ static void * run(hashpipe_thread_args_t * args) {
             if ((float) tval_result.tv_usec/1000 > 13) {
                 printf("RTBF: Warning!!!!!!!!! Time = %f ms\n", (float) tval_result.tv_usec/1000);
             }
+
 		    check_count++;
 		   // if(check_count == 1000){
 		   // }
@@ -241,7 +248,7 @@ static void * run(hashpipe_thread_args_t * args) {
 	    hashpipe_status_lock_safe(&st);
 	    hputl(st.buf, "CLEANB",1);
 	    hashpipe_status_unlock_safe(&st);
-	    printf("BF: Finished CLEANUP, returning to ACQUIRE\n");
+	    printf("RTBF: Finished CLEANUP, returning to ACQUIRE\n");
 	}
 
 
@@ -257,6 +264,11 @@ static void * run(hashpipe_thread_args_t * args) {
     }
 
     // Thread terminates after loop
+    hashpipe_status_lock_busywait_safe(&st);
+    printf("RTBF: Cleaning up gpu context...\n");
+    rtbfCleanup();
+    hputs(st.buf, status_key, "terminated");
+    hashpipe_status_unlock_safe(&st);
     return NULL;
 }
 

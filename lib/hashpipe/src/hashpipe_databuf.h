@@ -49,7 +49,6 @@ hashpipe_databuf_t *hashpipe_databuf_attach(int instance_id, int databuf_id);
 int hashpipe_databuf_detach(hashpipe_databuf_t *d);
 
 /* Set all semaphores to 0, 
- * TODO: memset to 0 as well?
  */
 void hashpipe_databuf_clear(hashpipe_databuf_t *d);
 

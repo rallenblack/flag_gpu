@@ -196,6 +196,11 @@ hashpipe_thread_run(void *vp_args)
             rv = THREAD_ERROR;
         }
     }
+
+    if(args->ibuf != NULL) {
+      printf("HASH: Clearning input buffer for %s ...\n", args->thread_desc->name);
+      hashpipe_databuf_clear(args->ibuf);
+    }
     pthread_cleanup_push((void *)hashpipe_databuf_detach, args->ibuf);
     if(args->thread_desc->obuf_desc.create) {
         args->obuf = hashpipe_databuf_attach(args->instance_id, args->output_buffer);
@@ -206,6 +211,10 @@ hashpipe_thread_run(void *vp_args)
             rv = THREAD_ERROR;
         }
     }
+    if(args->obuf != NULL) {
+      printf("HASH: Clearning output buffer for %s ...\n", args->thread_desc->name);
+      hashpipe_databuf_clear(args->obuf);
+    }
     pthread_cleanup_push((void *)hashpipe_databuf_detach, args->obuf);
 
 
@@ -214,7 +223,9 @@ hashpipe_thread_run(void *vp_args)
 
     // Call user run function
     if(rv == THREAD_OK) {
+        printf("HASH: Making call to %s ...\n", args->thread_desc->name);
         rv = args->thread_desc->run(args);
+        printf("HASH: Finished run function for %s ...\n", args->thread_desc->name);
     }
 
     // Set thread state to finished
@@ -330,7 +341,7 @@ int main(int argc, char *argv[])
           }
 
           // Init thread
-          printf("initing  thread '%s' with databufs %d and %d\n",
+          printf("HASH: Initing  thread '%s' with databufs %d and %d\n",
               args[num_threads].thread_desc->name, args[num_threads].input_buffer,
               args[num_threads].output_buffer);
 
@@ -462,9 +473,8 @@ int main(int argc, char *argv[])
 
     // Start threads in reverse order
     for(i=num_threads-1; i >= 0; i--) {
-
       // Launch thread
-      printf("starting thread '%s' with databufs %d and %d\n",
+      printf("HASH: starting thread '%s' with databufs %d and %d\n",
           args[i].thread_desc->name, args[i].input_buffer, args[i].output_buffer);
       rv = pthread_create(&threads[i], NULL,
           hashpipe_thread_run, (void *)&args[i]);
@@ -482,16 +492,16 @@ int main(int argc, char *argv[])
     while (run_threads()) {
         sleep(1);
     }
-
-    for(i=num_threads-1; i>=0; i--) {
-      pthread_cancel(threads[i]);
-    }
-    for(i=num_threads-1; i>=0; i--) {
-      pthread_kill(threads[i], SIGINT);
-    }
+    // MCB: To have each thread terminate itself should wait to have the thread clean themselves up before killing them.
+    // for(i=num_threads-1; i>=0; i--) {
+    //   pthread_cancel(threads[i]);
+    // }
+    // for(i=num_threads-1; i>=0; i--) {
+    //   pthread_kill(threads[i], SIGINT);
+    // }
     for(i=num_threads-1; i>=0; i--) {
       pthread_join(threads[i], NULL);
-      printf("Joined thread '%s'\n", args[i].thread_desc->name);
+      printf("HASH: Joined thread '%s'\n", args[i].thread_desc->name);
       fflush(stdout);
     }
     for(i=num_threads; i>=0; i--) {

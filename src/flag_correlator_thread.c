@@ -92,7 +92,7 @@ static void * run(hashpipe_thread_args_t * args) {
         if (cur_state == ACQUIRE) {
             next_state = ACQUIRE;
 	    // Wait for input buffer block to be filled
-            while ((rv=flag_gpu_input_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
+            while ((rv=flag_gpu_input_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK && run_threads()) {
                 if (rv==HASHPIPE_TIMEOUT) {
                     int cleanb;
                     hashpipe_status_lock_safe(&st);
@@ -111,6 +111,7 @@ static void * run(hashpipe_thread_args_t * args) {
                     break;
                 }
             }
+            if(!run_threads()) break;
 
             if (next_state != CLEANUP) {
             // Print out the header information for this block 
@@ -189,10 +190,10 @@ static void * run(hashpipe_thread_args_t * args) {
                 }
             }
 
-	    // Check to see if a stop is issued
-	    if (strcmp(integ_status, "stop") == 0) {
-	        continue;
-	    }
+    	    // Check to see if a stop is issued
+    	    if (strcmp(integ_status, "stop") == 0) {
+    	        continue;
+    	    }
 
             // If we get here, then integ_status == "on"
             // Setup for current chunk
@@ -204,7 +205,7 @@ static void * run(hashpipe_thread_args_t * args) {
                 doDump = 1;
 
                 // Wait for new output block to be free
-                while ((rv=flag_gpu_correlator_output_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
+                while ((rv=flag_gpu_correlator_output_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK && run_threads()) {
                     if (rv==HASHPIPE_TIMEOUT) {
                         int cleanb;
                         hashpipe_status_lock_safe(&st);
@@ -290,6 +291,11 @@ static void * run(hashpipe_thread_args_t * args) {
     }
 
     // Thread terminates after loop
+    hashpipe_status_lock_busywait_safe(&st);
+    printf("COR: Cleaning gpu context...\n");
+    xgpuFree(&context);
+    hputs(st.buf, status_key, "terminated");
+    hashpipe_status_unlock_safe(&st);
     return NULL;
 }
 

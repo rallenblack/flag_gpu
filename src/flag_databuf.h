@@ -143,8 +143,11 @@
 // Macros specific to the fine-channel correlator (PFB correlator)
 #define N_TIME_PER_PFB_BLOCK XGPU_PFB_NTIME
 #define N_CHAN_PER_PFB_BLOCK XGPU_PFB_NFREQUENCY
+#define N_CHAN_PFB_SELECTED 5
 #define N_PFB_COR_MATRIX (N_INPUTS/2*(N_INPUTS/2 + 1)/2*N_CHAN_PER_PFB_BLOCK*4)
 #define N_BYTES_PER_PFB_BLOCK (N_TIME_PER_BLOCK * N_CHAN_PER_PFB_BLOCK * N_INPUTS * N_BITS_IQ * 2 / 8)
+
+#define flag_pfb_gpu_input_databuf_idx(m,f,t,c) ((2*N_INPUTS_PER_FENGINE/sizeof(uint64_t))*(f+Nf*(c+N_CHAN_PFB_SELECTED*(t+Nt*m))))
 
 // Macros to maintain cache alignment
 #define CACHE_ALIGNMENT (128)
@@ -158,7 +161,8 @@ typedef uint8_t hashpipe_databuf_cache_alignment[
  * It is the output buffer of the flag_net_thread.
  * It is the input buffer of the flag_transpose_thread.
  */
-#define N_INPUT_BLOCKS 105
+
+#define N_INPUT_BLOCKS 100
 
 // A typedef for a block header
 typedef struct flag_input_header {
