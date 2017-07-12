@@ -185,6 +185,9 @@ static inline void cleanup_blocks(flag_input_databuf_t * db) {
 // Method to mark the block as filled
 static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
 
+    //struct timeval tval_before, tval_after, tval_result;
+    //gettimeofday(&tval_before, NULL);
+
     uint32_t block_idx = get_block_idx(binfo->mcnt_start);
     flag_input_databuf_wait_free(db, block_idx);
  
@@ -222,6 +225,9 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
     //hashpipe_status_lock_safe(st_p);
     //hgeti4(st_p->buf, "XID", &binfo->self_xid);
     //hashpipe_status_unlock_safe(st_p);
+    //gettimeofday(&tval_after, NULL);
+    //timersub(&tval_after, &tval_before, &tval_result);
+    //printf("NET: Time = %f\n", (float)tval_result.tv_usec/1000);
 }
 
 #define WINDOW_SIZE 50

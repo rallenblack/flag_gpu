@@ -9,6 +9,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/time.h>
 
 #include <xgpu.h>
 #include "hashpipe.h"
@@ -107,6 +108,10 @@ static void * run(hashpipe_thread_args_t * args) {
                 /**********************************************
                  * Perform transpose
                  **********************************************/
+                struct timeval tval_before, tval_after, tval_result;
+
+                gettimeofday(&tval_before, NULL);
+
                 int m; int f;
                 int t; int c;
                 uint64_t * in_p;
@@ -123,6 +128,13 @@ static void * run(hashpipe_thread_args_t * args) {
                             }
                         }
                     }
+                }
+
+                gettimeofday(&tval_after, NULL);
+
+                timersub(&tval_after, &tval_before, &tval_result);
+                if ((float)tval_result.tv_usec/1000 > 10) {
+                    printf("TRA: WARNING!!!!!!!!! - Time = %f ms\n", (float)tval_result.tv_usec/1000);
                 }
 
                 /***********************************************
