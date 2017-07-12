@@ -169,11 +169,22 @@ static inline void cleanup_blocks(flag_input_databuf_t * db) {
     hashpipe_status_unlock_safe(st_p);
 
     int i;
+    int rv;
     for (i = 0; i < N_INPUT_BLOCKS; i++) {
         #if VERBOSE==1
         printf("NET: Waiting for block %d to be free...\n", i);
         #endif
-        flag_input_databuf_wait_free(db, i);
+
+        while ((rv = flag_input_databuf_wait_free(db, i)) != HASHPIPE_OK) {
+	    if (rv == HASHPIPE_TIMEOUT) {
+		continue;
+	    }
+	    else {
+		hashpipe_error(__FUNCTION__, "error waiting for free databuf");
+		pthread_exit(NULL);
+		break;
+	    }
+	}
         #if VERBOSE==1
         printf("NET: Initializing block %d\n", i);
         #endif
@@ -189,7 +200,17 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
     //gettimeofday(&tval_before, NULL);
 
     uint32_t block_idx = get_block_idx(binfo->mcnt_start);
-    flag_input_databuf_wait_free(db, block_idx);
+    int rv;
+    while ((rv = flag_input_databuf_wait_free(db, block_idx)) != HASHPIPE_OK) {
+	if (rv == HASHPIPE_TIMEOUT) {
+	    continue;
+	}
+	else {
+	    hashpipe_error(__FUNCTION__, "error waiting for free databuf");
+	    pthread_exit(NULL);
+	    break;
+	}
+    }
  
     // Validate that we're filling blocks in the proper sequence
     int next_filled = (last_filled + 1)% N_INPUT_BLOCKS;
@@ -265,8 +286,20 @@ static inline int64_t process_packet(flag_input_databuf_t * db, struct hashpipe_
 
         // Initialize next block
         uint64_t  b;
+	int rv;
+
         for (b = (N_INPUT_BLOCKS - WINDOW_SIZE + 1)*Nm + cur_mcnt; b < (N_INPUT_BLOCKS + 1)*Nm + cur_mcnt; b++) {
-            flag_input_databuf_wait_free(db, get_block_idx(b) );
+
+	    while ((rv = flag_input_databuf_wait_free(db, get_block_idx(b))) != HASHPIPE_OK) {
+		if (rv == HASHPIPE_TIMEOUT) {
+		    continue;
+		}
+		else {
+		    hashpipe_error(__FUNCTION__, "error waiting for databuf free");
+		    pthread_exit(NULL);
+		    break;
+		}
+	    }
             initialize_block(db, b);
         }
 
@@ -325,8 +358,18 @@ static inline int64_t process_packet(flag_input_databuf_t * db, struct hashpipe_
     }
 
     // Calculate starting points for writing packet payload into buffer
-    // POSSIBLE RACE CONDITION!!!! Need to lock db->block access with semaphore
-    flag_input_databuf_wait_free(db, dest_block_idx);    
+    // POSSIBLE RACE CONDITION!!!! Need to lock db->block access with semaphor
+    int rv;
+    while ((rv = flag_input_databuf_wait_free(db, dest_block_idx)) != HASHPIPE_OK) {
+        if (rv == HASHPIPE_TIMEOUT) {
+	    continue;
+	}
+	else {
+	    hashpipe_error(__FUNCTION__, "error waiting for databuf free");
+	    pthread_exit(NULL);
+	    break;
+	}
+    }
     uint64_t * dest_p  = db->block[dest_block_idx].data + flag_input_databuf_idx(binfo.m, binfo.f, 0, 0);
     const uint64_t * payload_p = (uint64_t *)(p->data+8); // Ignore header
 
@@ -472,7 +515,10 @@ static void *run(hashpipe_thread_args_t * args) {
     int i;
     for (i = 0; i < N_INPUT_BLOCKS-1; i++) {
         // Wait until block semaphore is free
-        if (flag_input_databuf_wait_free(db, i) != HASHPIPE_OK) {
+        while ((rv = flag_input_databuf_wait_free(db, i)) != HASHPIPE_OK) {
+	    if (rv == HASHPIPE_TIMEOUT) {
+		continue;
+	    }
             if (errno == EINTR) { // Interrupt occurred
                 hashpipe_error(__FUNCTION__, "waiting for free block interrupted\n");
                 pthread_exit(NULL);
