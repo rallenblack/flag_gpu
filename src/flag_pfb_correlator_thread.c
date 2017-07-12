@@ -114,7 +114,7 @@ static void * run(hashpipe_thread_args_t * args) {
         if (cur_state == ACQUIRE) {
             next_state = ACQUIRE;
 	    // Wait for input buffer block to be filled
-            while ((rv=flag_gpu_pfb_output_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
+            while ((rv=flag_gpu_pfb_output_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK && run_threads()) {
                 if (rv==HASHPIPE_TIMEOUT) {
                     int cleanc;
                     hashpipe_status_lock_safe(&st);
@@ -133,6 +133,7 @@ static void * run(hashpipe_thread_args_t * args) {
                     break;
                 }
             }
+            if (!run_threads()) break;
 
             if (next_state != CLEANUP) {
             // Print out the header information for this block 
@@ -329,6 +330,11 @@ static void * run(hashpipe_thread_args_t * args) {
     }
 
     // Thread terminates after loop
+    hashpipe_status_lock_busywait_safe(&st);
+    printf("COR: Cleaning up gpu context...\n");
+    xgpuFree(&context);
+    hputs(st.buf, status_key, "terminated");
+    hashpipe_status_unlock_safe(&st);
     return NULL;
 }
 

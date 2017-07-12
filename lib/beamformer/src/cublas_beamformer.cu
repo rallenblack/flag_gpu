@@ -516,3 +516,41 @@ void run_beamformer(signed char * data_in, float * data_out) {
 	// cudaFree(d_data);
 	// cudaFree(d_outputs);
 }
+
+
+void rtbfCleanup() {
+	// Free up GPU memory at the end of a program
+	if (d_beamformed != NULL) {
+		cudaFree(d_beamformed);
+	}
+
+	if (d_data != NULL) {
+		cudaFree(d_data);
+	}
+
+	if (d_data1 != NULL) {
+		cudaFree(d_data1);
+	}
+
+	if (d_outputs != NULL) {
+		cudaFree(d_outputs);
+	}
+
+	if (d_weights != NULL) {
+		cudaFree(d_weights);
+	}
+
+	if (d_arr_A != NULL) {
+		cudaFree(d_arr_A);
+	}
+
+	if (d_arr_B != NULL) {
+		cudaFree(d_arr_B);
+	}
+
+	if (d_arr_C != NULL) {
+		cudaFree(d_arr_C);
+	}
+	// Free up and release cublas handle
+	cublasDestroy(handle);
+}

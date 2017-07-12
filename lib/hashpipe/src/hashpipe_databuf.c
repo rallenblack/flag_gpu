@@ -155,8 +155,6 @@ void hashpipe_databuf_clear(hashpipe_databuf_t *d)
     memset(arg.array, 0, sizeof(unsigned short)*d->n_block);
     semctl(d->semid, 0, SETALL, arg);
     free(arg.array);
-
-    // TODO memset to 0?
 }
 
 char *hashpipe_databuf_data(hashpipe_databuf_t *d, int block_id)

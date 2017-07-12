@@ -38,7 +38,7 @@ for i = 1:Nele_tot/2
 end
 
 Rtot = zeros(Nele_tot, Nele_tot, Nbin);
-PATH = '/users/mburnett/FLAG/dibas/lib/python/';
+PATH = '/lustre/projects/flag/';
 mcnt = [0]%, 200, 400, 600];
 %for mcnt = 0:2:198
 for k = 1:length(mcnt)

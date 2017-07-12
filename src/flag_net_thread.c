@@ -232,7 +232,7 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
 // (2) block population (output buffer data type is a block)
 // (3) buffer population (if block is filled)
 static inline int64_t process_packet(flag_input_databuf_t * db, struct hashpipe_udp_packet *p) {
-    packet_header_t     pkt_header;
+    packet_header_t pkt_header;
 
     // Initialize block information data types
     if (!binfo.initialized) {
@@ -407,7 +407,7 @@ static void *run(hashpipe_thread_args_t * args) {
     hashpipe_status_unlock_safe(&st);
 
     struct hashpipe_udp_packet p;
-    struct hashpipe_udp_packet bh; // blackhole packet to suck up data that isnt processed
+    //struct hashpipe_udp_packet bh; // blackhole packet to suck up data that isnt processed
 
     /* Give all the threads a chance to start before opening network socket */
     /*
@@ -537,13 +537,11 @@ static void *run(hashpipe_thread_args_t * args) {
         if (cur_state == IDLE) {
             // cmd = check_cmd(gpu_fifo_id);
              
-	    // keep receiving packets but send them to a blackhole packet, these wont be processed
-	    
-            bh.packet_size = recv(up.sock, bh.data, HASHPIPE_MAX_PACKET_SIZE, 0);
-	    if(bh.packet_size != -1) {
-		//printf("blackhole!!!\n");
-	    }
-
+	        // keep receiving packets but send them to a blackhole packet, these wont be processed
+            //bh.packet_size = recv(up.sock, bh.data, HASHPIPE_MAX_PACKET_SIZE, 0);
+    	    //if(bh.packet_size != -1) {
+    		//printf("blackhole!!!\n");
+    	    //}
 
             // If command is START, proceed to ACQUIRE state
             if (master_cmd == START) {
@@ -604,7 +602,7 @@ static void *run(hashpipe_thread_args_t * args) {
                 int cleanA = 1;
                 int cleanB = 1;
                 int cleanC = 1;
-		printf("NET: CLEANUP condition met!\n");
+		        printf("NET: CLEANUP condition met!\n");
                 sleep(1);
                 printf("NET: Informing other threads of cleanup condition\n");
                 while (cleanA != 0 && cleanB != 0 && cleanC != 0) {
@@ -688,8 +686,8 @@ static void *run(hashpipe_thread_args_t * args) {
     }
 
     pthread_cleanup_pop(1); /* Closes push(hashpipe_udp_close) */
-
     hashpipe_status_lock_busywait_safe(&st);
+    printf("NET: Exiting thread loop...\n");
     hputs(st.buf, status_key, "terminated");
     hashpipe_status_unlock_safe(&st);
     return NULL;
