@@ -37,8 +37,9 @@ sigma2 = kb*Tsys*BW;    % Noise power per channel
 % 6 -> Send complex sinusodial data
 % 7 -> Send ULA data
 % 8 -> Send exponentially correlated noise.
+% 9 -> Send pulsar data
 % else -> Send all zeros
-data_flag = 8;
+data_flag = 9;
 
 % Sinusoid parameters (only used if data_flag = 2)
 % It should be noted that the phase of the sinusoid will not change between
@@ -151,13 +152,43 @@ c_min = -4;
 CEN_real = int8(((real(CEN) - c_min)/(c_max - c_min) - 0.5) * 256);
 CEN_imag = int8(((imag(CEN) - c_min)/(c_max - c_min) - 0.5) * 256);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Case 9 - Simulated pulsar data
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Increase the range of tau when dispersion measure causes m_D to exceed
+% time samples.
+D = 10; % Dispersion measure 
+freq = (0:499)*(303e3) + 1300e6; % All frequencies
+fo = freq(floor(length(freq)/2)); % Center frequency
+m_D = 4.1488e3*((fo^-2)-(freq.^-2))*D; % Frequency dependent timing offset
+Ntime = 4000;
+tau = -2.8e-14:((2.5e-14)+(2.8e-14))/(Ntime-1):2.5e-14; % Range of timing offsets
+pulseData = zeros(Ninputs, Nbins, Ntime);
+% Noisy environment
+for ii = 1:size(pulseData,3)
+    for jj = 1:size(pulseData,2)
+        pulseData(:,jj,ii) = 0.1*(randn(1) + 1j*rand(1));
+    end
+end
 
+% Pulsar
+pulse = 1;
+for cyc = [0, -1000, 1000]
+    for m = 1:Ninputs
+        for k = 1:Nbins
+            tmp = abs(m_D(k)-tau);
+            [~,idx] = min(tmp);
+            phi = m*2*pi*freq(k)*tau(idx+cyc);
+            pulseData(m,k,idx+cyc) = pulse*exp(1j*phi) + 0.1*(randn(1) + 1j*rand(1));
+        end
+    end
+end
 
 % Create UDP sockets - 1 IP address per Xengine (xid)
 for xid = 1:Nxengines
     remoteHost = ['10.10.1.', num2str(xid)];
     if xid == 1
-        remoteHost = '10.17.16.208';
+        remoteHost = '10.17.16.208'; % It was 208 before
     end
     %if xid == 14
     %    remoteHost = '10.10.1.1';
@@ -172,7 +203,7 @@ end
 mcnt = 0; % Each mcnt represents 20 packets across all F-engines in the
           % same time frame
   
-for mcnt = [0:201, 400:50:20000] %while mcnt <= 10000
+for mcnt = [0:401]% [0:201, 400:50:20000] %while mcnt <= 10000
     disp(['Sending mcnt = ', num2str(mcnt)]);
     for xid = 1:1 % Set to a single X-engine for single HPC testing (Richard B.)
         for fid = 1:Nfengines
@@ -212,7 +243,7 @@ for mcnt = [0:201, 400:50:20000] %while mcnt <= 10000
             w_idx = w_idx + 1;
             
             % Generate signal to send
-            data = zeros(Nin_per_f, 2, Nbin_per_x, Ntime_per_packet);
+            data = zeros(Nin_per_f, 2, Nbin_per_x, Ntime_per_packet); % 8x2x25x20
             switch data_flag
                 case 1 % Send white noise
                     sig = sqrt(sigma2/2);
@@ -286,7 +317,15 @@ for mcnt = [0:201, 400:50:20000] %while mcnt <= 10000
                         data(:, 2, bin_idx, :) = CEN_imag(f_idxs,t_idxs);
                         data(data < 0) = 2^8 + data(data < 0);
                     end
-                  
+                case 9 % Send pulsar data
+                    t_idxs = mod(mcnt*20 + 1:(mcnt+1)*20, Ntime);
+                    t_idxs(t_idxs == 0) = Ntime;
+                    f_idxs = (fid - 1)*8+1:fid*8;
+                    freq_idxs = 5*(xid-1) + [1:5, 101:105, 201:205, 301:305, 401:405];
+                    tmp = pulseData(f_idxs, freq_idxs, t_idxs);
+                    data(:,1,:,:) = real(tmp);
+                    data(:,2,:,:) = imag(tmp);
+                    data(data < 0) = 2^8 + data(data < 0);
                 otherwise % Send all zeros
             end
             data = uint8(data);
