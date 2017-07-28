@@ -107,7 +107,6 @@ int flag_pfb_gpu_input_databuf_set_filled(flag_pfb_gpu_input_databuf_t * d, int 
 
 
 
-
 hashpipe_databuf_t * flag_gpu_correlator_output_databuf_create(int instance_id, int databuf_id) {
     size_t header_size = sizeof(hashpipe_databuf_t) + sizeof(hashpipe_databuf_cache_alignment);
     size_t block_size  = sizeof(flag_gpu_correlator_output_block_t);
@@ -181,6 +180,25 @@ int flag_pfb_gpu_correlator_output_databuf_set_filled(flag_pfb_gpu_correlator_ou
     return hashpipe_databuf_set_filled((hashpipe_databuf_t *)d, block_id);
 }
 
+int flag_pfb_gpu_correlator_output_databuf_total_status(flag_pfb_gpu_correlator_output_databuf_t * d) {
+    return hashpipe_databuf_total_status((hashpipe_databuf_t *)d);
+}
+
+int flag_gpu_pfb_output_databuf_total_status(flag_gpu_pfb_output_databuf_t * d) {
+    return hashpipe_databuf_total_status((hashpipe_databuf_t *)d);
+}
+
+int flag_pfb_gpu_input_databuf_total_status(flag_pfb_gpu_input_databuf_t * d) {
+    return hashpipe_databuf_total_status((hashpipe_databuf_t *) d);
+}
+
+int flag_input_databuf_total_status(flag_input_databuf_t * d) {
+    return hashpipe_databuf_total_status((hashpipe_databuf_t *) d);
+}
+
+int flag_gpu_correlator_output_databuf_total_status(flag_gpu_correlator_output_databuf_t * d) {
+    return hashpipe_databuf_total_status((hashpipe_databuf_t *) d);
+}
 
 hashpipe_databuf_t * flag_gpu_beamformer_output_databuf_create(int instance_id, int databuf_id) {
     size_t header_size = sizeof(hashpipe_databuf_t) + sizeof(hashpipe_databuf_cache_alignment);

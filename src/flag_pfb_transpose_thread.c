@@ -109,11 +109,6 @@ static void * run(hashpipe_thread_args_t * args) {
                 hputi4(st.buf, "TRAMCNT", mcnt);
                 hashpipe_status_unlock_safe(&st);
 
-                // Set metadata for output block
-                db_out->block[curblock_out].header.mcnt = mcnt;
-                db_out->block[curblock_out].header.good_data = tmp_header.good_data;
-                //printf("TRA: Receiving block %d with starting mcnt = %lld\n", curblock_in, (long long int)mcnt);
-
                 // Get the specified frequency channel chunk
                 hashpipe_status_lock_safe(&st);
                 hgeti4(st.buf, "CHANSEL", &n_chunk);
@@ -142,6 +137,11 @@ static void * run(hashpipe_thread_args_t * args) {
                         }
                     }
                 }
+                
+                // Set metadata for output block
+                db_out->block[curblock_out].header.mcnt = mcnt;
+                db_out->block[curblock_out].header.good_data = tmp_header.good_data;
+                //printf("TRA: Receiving block %d with starting mcnt = %lld\n", curblock_in, (long long int)mcnt);
     
                 // Mark block as filled
                 flag_pfb_gpu_input_databuf_set_filled(db_out, curblock_out);
@@ -156,14 +156,30 @@ static void * run(hashpipe_thread_args_t * args) {
             }
         }
         else if (cur_state == CLEANUP) {
-            printf("TRA: In Clean up \n");
-            curblock_in = 0;
-            curblock_out = 0;
-            next_state = ACQUIRE;
-            // Indicate that we have finished cleanup
+            //printf("TRA: In Cleanup \n");
+
             hashpipe_status_lock_safe(&st);
-            hputl(st.buf, "CLEANA", 1);
+            hgets(st.buf, "NETSTAT", 16, netstat);
             hashpipe_status_unlock_safe(&st);
+
+            if(strcmp(netstat, "IDLE") == 0) {
+                next_state = ACQUIRE;
+            }
+            else {
+                next_state = CLEANUP;
+
+                curblock_in = 0;
+                curblock_out = 0;
+                // Indicate that we have finished cleanup
+                hashpipe_status_lock_safe(&st);
+                hputl(st.buf, "CLEANA", 1);
+                hashpipe_status_unlock_safe(&st);
+            }
+            /*
+            int hashLocked_in = flag_input_databuf_total_status(db_in);
+            printf("TRA: buffer status\n\t db_in tot=%d\n\t", hashLocked_in);
+            */
+
         }
 
         // Next state processing

@@ -109,8 +109,8 @@ void print_pkt_header(packet_header_t * pkt_header) {
     static long long prior_mcnt;
 
     printf("packet header : mcnt %012lx (diff from prior %lld) cal %hx fid %d xid %d\n",
-	   pkt_header->mcnt, pkt_header->mcnt-prior_mcnt, pkt_header->cal, pkt_header->fid, pkt_header->xid);
-
+	           pkt_header->mcnt, pkt_header->mcnt-prior_mcnt, pkt_header->cal, pkt_header->fid, pkt_header->xid);
+    
     prior_mcnt = pkt_header->mcnt;
 }
 
@@ -251,7 +251,7 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
     //printf("NET: Time = %f\n", (float)tval_result.tv_usec/1000);
 }
 
-#define WINDOW_SIZE 50
+#define WINDOW_SIZE 2
 
 // Method to process a received packet
 // Processing involves the following
@@ -313,19 +313,21 @@ static inline int64_t process_packet(flag_input_databuf_t * db, struct hashpipe_
         binfo.packet_count[dest_block_idx] = 0;
     }
     else if (pkt_mcnt_dist >= (N_INPUT_BLOCKS-1)*Nm) { // > current block + 2
+        /*
         char msg[60];
+        printf("NET: Writing to NETERR\n");
         sprintf(msg, "Late Packet! - %lld", (long long int)pkt_mcnt);
         hashpipe_status_lock_safe(st_p);
         hputs(st_p->buf, "NETERR", msg);
         hashpipe_status_unlock_safe(st_p);
-
+        */
 
         /*
         // The x-engine is lagging behind the f-engine, or the x-engine
         // has just started. Reinitialize the current block
         // to have the next multiple of Nm. Then initialize the next block appropriately
         uint64_t new_mcnt = pkt_mcnt - (pkt_mcnt % (Nm*N_INPUT_BLOCKS)) + Nm*N_INPUT_BLOCKS;
-	// binfo.block_i = get_block_idx(new_mcnt);
+        // binfo.block_i = get_block_idx(new_mcnt);
 
         fprintf(stderr, "Packet mcnt %lld is very late... resettting current block mcnt to %lld (%012lx)\n", (long long int)pkt_mcnt, (long long int)new_mcnt, new_mcnt);
         fprintf(stderr, "pkt_mcnt_dist = %lld\n", (long long int)pkt_mcnt_dist);
@@ -362,14 +364,16 @@ static inline int64_t process_packet(flag_input_databuf_t * db, struct hashpipe_
     int rv;
     while ((rv = flag_input_databuf_wait_free(db, dest_block_idx)) != HASHPIPE_OK) {
         if (rv == HASHPIPE_TIMEOUT) {
-	    continue;
-	}
-	else {
-	    hashpipe_error(__FUNCTION__, "error waiting for databuf free");
-	    pthread_exit(NULL);
-	    break;
-	}
+            printf("NET: Timed out!!!!!!!!\n");
+            continue;
+	    }
+        else {
+            hashpipe_error(__FUNCTION__, "error waiting for databuf free");
+            pthread_exit(NULL);
+            break;
+        }
     }
+
     uint64_t * dest_p  = db->block[dest_block_idx].data + flag_input_databuf_idx(binfo.m, binfo.f, 0, 0);
     const uint64_t * payload_p = (uint64_t *)(p->data+8); // Ignore header
 
@@ -392,11 +396,7 @@ static inline int64_t process_packet(flag_input_databuf_t * db, struct hashpipe_
     }
     */
     
-
     //print_pkt_header(&pkt_header);
-    
-    
-
     return last_filled_mcnt;
 }
 
@@ -438,21 +438,21 @@ static void *run(hashpipe_thread_args_t * args) {
 
     /* Read network params */
     struct hashpipe_udp_params up = {
-	.bindhost = "0.0.0.0",
-	.bindport = 8511,
-	.packet_size = N_BYTES_PER_PACKET
+	   .bindhost = "0.0.0.0",
+	   .bindport = 8511,
+	   .packet_size = N_BYTES_PER_PACKET
     };
 
     hashpipe_status_lock_safe(&st);
-    	// Get info from status buffer if present (no change if not present)
-    	hgets(st.buf, "BINDHOST", 80, up.bindhost);
-    	hgeti4(st.buf, "BINDPORT", &up.bindport);
+    // Get info from status buffer if present (no change if not present)
+    hgets(st.buf, "BINDHOST", 80, up.bindhost);
+    hgeti4(st.buf, "BINDPORT", &up.bindport);
     
-    	// Store bind host/port info etc in status buffer
-    	hputs(st.buf, "BINDHOST", up.bindhost);
-    	hputi4(st.buf, "BINDPORT", up.bindport);
-    	hputu4(st.buf, "MISSEDFE", 0);
-    	hputu4(st.buf, "MISSEDPK", 0);
+    // Store bind host/port info etc in status buffer
+    hputs(st.buf, "BINDHOST", up.bindhost);
+    hputi4(st.buf, "BINDPORT", up.bindport);
+    hputu4(st.buf, "MISSEDFE", 0);
+    hputu4(st.buf, "MISSEDPK", 0);
     hashpipe_status_unlock_safe(&st);
 
     struct hashpipe_udp_packet p;

@@ -124,6 +124,13 @@ int runPFB(signed char* inputData_h, float* outputData_h, params pfbParams) {
 
 }
 
+void flushBuffer(params pfbParams) {
+
+	int start = pfbParams.fine_channels*pfbParams.elements*pfbParams.nfft*pfbParams.taps;
+	CUDASafeCallWithCleanUp(cudaMemset((void *)   g_pc2Data_d, 0, start*2*sizeof(char)));
+	return;
+}
+
 // return true or false upon successful setup.
 int initPFB(int iCudaDevice, params pfbParams){
 

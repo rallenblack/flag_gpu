@@ -8,7 +8,7 @@
 #include "pfb.h"
 #include "config.h"
 
-#define VERBOSE 0 
+#define VERBOSE 0
 #define SAVE 0
 
 // Total number of antennas (nominally 40)
@@ -162,7 +162,7 @@ typedef uint8_t hashpipe_databuf_cache_alignment[
  * It is the input buffer of the flag_transpose_thread.
  */
 
-#define N_INPUT_BLOCKS 100
+#define N_INPUT_BLOCKS 4
 
 // A typedef for a block header
 typedef struct flag_input_header {
@@ -422,6 +422,14 @@ int flag_pfb_gpu_correlator_output_databuf_wait_free   (flag_pfb_gpu_correlator_
 int flag_pfb_gpu_correlator_output_databuf_wait_filled (flag_pfb_gpu_correlator_output_databuf_t * d, int block_id);
 int flag_pfb_gpu_correlator_output_databuf_set_free    (flag_pfb_gpu_correlator_output_databuf_t * d, int block_id);
 int flag_pfb_gpu_correlator_output_databuf_set_filled  (flag_pfb_gpu_correlator_output_databuf_t * d, int block_id);
+
+int flag_pfb_gpu_correlator_output_databuf_total_status (flag_pfb_gpu_correlator_output_databuf_t * d);
+int flag_gpu_pfb_output_databuf_total_status (flag_gpu_pfb_output_databuf_t * d);
+
+int flag_pfb_gpu_input_databuf_total_status(flag_pfb_gpu_input_databuf_t * d);
+int flag_gpu_correlator_output_databuf_total_status(flag_gpu_correlator_output_databuf_t * d);
+
+int flag_input_databuf_total_status(flag_input_databuf_t * d);
 
 hashpipe_databuf_t * flag_gpu_beamformer_output_databuf_create(int instance_id, int databuf_id);
 

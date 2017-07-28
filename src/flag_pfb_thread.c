@@ -87,7 +87,7 @@ static void * run(hashpipe_thread_args_t * args) {
     while (run_threads()) {
         if(cur_state == ACQUIRE){
             next_state = ACQUIRE;
-	    // Wait for input buffer block to be filled
+            // Wait for input buffer block to be filled
             while ((rv=flag_pfb_gpu_input_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK && run_threads()) {
         		// Take this time to update CHANSEL
         		int chk_chanSel = 0;
@@ -110,6 +110,9 @@ static void * run(hashpipe_thread_args_t * args) {
                     hgets(st.buf, "NETSTAT", 16, netstat);
                     hashpipe_status_unlock_safe(&st);
                     if (cleanb == 0 && strcmp(netstat, "CLEANUP") == 0) {
+                        if(VERBOSE) {
+                            printf("PFB: Cleanup detected!\n");
+                        }
                         next_state = CLEANUP;
                         break;
                     }
@@ -122,67 +125,86 @@ static void * run(hashpipe_thread_args_t * args) {
             }
             if (!run_threads()) break;
 
-            // Print out the header information for this block 
-            flag_gpu_input_header_t tmp_header;
-            memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_gpu_input_header_t));
-            good_data = tmp_header.good_data;
-            hashpipe_status_lock_safe(&st);
-            hputi4(st.buf, "PFBMCNT", tmp_header.mcnt);
-            hashpipe_status_unlock_safe(&st);
+            if (next_state != CLEANUP) {
+                // Print out the header information for this block 
+                flag_gpu_input_header_t tmp_header;
+                memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_gpu_input_header_t));
+                good_data = tmp_header.good_data;
+                hashpipe_status_lock_safe(&st);
+                hputi4(st.buf, "PFBMCNT", tmp_header.mcnt);
+                hashpipe_status_unlock_safe(&st);
 
-            // Wait for output block to become free
-            while ((rv=flag_gpu_pfb_output_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
-                if (rv==HASHPIPE_TIMEOUT) {
-                    continue;
-                } else {
-                    hashpipe_error(__FUNCTION__, "error waiting for free databuf");
-                    fprintf(stderr, "rv = %d\n", rv);
-                    pthread_exit(NULL);
-                    break;
+                // Wait for output block to become free
+                while ((rv=flag_gpu_pfb_output_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
+                    if (rv==HASHPIPE_TIMEOUT) {
+                        continue;
+                    } else {
+                        hashpipe_error(__FUNCTION__, "error waiting for free databuf");
+                        fprintf(stderr, "rv = %d\n", rv);
+                        pthread_exit(NULL);
+                        break;
+                    }
                 }
-            }
-           
-            // Run the PFB
-            if (VERBOSE) {
-                printf("PFB: Launching PFB...\n");
-            }
+               
+                // Run the PFB
+                if (VERBOSE) {
+                    printf("PFB: Launching PFB...\n");
+                }
 
-            runPFB((signed char *)&db_in->block[curblock_in].data, (float *)&db_out->block[curblock_out].data, pfbParams);
+                runPFB((signed char *)&db_in->block[curblock_in].data, (float *)&db_out->block[curblock_out].data, pfbParams);
 
-	        // Get block's starting mcnt for output block
-            db_out->block[curblock_out].header.mcnt = tmp_header.mcnt;
-            db_out->block[curblock_out].header.good_data = good_data;
+    	        // Get block's starting mcnt for output block
+                db_out->block[curblock_out].header.mcnt = tmp_header.mcnt;
+                db_out->block[curblock_out].header.good_data = good_data;
+                    
+                // Mark output block as full and advance
+                flag_gpu_pfb_output_databuf_set_filled(db_out, curblock_out);
+
+                if (VERBOSE) {
+                    printf("PFB: Marked block %d as filled...\n", curblock_out);
+                }
+                curblock_out = (curblock_out + 1) % db_out->header.n_block;
+                start_mcnt = last_mcnt + 1;
+                last_mcnt = start_mcnt + Nm - 1;
                 
-            // Mark output block as full and advance
-            flag_gpu_pfb_output_databuf_set_filled(db_out, curblock_out);
+                // Mark input block as free
+                if (VERBOSE) {
+                    printf("PFB: Attempting to mark block %d as free...\n", curblock_in);
+                }
 
-            if (VERBOSE) {
-                printf("PFB: Marked block %d as filled...\n", curblock_out);
+                flag_pfb_gpu_input_databuf_set_free(db_in, curblock_in);
+
+                if (VERBOSE) {
+                    printf("PFB: Marked block %d as free...\n", curblock_in);
+                }
+
+                curblock_in = (curblock_in + 1) % db_in->header.n_block;
             }
-            curblock_out = (curblock_out + 1) % db_out->header.n_block;
-            start_mcnt = last_mcnt + 1;
-            last_mcnt = start_mcnt + Nm - 1;
-            
-            // Mark input block as free
-            if (VERBOSE) {
-                printf("PFB: Attempting to mark block %d as free...\n", curblock_in);
-            }
-
-            flag_pfb_gpu_input_databuf_set_free(db_in, curblock_in);
-
-            if (VERBOSE) {
-                printf("PFB: Marked block %d as free...\n", curblock_in);
-            }
-
-            curblock_in = (curblock_in + 1) % db_in->header.n_block;
         }
         else if (cur_state == CLEANUP) {
-            next_state = ACQUIRE;
-            curblock_in = 0;
-            curblock_out = 0;
+            //printf("PFB: In Cleanup\n");
+
             hashpipe_status_lock_safe(&st);
-            hputl(st.buf, "CLEANB",1);
+            hgets(st.buf, "NETSTAT", 16, netstat);
             hashpipe_status_unlock_safe(&st);
+
+            if (strcmp(netstat, "IDLE") == 0) {
+                next_state = ACQUIRE;
+            } else {
+                next_state = CLEANUP;
+                curblock_in = 0;
+                curblock_out = 0;
+                flushBuffer(pfbParams);
+                hashpipe_status_lock_safe(&st);
+                hputl(st.buf, "CLEANB",1);
+                hashpipe_status_unlock_safe(&st);
+            }
+            /*
+            int hashLocked_in = flag_pfb_gpu_input_databuf_total_status(db_in);
+            int hashLocked_out = flag_gpu_pfb_output_databuf_total_status(db_out);
+
+            printf("PFB: buffer status\n\t db_in tot=%d\n\t db_out tot=%d\n\t", hashLocked_in, hashLocked_out);
+            */
         }
 
         // Next state processing

@@ -56,5 +56,6 @@ int runPFB(signed char* inputData_h, float* outputData_h, params pfbParams);
 int doFFT();
 int resetDevice(void);
 void cleanUp(void);
+void flushBuffer(params pfbParams);
 
 #endif
