@@ -88,21 +88,20 @@ static void * run(hashpipe_thread_args_t * args) {
         if(cur_state == ACQUIRE){
             next_state = ACQUIRE;
 	    // Wait for input buffer block to be filled
-            while ((rv=flag_pfb_gpu_input_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
-
-		// Take this time to update CHANSEL
-		int chk_chanSel = 0;
-		hashpipe_status_lock_safe(&st);
-		hgeti4(st.buf, "CHANSEL", &chk_chanSel);
-		hashpipe_status_unlock_safe(&st);
-		if( (chanSel - chk_chanSel) != 0) {
-		    printf("PFB: Channel Selection detected. Switching channel...\n");
-		    pfbParams.select = chk_chanSel;
-		    chanSel = chk_chanSel;
-		    hashpipe_status_lock_safe(&st);
-		    hputi4(st.buf, "CHANSEL", chanSel);
-		    hashpipe_status_unlock_safe(&st);
-		}
+            while ((rv=flag_pfb_gpu_input_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK && run_threads()) {
+        		// Take this time to update CHANSEL
+        		int chk_chanSel = 0;
+        		hashpipe_status_lock_safe(&st);
+        		hgeti4(st.buf, "CHANSEL", &chk_chanSel);
+        		hashpipe_status_unlock_safe(&st);
+        		if( (chanSel - chk_chanSel) != 0) {
+        		    printf("PFB: Channel Selection detected. Switching channel...\n");
+        		    pfbParams.select = chk_chanSel;
+        		    chanSel = chk_chanSel;
+        		    hashpipe_status_lock_safe(&st);
+        		    hputi4(st.buf, "CHANSEL", chanSel);
+        		    hashpipe_status_unlock_safe(&st);
+        		}
 
                 if (rv==HASHPIPE_TIMEOUT) {
                     int cleanb;
@@ -121,6 +120,7 @@ static void * run(hashpipe_thread_args_t * args) {
                     break;
                 }
             }
+            if (!run_threads()) break;
 
             // Print out the header information for this block 
             flag_gpu_input_header_t tmp_header;
@@ -197,6 +197,11 @@ static void * run(hashpipe_thread_args_t * args) {
     }
 
     // Thread terminates after loop
+    hashpipe_status_lock_busywait_safe(&st);
+    printf("PFB: Cleaning up gpu context...\n");
+    cleanUp(); // pfb cleanup method. Should redefine in the future as a different function i.e pfbFree().
+    hputs(st.buf, status_key, "terminated");
+    hashpipe_status_unlock_safe(&st);
     return NULL;
 }
 
@@ -205,7 +210,7 @@ static hashpipe_thread_desc_t f_thread = {
     name: "flag_pfb_thread",
     skey: "PFBSTAT",
     init: NULL,
-    run:  run,
+    run:  run,  
     ibuf_desc: {flag_pfb_gpu_input_databuf_create},
     obuf_desc: {flag_gpu_pfb_output_databuf_create}
 };

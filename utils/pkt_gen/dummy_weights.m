@@ -3,7 +3,7 @@
 % files
 
 % Reshape weights
-N_beam = 7;
+N_beam = 14;
 N_ele = 64;
 N_bin_total = 500;
 N_bin = 25;
@@ -46,13 +46,14 @@ for b = 1:length(banks)
     interleaved_w(2:2:end) = w_imag(:);
     
     % Get filename
-    filename = '/lustre/projects/flag/weight_files/dummy_w.bin';
+%     filename = '/lustre/projects/flag/weight_files/dummy_w.bin';
+    filename = '/home/groups/flag/weight_files/dummy_w.bin';
     weight_file = strrep(filename, '.', sprintf('_%s.', bank_name));
     
     % Create metadata for weight file
     offsets_el = 0.7;
     offsets_az = 0.7;
-    offsets = [offsets_el; offsets_az];
+    offsets =  0.7*ones(N_beam,1); %[offsets_el; offsets_az];
     offsets = offsets(:);
     cal_filename = 'test';
     to_skip1 = 64 - length(cal_filename);

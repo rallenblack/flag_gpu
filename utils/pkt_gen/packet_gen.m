@@ -173,7 +173,7 @@ end
 
 % Pulsar
 pulse = 1;
-for cyc = [0, -1000, 1000]
+for cyc = [0] % [0, -1000, 1000]
     for m = 1:Ninputs
         for k = 1:Nbins
             tmp = abs(m_D(k)-tau);
@@ -184,11 +184,27 @@ for cyc = [0, -1000, 1000]
     end
 end
 
+keyboard;
+
 % Create UDP sockets - 1 IP address per Xengine (xid)
 for xid = 1:Nxengines
+
     remoteHost = ['10.10.1.', num2str(xid)];
+
     if xid == 1
-        remoteHost = '10.17.16.208'; % It was 208 before
+        remoteHost = '10.17.16.200'; % It was 208 before
+    end
+    if xid == 2
+        remoteHost = '10.17.16.201'; % It was 208 before
+    end
+    if xid == 3
+        remoteHost = '10.17.16.202'; % It was 208 before
+    end
+    if xid == 4
+        remoteHost = '10.17.16.203'; % It was 208 before
+    end
+    if xid == 12
+        remoteHost = '10.17.16.211'; % It was 208 before
     end
     %if xid == 14
     %    remoteHost = '10.10.1.1';
@@ -203,9 +219,9 @@ end
 mcnt = 0; % Each mcnt represents 20 packets across all F-engines in the
           % same time frame
   
-for mcnt = [0:401]% [0:201, 400:50:20000] %while mcnt <= 10000
+for mcnt = [0:401] %while mcnt <= 10000
     disp(['Sending mcnt = ', num2str(mcnt)]);
-    for xid = 1:1 % Set to a single X-engine for single HPC testing (Richard B.)
+    for xid = [1:4] % Set to a single X-engine for single HPC testing (Richard B.)
         for fid = 1:Nfengines
             w_idx = 1;
             

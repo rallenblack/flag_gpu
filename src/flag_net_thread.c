@@ -169,11 +169,22 @@ static inline void cleanup_blocks(flag_input_databuf_t * db) {
     hashpipe_status_unlock_safe(st_p);
 
     int i;
+    int rv;
     for (i = 0; i < N_INPUT_BLOCKS; i++) {
         #if VERBOSE==1
         printf("NET: Waiting for block %d to be free...\n", i);
         #endif
-        flag_input_databuf_wait_free(db, i);
+
+        while ((rv = flag_input_databuf_wait_free(db, i)) != HASHPIPE_OK) {
+	    if (rv == HASHPIPE_TIMEOUT) {
+		continue;
+	    }
+	    else {
+		hashpipe_error(__FUNCTION__, "error waiting for free databuf");
+		pthread_exit(NULL);
+		break;
+	    }
+	}
         #if VERBOSE==1
         printf("NET: Initializing block %d\n", i);
         #endif
@@ -185,8 +196,21 @@ static inline void cleanup_blocks(flag_input_databuf_t * db) {
 // Method to mark the block as filled
 static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
 
+    //struct timeval tval_before, tval_after, tval_result;
+    //gettimeofday(&tval_before, NULL);
+
     uint32_t block_idx = get_block_idx(binfo->mcnt_start);
-    flag_input_databuf_wait_free(db, block_idx);
+    int rv;
+    while ((rv = flag_input_databuf_wait_free(db, block_idx)) != HASHPIPE_OK) {
+	if (rv == HASHPIPE_TIMEOUT) {
+	    continue;
+	}
+	else {
+	    hashpipe_error(__FUNCTION__, "error waiting for free databuf");
+	    pthread_exit(NULL);
+	    break;
+	}
+    }
  
     // Validate that we're filling blocks in the proper sequence
     int next_filled = (last_filled + 1)% N_INPUT_BLOCKS;
@@ -222,6 +246,9 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
     //hashpipe_status_lock_safe(st_p);
     //hgeti4(st_p->buf, "XID", &binfo->self_xid);
     //hashpipe_status_unlock_safe(st_p);
+    //gettimeofday(&tval_after, NULL);
+    //timersub(&tval_after, &tval_before, &tval_result);
+    //printf("NET: Time = %f\n", (float)tval_result.tv_usec/1000);
 }
 
 #define WINDOW_SIZE 50
@@ -232,7 +259,7 @@ static void set_block_filled(flag_input_databuf_t * db, block_info_t * binfo) {
 // (2) block population (output buffer data type is a block)
 // (3) buffer population (if block is filled)
 static inline int64_t process_packet(flag_input_databuf_t * db, struct hashpipe_udp_packet *p) {
-    packet_header_t     pkt_header;
+    packet_header_t pkt_header;
 
     // Initialize block information data types
     if (!binfo.initialized) {
@@ -259,8 +286,20 @@ static inline int64_t process_packet(flag_input_databuf_t * db, struct hashpipe_
 
         // Initialize next block
         uint64_t  b;
+	int rv;
+
         for (b = (N_INPUT_BLOCKS - WINDOW_SIZE + 1)*Nm + cur_mcnt; b < (N_INPUT_BLOCKS + 1)*Nm + cur_mcnt; b++) {
-            flag_input_databuf_wait_free(db, get_block_idx(b) );
+
+	    while ((rv = flag_input_databuf_wait_free(db, get_block_idx(b))) != HASHPIPE_OK) {
+		if (rv == HASHPIPE_TIMEOUT) {
+		    continue;
+		}
+		else {
+		    hashpipe_error(__FUNCTION__, "error waiting for databuf free");
+		    pthread_exit(NULL);
+		    break;
+		}
+	    }
             initialize_block(db, b);
         }
 
@@ -319,8 +358,18 @@ static inline int64_t process_packet(flag_input_databuf_t * db, struct hashpipe_
     }
 
     // Calculate starting points for writing packet payload into buffer
-    // POSSIBLE RACE CONDITION!!!! Need to lock db->block access with semaphore
-    flag_input_databuf_wait_free(db, dest_block_idx);    
+    // POSSIBLE RACE CONDITION!!!! Need to lock db->block access with semaphor
+    int rv;
+    while ((rv = flag_input_databuf_wait_free(db, dest_block_idx)) != HASHPIPE_OK) {
+        if (rv == HASHPIPE_TIMEOUT) {
+	    continue;
+	}
+	else {
+	    hashpipe_error(__FUNCTION__, "error waiting for databuf free");
+	    pthread_exit(NULL);
+	    break;
+	}
+    }
     uint64_t * dest_p  = db->block[dest_block_idx].data + flag_input_databuf_idx(binfo.m, binfo.f, 0, 0);
     const uint64_t * payload_p = (uint64_t *)(p->data+8); // Ignore header
 
@@ -407,6 +456,7 @@ static void *run(hashpipe_thread_args_t * args) {
     hashpipe_status_unlock_safe(&st);
 
     struct hashpipe_udp_packet p;
+    //struct hashpipe_udp_packet bh; // blackhole packet to suck up data that isnt processed
 
     /* Give all the threads a chance to start before opening network socket */
     /*
@@ -466,7 +516,10 @@ static void *run(hashpipe_thread_args_t * args) {
     int i;
     for (i = 0; i < N_INPUT_BLOCKS-1; i++) {
         // Wait until block semaphore is free
-        if (flag_input_databuf_wait_free(db, i) != HASHPIPE_OK) {
+        while ((rv = flag_input_databuf_wait_free(db, i)) != HASHPIPE_OK) {
+	    if (rv == HASHPIPE_TIMEOUT) {
+		continue;
+	    }
             if (errno == EINTR) { // Interrupt occurred
                 hashpipe_error(__FUNCTION__, "waiting for free block interrupted\n");
                 pthread_exit(NULL);
@@ -534,8 +587,13 @@ static void *run(hashpipe_thread_args_t * args) {
          ************************************************************/
         // If in IDLE state, look for START command
         if (cur_state == IDLE) {
-             // cmd = check_cmd(gpu_fifo_id);
-
+            // cmd = check_cmd(gpu_fifo_id);
+             
+	        // keep receiving packets but send them to a blackhole packet, these wont be processed
+            //bh.packet_size = recv(up.sock, bh.data, HASHPIPE_MAX_PACKET_SIZE, 0);
+    	    //if(bh.packet_size != -1) {
+    		//printf("blackhole!!!\n");
+    	    //}
 
             // If command is START, proceed to ACQUIRE state
             if (master_cmd == START) {
@@ -596,7 +654,7 @@ static void *run(hashpipe_thread_args_t * args) {
                 int cleanA = 1;
                 int cleanB = 1;
                 int cleanC = 1;
-		printf("NET: CLEANUP condition met!\n");
+		        printf("NET: CLEANUP condition met!\n");
                 sleep(1);
                 printf("NET: Informing other threads of cleanup condition\n");
                 while (cleanA != 0 && cleanB != 0 && cleanC != 0) {
@@ -680,8 +738,8 @@ static void *run(hashpipe_thread_args_t * args) {
     }
 
     pthread_cleanup_pop(1); /* Closes push(hashpipe_udp_close) */
-
     hashpipe_status_lock_busywait_safe(&st);
+    printf("NET: Exiting thread loop...\n");
     hputs(st.buf, status_key, "terminated");
     hashpipe_status_unlock_safe(&st);
     return NULL;

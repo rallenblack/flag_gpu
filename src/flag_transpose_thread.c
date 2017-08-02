@@ -9,6 +9,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/time.h>
 
 #include <xgpu.h>
 #include "hashpipe.h"
@@ -57,7 +58,7 @@ static void * run(hashpipe_thread_args_t * args) {
         if (cur_state == ACQUIRE) {
             next_state = ACQUIRE;
             // Wait for input buffer block to be filled
-            while ((rv=flag_input_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
+            while ((rv=flag_input_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK && run_threads()) {
                 if (rv==HASHPIPE_TIMEOUT) { // If we are waiting for an input block...
                     // Check to see if network thread is in cleanup
                     hashpipe_status_lock_safe(&st);
@@ -76,12 +77,13 @@ static void * run(hashpipe_thread_args_t * args) {
                     break;
                 }
             }
+            if (!run_threads()) break;
 
             //printf("TRA: Rx %lld, curblock_in %d\n", (long long int)db_in->block[curblock_in].header.mcnt_start, curblock_in);
             if (next_state != CLEANUP) {
 
                 // Wait for output buffer block to be freed
-                while ((rv=flag_gpu_input_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
+                while ((rv=flag_gpu_input_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK && run_threads()) {
                     if (rv == HASHPIPE_TIMEOUT) {
                         //hashpipe_status_lock_safe(&st);
                         //hputs(st.buf, status_key, "waiting for free block");
@@ -94,7 +96,8 @@ static void * run(hashpipe_thread_args_t * args) {
                         break;
                     }
                 }
-       
+                if (!run_threads());
+
                 // Print out the header information for this block 
                 flag_input_header_t tmp_header;
                 memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_input_header_t));
@@ -107,6 +110,10 @@ static void * run(hashpipe_thread_args_t * args) {
                 /**********************************************
                  * Perform transpose
                  **********************************************/
+                struct timeval tval_before, tval_after, tval_result;
+
+                gettimeofday(&tval_before, NULL);
+
                 int m; int f;
                 int t; int c;
                 uint64_t * in_p;
@@ -123,6 +130,13 @@ static void * run(hashpipe_thread_args_t * args) {
                             }
                         }
                     }
+                }
+
+                gettimeofday(&tval_after, NULL);
+
+                timersub(&tval_after, &tval_before, &tval_result);
+                if ((float)tval_result.tv_usec/1000 > 10) {
+                    printf("TRA: WARNING!!!!!!!!! - Time = %f ms\n", (float)tval_result.tv_usec/1000);
                 }
 
                 /***********************************************
@@ -169,6 +183,10 @@ static void * run(hashpipe_thread_args_t * args) {
     }
 
     // Thread terminates after loop
+    hashpipe_status_lock_busywait_safe(&st);
+    printf("TRA: Exiting loop...\n");
+    hputs(st.buf, status_key, "terminated");
+    hashpipe_status_unlock_safe(&st);
     return NULL;
 }
 

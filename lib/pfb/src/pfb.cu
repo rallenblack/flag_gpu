@@ -81,7 +81,7 @@ int runPFB(signed char* inputData_h, float* outputData_h, params pfbParams) {
 		CUDASafeCallWithCleanUp(cudaGetLastError());
 	}
 
-	float2* fftOutPtr = g_pf2FFTOut_d;
+	//float2* fftOutPtr = g_pf2FFTOut_d;
 	while(!g_IsProcDone) {
 		//FFT
 		iRet = doFFT();
@@ -116,7 +116,9 @@ int runPFB(signed char* inputData_h, float* outputData_h, params pfbParams) {
 	g_pf2FFTIn_d = g_pf2FFTIn_d -countFFT*g_iNumSubBands*g_iNFFT;
 
 	int outDataSize = countFFT * g_iNumSubBands * g_iNFFT;
-	CUDASafeCallWithCleanUp(cudaMemcpy(outputData_h, fftOutPtr, outDataSize*sizeof(cufftComplex), cudaMemcpyDeviceToHost));
+	//CUDASafeCallWithCleanUp(cudaMemcpy(outputData_h, fftOutPtr, outDataSize*sizeof(cufftComplex), cudaMemcpyDeviceToHost));
+	//printf("making sure new build...\n");
+	CUDASafeCallWithCleanUp(cudaMemcpy(outputData_h, g_pf2FFTOut_d, outDataSize*sizeof(cufftComplex), cudaMemcpyDeviceToHost));
 
 	return iRet;
 

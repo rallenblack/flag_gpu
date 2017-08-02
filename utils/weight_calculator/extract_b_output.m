@@ -7,7 +7,7 @@ function [ B, dmjd, xid ] = extract_b_output( fits_filename )
     
     dmjd = bintbl{1};
     mcnt = bintbl{2};
-    data = bintbl{3};
+    data = bintbl{4};
     keywords = info.PrimaryData.Keywords;
     xid = -1;
     for i = 1:size(keywords, 1)

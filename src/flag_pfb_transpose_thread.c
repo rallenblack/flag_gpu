@@ -63,7 +63,7 @@ static void * run(hashpipe_thread_args_t * args) {
         if (cur_state == ACQUIRE) {
             next_state = ACQUIRE;
             // Wait for input buffer block to be filled
-            while ((rv=flag_input_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK) {
+            while ((rv=flag_input_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK && run_threads()) {
                 if (rv==HASHPIPE_TIMEOUT) { // If we are waiting for an input block...
                     // Check to see if network thread is in cleanup
                     hashpipe_status_lock_safe(&st);
@@ -81,11 +81,12 @@ static void * run(hashpipe_thread_args_t * args) {
                     break;
                 }
             }
+            if (!run_threads()) break;
 
             if (next_state != CLEANUP) {
 
                 // Wait for output buffer block to be freed
-                while ((rv=flag_pfb_gpu_input_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
+                while ((rv=flag_pfb_gpu_input_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK && run_threads()) {
                     if (rv == HASHPIPE_TIMEOUT) {
                         //hashpipe_status_lock_safe(&st);
                         //hputs(st.buf, status_key, "waiting for free block");
@@ -98,6 +99,7 @@ static void * run(hashpipe_thread_args_t * args) {
                         break;
                     }
                 }
+                if (!run_threads()) break;
        
                 // Print out the header information for this block 
                 flag_input_header_t tmp_header;
@@ -116,8 +118,8 @@ static void * run(hashpipe_thread_args_t * args) {
                 hashpipe_status_lock_safe(&st);
                 hgeti4(st.buf, "CHANSEL", &n_chunk);
                 hashpipe_status_unlock_safe(&st);
-                int c_start = n_chunk*N_CHAN_PER_FRB_BLOCK;
-                int c_end   = c_start + N_CHAN_PER_FRB_BLOCK;
+                int c_start = n_chunk*N_CHAN_PFB_SELECTED;
+                int c_end   = c_start + N_CHAN_PFB_SELECTED;
 
                 /**********************************************
                  * Perform transpose
@@ -127,20 +129,19 @@ static void * run(hashpipe_thread_args_t * args) {
                 uint64_t * in_p;
                 uint64_t * out_p;
                 uint64_t * block_in_p  = db_in->block[curblock_in].data;
-		uint64_t * block_out_p = db_out->block[curblock_out].data;
+		        uint64_t * block_out_p = db_out->block[curblock_out].data;
                 for (m = 0; m < Nm; m++) {
                     for (t = 0; t < Nt; t++) {
                         for (f = 0; f < Nf; f++) {
                             for (c = c_start; c < c_end; c++) {
                             // for (c = 0; c < Nc; c++) {
                                 in_p  = block_in_p + flag_input_databuf_idx(m,f,t,c);
-                                out_p = block_out_p + flag_gpu_input_databuf_idx(m,f,t,c % N_CHAN_PER_FRB_BLOCK);
+                                out_p = block_out_p + flag_pfb_gpu_input_databuf_idx(m,f,t,c % N_CHAN_PFB_SELECTED);
                                 memcpy(out_p, in_p, 128/8);
                             }
                         }
                     }
                 }
-
     
                 // Mark block as filled
                 flag_pfb_gpu_input_databuf_set_filled(db_out, curblock_out);
@@ -177,6 +178,11 @@ static void * run(hashpipe_thread_args_t * args) {
     }
 
     // Thread terminates after loop
+    hashpipe_status_lock_busywait_safe(&st);
+    printf("TRA: Exiting thread loop...\n");
+    hputs(st.buf, status_key, "terminated");
+    hashpipe_status_unlock_safe(&st);
+    
     return NULL;
 }
 

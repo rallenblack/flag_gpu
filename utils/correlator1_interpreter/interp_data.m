@@ -38,7 +38,7 @@ for i = 1:Nele_tot/2
 end
 
 Rtot = zeros(Nele_tot, Nele_tot, Nbin);
-PATH = '/home/mburnett/dibas/lib/python/';
+PATH = '/lustre/projects/flag/';
 mcnt = [0]%, 200, 400, 600];
 %for mcnt = 0:2:198
 for k = 1:length(mcnt)
@@ -68,7 +68,7 @@ for k = 1:length(mcnt)
         Rb = Rb./Nsamp;
 
         Rtot(:,:,Nb) = Rtot(:,:,Nb) + Rb.*Nsamp;
-
+              
         fig_mod = ceil(Nb/40);
         fig_mod_plot = mod(Nb,40);
         figure(fig_mod);
