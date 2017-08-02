@@ -138,12 +138,12 @@ cmd_t check_cmd(int fifo_fd)
         }
         else if (strncasecmp(cmd,"STOP",MAX_CMD_LEN)==0)
 		{
-                        printf("FIFO: A STOP was issued to the hashpipe codes!!!!!!!!!!!!!!!!!!\n");
+            printf("FIFO: A STOP was issued to the hashpipe codes!!!!!!!!!!!!!!!!!!\n");
 			return STOP;
 		}
 		else if (strncasecmp(cmd,"QUIT",MAX_CMD_LEN)==0)
 		{
-                        printf("FIFO: A QUIT was issued to the hashpipe codes!!!!!!!!!!!!!!!!!!\n");
+            printf("FIFO: A QUIT was issued to the hashpipe codes!!!!!!!!!!!!!!!!!!\n");
 			return QUIT;
 		}
         else

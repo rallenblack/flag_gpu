@@ -156,7 +156,10 @@ static void * run(hashpipe_thread_args_t * args) {
             }
         }
         else if (cur_state == CLEANUP) {
-            //printf("TRA: In Cleanup \n");
+            
+            if (VERBOSE) {
+                printf("TRA: In Cleanup \n");
+            }
 
             hashpipe_status_lock_safe(&st);
             hgets(st.buf, "NETSTAT", 16, netstat);
@@ -164,13 +167,15 @@ static void * run(hashpipe_thread_args_t * args) {
 
             if(strcmp(netstat, "IDLE") == 0) {
                 next_state = ACQUIRE;
+                flag_databuf_clear((hashpipe_databuf_t *) db_out);
+                printf("TRA: Finished CLEANUP, clearing output databuf and returning to ACQUIRE\n");
             }
             else {
                 next_state = CLEANUP;
 
                 curblock_in = 0;
                 curblock_out = 0;
-                // Indicate that we have finished cleanup
+                // Indicate that we are cleaning up
                 hashpipe_status_lock_safe(&st);
                 hputl(st.buf, "CLEANA", 1);
                 hashpipe_status_unlock_safe(&st);

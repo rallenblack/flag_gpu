@@ -16,7 +16,7 @@
 
 #define FALSE 					0
 #define TRUE  					1
-#define DEBUG					1
+//#define DEBUG					1
 
 #define DEF_CUDA_DEVICE			0
 

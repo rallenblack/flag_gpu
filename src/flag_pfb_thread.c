@@ -73,6 +73,7 @@ static void * run(hashpipe_thread_args_t * args) {
 
     pfb_init_flag = initPFB(cudaDevice, pfbParams);
 
+
     state cur_state = ACQUIRE;
     state next_state = ACQUIRE;
     int64_t good_data = 1;
@@ -109,6 +110,13 @@ static void * run(hashpipe_thread_args_t * args) {
                     hgetl(st.buf, "CLEANB", &cleanb);
                     hgets(st.buf, "NETSTAT", 16, netstat);
                     hashpipe_status_unlock_safe(&st);
+
+
+
+
+
+
+                    
                     if (cleanb == 0 && strcmp(netstat, "CLEANUP") == 0) {
                         if(VERBOSE) {
                             printf("PFB: Cleanup detected!\n");
@@ -182,7 +190,9 @@ static void * run(hashpipe_thread_args_t * args) {
             }
         }
         else if (cur_state == CLEANUP) {
-            //printf("PFB: In Cleanup\n");
+            if (VERBOSE) {
+                printf("PFB: In Cleanup\n");
+            }
 
             hashpipe_status_lock_safe(&st);
             hgets(st.buf, "NETSTAT", 16, netstat);
@@ -190,6 +200,12 @@ static void * run(hashpipe_thread_args_t * args) {
 
             if (strcmp(netstat, "IDLE") == 0) {
                 next_state = ACQUIRE;
+                //clear output and input buffers -- make each thread clear out their output buffers.
+                //flag_databuf_clear((hashpipe_databuf_t *)db_in);
+                //flag_pfb_gpu_input_databuf_clear(db_in);
+                flag_databuf_clear((hashpipe_databuf_t *)db_out);
+                //flag_gpu_pfb_output_databuf_clear(db_out);
+                printf("PFB: Finished CLEANUP, clearing output databuf and returning to ACQUIRE\n");
             } else {
                 next_state = CLEANUP;
                 curblock_in = 0;

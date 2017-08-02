@@ -269,8 +269,21 @@ static void * run(hashpipe_thread_args_t * args) {
         }
         }
         else if (cur_state == CLEANUP) {
-            printf("COR: In Cleanup\n");
-            next_state = ACQUIRE;
+
+            if (VERBOSE) {
+                printf("COR: In Cleanup\n");
+            }
+
+            hashpipe_status_lock_safe(&st);
+            hgets(st.buf, "NETSTAT", 16, netstat);
+            hashpipe_status_unlock_safe(&st);
+
+            if (strcmp(netstat, "IDLE") == 0) {
+                next_state = ACQUIRE;
+                flag_databuf_clear((hashpipe_databuf_t *) db_out);
+                printf("COR: Finished CLEANUP, clearing output databuf and returning to ACQUIRE\n");
+            }
+            else {
             // Set interntal integ_status to start
             hashpipe_status_lock_safe(&st);
             hputs(st.buf, "INTSTAT", "start");
@@ -287,6 +300,7 @@ static void * run(hashpipe_thread_args_t * args) {
             hashpipe_status_lock_safe(&st);
             hputl(st.buf, "CLEANB", 1);
             hashpipe_status_unlock_safe(&st);
+            }
         }
         
         // Next state processing
