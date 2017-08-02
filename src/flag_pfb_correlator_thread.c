@@ -109,11 +109,12 @@ static void * run(hashpipe_thread_args_t * args) {
     state next_state = ACQUIRE;
     char netstat[17];
     int64_t good_data = 1;
+
     while (run_threads()) {
        
         if (cur_state == ACQUIRE) {
             next_state = ACQUIRE;
-	    // Wait for input buffer block to be filled
+            // Wait for input buffer block to be filled
             while ((rv=flag_gpu_pfb_output_databuf_wait_filled(db_in, curblock_in)) != HASHPIPE_OK && run_threads()) {
                 if (rv==HASHPIPE_TIMEOUT) {
                     int cleanc;
@@ -136,186 +137,206 @@ static void * run(hashpipe_thread_args_t * args) {
             if (!run_threads()) break;
 
             if (next_state != CLEANUP) {
-            // Print out the header information for this block 
-            flag_gpu_input_header_t tmp_header;
-            memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_gpu_input_header_t));
-            #if VERBOSE==1
-    	        printf("COR: Received block %d, starting mcnt = %lld\n", curblock_in, (long long int)tmp_header.mcnt);
-	    #endif
-            good_data &= tmp_header.good_data;
-            hashpipe_status_lock_safe(&st);
-            hputi4(st.buf, "CORMCNT", tmp_header.mcnt);
-            hashpipe_status_unlock_safe(&st);
-
-            // Retrieve correlator integrator status
-            hashpipe_status_lock_safe(&st);
-            hgets(st.buf, "INTSTAT", 16, integ_status);
-            hashpipe_status_unlock_safe(&st);
-        
-            // If the correlator integrator status is "off,"
-            // Free the input block and continue
-            if (strcmp(integ_status, "off") == 0) {
+                // Print out the header information for this block 
+                flag_gpu_input_header_t tmp_header;
+                memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_gpu_input_header_t));
                 #if VERBOSE==1
-                    fprintf(stderr, "COR: Correlator is off...\n");
+    	           printf("COR: Received block %d, starting mcnt = %lld\n", curblock_in, (long long int)tmp_header.mcnt);
+                #endif
+                good_data &= tmp_header.good_data;
+                hashpipe_status_lock_safe(&st);
+                hputi4(st.buf, "CORMCNT", tmp_header.mcnt);
+                hashpipe_status_unlock_safe(&st);
+
+                // Retrieve correlator integrator status
+                hashpipe_status_lock_safe(&st);
+                hgets(st.buf, "INTSTAT", 16, integ_status);
+                hashpipe_status_unlock_safe(&st);
+        
+                // If the correlator integrator status is "off,"
+                // Free the input block and continue
+                if (strcmp(integ_status, "off") == 0) {
+                    #if VERBOSE==1
+                        fprintf(stderr, "COR: Correlator is off...\n");
+                    #endif
+                    flag_gpu_pfb_output_databuf_set_free(db_in, curblock_in);
+                    curblock_in = (curblock_in + 1) % db_in->header.n_block;
+                    good_data = 1;
+                    continue;
+                }
+
+                // If the correlator integrator status is "start,"
+                // Get the correlator started
+                // The INTSTAT string is set to "start" by the net thread once it's up and running
+                if (strcmp(integ_status, "start") == 0) {
+
+                    // Get the starting mcnt for integration (should be zero)
+                    hashpipe_status_lock_safe(&st);
+                    hgeti4(st.buf, "NETMCNT", (int *)(&start_mcnt));
+                    hashpipe_status_unlock_safe(&st); 
+
+                    // Check to see if block's starting mcnt matches INTSYNC
+                    if (db_in->block[curblock_in].header.mcnt < start_mcnt) {
+
+                        // If we get here, then there is a bug since the net thread shouldn't
+                        // mark blocks as filled that are before the starting mcnt
+                        // fprintf(stderr, "COR: Unable to start yet... waiting for mcnt = %lld\n", (long long int)start_mcnt);
+
+                        // starting mcnt not yet reached
+                        // free block and continue
+                        flag_gpu_pfb_output_databuf_set_free(db_in, curblock_in);
+                        curblock_in = (curblock_in + 1) % db_in->header.n_block;
+                        continue;
+                    }
+                    else if (db_in->block[curblock_in].header.mcnt == start_mcnt) {
+                        // set correlator integrator to "on"
+                        #if VERBOSE
+                            fprintf(stderr, "COR: Starting correlator!\n");
+                        #endif
+                        strcpy(integ_status, "on");
+                        float requested_integration_time = 0.0;
+                        float actual_integration_time = 0.0;
+                        hashpipe_status_lock_safe(&st);
+                        hputs(st.buf, "INTSTAT", integ_status);
+                        hgetr4(st.buf, "REQSTI", &requested_integration_time);
+                        hashpipe_status_unlock_safe(&st);
+
+                        int_count = ceil((N_MCNT_PER_SECOND / Nm) * requested_integration_time);
+                        actual_integration_time = int_count/(N_MCNT_PER_SECOND / Nm);
+
+                        hashpipe_status_lock_safe(&st);
+                        hputr4(st.buf, "ACTSTI", actual_integration_time);
+                        hputi4(st.buf, "INTCOUNT", int_count);
+                        hashpipe_status_unlock_safe(&st);
+
+                        // Compute last mcount
+                        last_mcnt = start_mcnt + int_count*Nm - 1;
+                    }
+                    else {
+                        // fprintf(stdout, "COR: We missed the start of the integration\n");
+                        fprintf(stdout, "COR: Missed start. Expected start_mcnt = %lld, got %lld\n", (long long int)start_mcnt, (long long int)db_in->block[curblock_in].header.mcnt);
+                        // we apparently missed the start of the integation... ouch...
+                    }
+                }
+
+                // Check to see if a stop is issued
+                if (strcmp(integ_status, "stop") == 0) {
+                    continue;
+                }
+
+                // If we get here, then integ_status == "on"
+                // Setup for current chunk
+                context.input_offset  = curblock_in  * sizeof(flag_gpu_pfb_output_block_t) / sizeof(ComplexInput);
+                context.output_offset = curblock_out * sizeof(flag_pfb_gpu_correlator_output_block_t) / sizeof(Complex);
+        
+                int doDump = 0;
+                if ((db_in->block[curblock_in].header.mcnt + Nm - 1) >= last_mcnt) {
+                    doDump = 1;
+
+                    #if VERBOSE
+                    printf("COR: Setting dump\n\t last_mcnt=%lld\n\t int_count=%d\n\t rx_mcnt=%lld\n\t Nm=%d\n",
+                                    (long long int)last_mcnt,
+                                    int_count,
+                                    (long long int)(db_in->block[curblock_in].header.mcnt),
+                                    Nm);
+                    #endif
+
+                    // Wait for new output block to be free
+                    while ((rv=flag_pfb_gpu_correlator_output_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
+                        if (rv==HASHPIPE_TIMEOUT) {
+
+                            continue;
+                        } else {
+                            hashpipe_error(__FUNCTION__, "error waiting for free databuf");
+                            // fprintf(stderr, "rv = %d\n", rv);
+                            pthread_exit(NULL);
+                            break;
+                        }
+                    }
+                }
+       
+                #if VERBOSE==1
+                    printf("COR: Running xgpuCudaXengine now...\n");
+                #endif
+                xgpuCudaXengine(&context, doDump ? SYNCOP_DUMP : SYNCOP_SYNC_TRANSFER);
+                #if VERBOSE==1
+                    printf("COR: Done!\n");
+                #endif
+           
+                #if VERBOSE==1 
+                    printf("COR: doDump = %d\n", doDump);
+                    printf("COR: start_mcnt = %lld, last_mcnt = %lld\n", (long long int)start_mcnt, (long long int)last_mcnt);
+                #endif
+
+                if (doDump) {
+                    xgpuClearDeviceIntegrationBuffer(&context);
+                    //xgpuReorderMatrix((Complex *)db_out->block[curblock_out].data);
+                    db_out->block[curblock_out].header.mcnt = start_mcnt;
+                    db_out->block[curblock_out].header.good_data = good_data;
+                    //printf("COR: Dumping correlator output with mcnt %lld\n", (long long int) start_mcnt);
+                
+                    // Mark output block as full and advance
+                    #if VERBOSE==1
+                    printf("COR: Marking output block %d as filled, mcnt=%lld\n", curblock_out, (long long int)start_mcnt);
+                    #endif
+                    flag_pfb_gpu_correlator_output_databuf_set_filled(db_out, curblock_out);
+                    curblock_out = (curblock_out + 1) % db_out->header.n_block;
+                    start_mcnt = last_mcnt + 1;
+                    last_mcnt = start_mcnt + int_count*Nm - 1;
+                    // Reset good_data flag for next block
+                    good_data = 1;
+                }
+
+                #if VERBOSE==1
+                printf("COR: Marking input block %d as free\n", curblock_in);
                 #endif
                 flag_gpu_pfb_output_databuf_set_free(db_in, curblock_in);
                 curblock_in = (curblock_in + 1) % db_in->header.n_block;
-                good_data = 1;
-                continue;
             }
-
-            // If the correlator integrator status is "start,"
-            // Get the correlator started
-            // The INTSTAT string is set to "start" by the net thread once it's up and running
-            if (strcmp(integ_status, "start") == 0) {
-
-	        // Get the starting mcnt for integration (should be zero)
-                hashpipe_status_lock_safe(&st);
-                hgeti4(st.buf, "NETMCNT", (int *)(&start_mcnt));
-                hashpipe_status_unlock_safe(&st); 
-
-                // Check to see if block's starting mcnt matches INTSYNC
-                if (db_in->block[curblock_in].header.mcnt < start_mcnt) {
-
-		    // If we get here, then there is a bug since the net thread shouldn't
-		    // mark blocks as filled that are before the starting mcnt
-                    // fprintf(stderr, "COR: Unable to start yet... waiting for mcnt = %lld\n", (long long int)start_mcnt);
-
-                    // starting mcnt not yet reached
-                    // free block and continue
-                    flag_gpu_pfb_output_databuf_set_free(db_in, curblock_in);
-                    curblock_in = (curblock_in + 1) % db_in->header.n_block;
-                    continue;
-                }
-                else if (db_in->block[curblock_in].header.mcnt == start_mcnt) {
-                    // set correlator integrator to "on"
-                    #if VERBOSE==1
-                        fprintf(stderr, "COR: Starting correlator!\n");
-                    #endif
-                    strcpy(integ_status, "on");
-                    float requested_integration_time = 0.0;
-                    float actual_integration_time = 0.0;
-                    hashpipe_status_lock_safe(&st);
-                    hputs(st.buf, "INTSTAT", integ_status);
-                    hgetr4(st.buf, "REQSTI", &requested_integration_time);
-                    hashpipe_status_unlock_safe(&st);
-
-                    int_count = ceil((N_MCNT_PER_SECOND / Nm) * requested_integration_time);
-                    actual_integration_time = int_count/(N_MCNT_PER_SECOND / Nm);
-
-                    hashpipe_status_lock_safe(&st);
-                    hputr4(st.buf, "ACTSTI", actual_integration_time);
-                    hputi4(st.buf, "INTCOUNT", int_count);
-                    hashpipe_status_unlock_safe(&st);
-
-                    // Compute last mcount
-                    last_mcnt = start_mcnt + int_count*Nm - 1;
-                }
-                else {
-                    // fprintf(stdout, "COR: We missed the start of the integration\n");
-		    fprintf(stdout, "COR: Missed start. Expected start_mcnt = %lld, got %lld\n", (long long int)start_mcnt, (long long int)db_in->block[curblock_in].header.mcnt);
-                    // we apparently missed the start of the integation... ouch...
-                }
-            }
-
-	    // Check to see if a stop is issued
-	    if (strcmp(integ_status, "stop") == 0) {
-	        continue;
-	    }
-
-            // If we get here, then integ_status == "on"
-            // Setup for current chunk
-            context.input_offset  = curblock_in  * sizeof(flag_gpu_pfb_output_block_t) / sizeof(ComplexInput);
-            context.output_offset = curblock_out * sizeof(flag_pfb_gpu_correlator_output_block_t) / sizeof(Complex);
-        
-            int doDump = 0;
-            if ((db_in->block[curblock_in].header.mcnt + int_count*Nm - 1) >= last_mcnt) {
-                doDump = 1;
-
-                // Wait for new output block to be free
-                while ((rv=flag_pfb_gpu_correlator_output_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
-                    if (rv==HASHPIPE_TIMEOUT) {
-                        /*
-                        int cleanc;
-                        hashpipe_status_lock_safe(&st);
-                        hgetl(st.buf, "CLEANC", &cleanc);
-                        hgets(st.buf, "NETSTAT", 16, netstat);
-                        hashpipe_status_unlock_safe(&st);
-                        if (cleanc == 0 && strcmp(netstat, "CLEANUP") == 0) {
-                           printf("COR: Cleanup condition met!\n");
-                           next_state = CLEANUP;
-                           break;
-                        }
-                        */
-                        continue;
-                    } else {
-                        hashpipe_error(__FUNCTION__, "error waiting for free databuf");
-                        // fprintf(stderr, "rv = %d\n", rv);
-                        pthread_exit(NULL);
-                        break;
-                    }
-                }
-            }
-       
-            #if VERBOSE==1
-                printf("COR: Running xgpuCudaXengine now...\n");
-            #endif
-            xgpuCudaXengine(&context, doDump ? SYNCOP_DUMP : SYNCOP_SYNC_TRANSFER);
-            #if VERBOSE==1
-                printf("COR: Done!\n");
-            #endif
-       
-            #if VERBOSE==1 
-                printf("COR: doDump = %d\n", doDump);
-                printf("COR: start_mcnt = %lld, last_mcnt = %lld\n", (long long int)start_mcnt, (long long int)last_mcnt);
-            #endif
-
-            if (doDump) {
-                xgpuClearDeviceIntegrationBuffer(&context);
-                //xgpuReorderMatrix((Complex *)db_out->block[curblock_out].data);
-                db_out->block[curblock_out].header.mcnt = start_mcnt;
-                db_out->block[curblock_out].header.good_data = good_data;
-                //printf("COR: Dumping correlator output with mcnt %lld\n", (long long int) start_mcnt);
-            
-
-                // Mark output block as full and advance
-                #if VERBOSE==1
-                printf("COR: Marking output block %d as filled, mcnt=%lld\n", curblock_out, (long long int)start_mcnt);
-                #endif
-                flag_pfb_gpu_correlator_output_databuf_set_filled(db_out, curblock_out);
-                curblock_out = (curblock_out + 1) % db_out->header.n_block;
-                start_mcnt = last_mcnt + 1;
-                last_mcnt = start_mcnt + int_count*Nm - 1;
-                // Reset good_data flag for next block
-                good_data = 1;
-            }
-
-            #if VERBOSE==1
-            printf("COR: Marking input block %d as free\n", curblock_in);
-            #endif
-            flag_gpu_pfb_output_databuf_set_free(db_in, curblock_in);
-            curblock_in = (curblock_in + 1) % db_in->header.n_block;
-        }
         }
         else if (cur_state == CLEANUP) {
-            printf("COR: In Cleanup\n");
-            next_state = ACQUIRE;
-            // Set interntal integ_status to start
-            hashpipe_status_lock_safe(&st);
-            hputs(st.buf, "INTSTAT", "start");
-            hashpipe_status_unlock_safe(&st);
-            strcpy(integ_status, "start");
+            
+            if (VERBOSE) {
+                printf("COR: In Cleanup\n");
+            }
 
-            // Clear out integration buffer on GPU
-            xgpuClearDeviceIntegrationBuffer(&context);
-            curblock_in = 0;
-            curblock_out = 0;
-            //start_mcnt = 0;
-            //last_mcnt = 0;
-            good_data = 1;
             hashpipe_status_lock_safe(&st);
-            hputl(st.buf, "CLEANC", 1);
+            hgets(st.buf, "NETSTAT", 16, netstat);
             hashpipe_status_unlock_safe(&st);
+
+            if (strcmp(netstat, "IDLE") == 0) {
+                next_state = ACQUIRE;
+                flag_databuf_clear((hashpipe_databuf_t *) db_out);
+                printf("COR: Finished CLEANUP, clearing output databuf and returning to ACQUIRE\n");   
+
+            } else {
+                next_state = CLEANUP;
+
+                // Set interntal integ_status to start
+                hashpipe_status_lock_safe(&st);
+                hputs(st.buf, "INTSTAT", "start");
+                hashpipe_status_unlock_safe(&st);
+                strcpy(integ_status, "start");
+
+                // Clear out integration buffer on GPU
+                xgpuClearDeviceIntegrationBuffer(&context);
+                curblock_in = 0;
+                curblock_out = 0;
+                //start_mcnt = 0;
+                //last_mcnt = 0;
+                good_data = 1;
+                hashpipe_status_lock_safe(&st);
+                hputl(st.buf, "CLEANC", 1);
+                hashpipe_status_unlock_safe(&st);
+            }
+            /*
+
+            int hashLocked_in = flag_gpu_pfb_output_databuf_total_status(db_in);
+            int hashLocked_out = flag_pfb_gpu_correlator_output_databuf_total_status(db_out);
+
+            printf("COR: buffer status\n\t db_in tot=%d\n\t db_out tot=%d\n\t", hashLocked_in, hashLocked_out);
+            */
+
         }
         
         // Next state processing

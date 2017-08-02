@@ -52,6 +52,7 @@ static void * run(hashpipe_thread_args_t * args) {
     state next_state = ACQUIRE;
     int traclean = -1;
     char netstat[17];
+
     while (run_threads()) {
 
         // Current state processing
@@ -85,9 +86,11 @@ static void * run(hashpipe_thread_args_t * args) {
                 // Wait for output buffer block to be freed
                 while ((rv=flag_gpu_input_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK && run_threads()) {
                     if (rv == HASHPIPE_TIMEOUT) {
-                        //hashpipe_status_lock_safe(&st);
-                        //hputs(st.buf, status_key, "waiting for free block");
-                        //hashpipe_status_unlock_safe(&st);
+                        if (DEBUG) {
+                            hashpipe_status_lock_safe(&st);
+                            hputs(st.buf, status_key, "waiting for free block");
+                            hashpipe_status_unlock_safe(&st);
+                        }
                         continue;
                     }
                     else {
@@ -98,13 +101,15 @@ static void * run(hashpipe_thread_args_t * args) {
                 }
                 if (!run_threads());
 
-                // Print out the header information for this block 
-                flag_input_header_t tmp_header;
-                memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_input_header_t));
-                mcnt = tmp_header.mcnt_start;
-                hashpipe_status_lock_safe(&st);
-                hputi4(st.buf, "TRAMCNT", mcnt);
-                hashpipe_status_unlock_safe(&st);
+                if (DEBUG) {
+                    // Print out the header information for this block 
+                    flag_input_header_t tmp_header;
+                    memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_input_header_t));
+                    mcnt = tmp_header.mcnt_start;
+                    hashpipe_status_lock_safe(&st);
+                    hputi4(st.buf, "TRAMCNT", mcnt);
+                    hashpipe_status_unlock_safe(&st);
+                }
                 //printf("TRA: Receiving block %d with starting mcnt = %lld\n", curblock_in, (long long int)mcnt);
 
                 /**********************************************
@@ -142,7 +147,8 @@ static void * run(hashpipe_thread_args_t * args) {
                 /***********************************************
                  * Add header information to output block
                  ***********************************************/
-                db_out->block[curblock_out].header.mcnt = mcnt;
+                //db_out->block[curblock_out].header.mcnt = mcnt;
+                db_out->block[curblock_out].header.mcnt = db_in->block[curblock_in].header.mcnt_start;
                 db_out->block[curblock_out].header.good_data = db_in->block[curblock_in].header.good_data;
     
                 // Set output block to filled
@@ -161,14 +167,30 @@ static void * run(hashpipe_thread_args_t * args) {
             }
         }
         else if (cur_state == CLEANUP) {
-            curblock_in = 0;
-            curblock_out = 0;
-            next_state = ACQUIRE;
-            // Indicate that we have finished cleanup
+
+            if (VERBOSE) {
+                printf("TRA: In Cleanup\n");
+            }
+
             hashpipe_status_lock_safe(&st);
-            hputl(st.buf, "CLEANA", 1);
+            hgets(st.buf, "NETSTAT", 16, netstat);
             hashpipe_status_unlock_safe(&st);
-            printf("TRA: Finished CLEANUP, returning to ACQUIRE\n");
+
+            if (strcmp(netstat, "IDLE") == 0) {
+                next_state = ACQUIRE;
+                flag_databuf_clear((hashpipe_databuf_t *) db_out);
+                printf("TRA: Finished CLEANUP, clearing output databuf and returning to ACQUIRE\n");
+            }
+            else {
+                next_state = CLEANUP;
+
+                curblock_in = 0;
+                curblock_out = 0;
+                // Indicate that we are cleaning up
+                hashpipe_status_lock_safe(&st);
+                hputl(st.buf, "CLEANA", 1);
+                hashpipe_status_unlock_safe(&st);
+            }
         }
 
         // Next state processing
