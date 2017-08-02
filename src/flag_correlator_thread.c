@@ -117,7 +117,7 @@ static void * run(hashpipe_thread_args_t * args) {
             // Print out the header information for this block 
             flag_gpu_input_header_t tmp_header;
             memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_gpu_input_header_t));
-	    //printf("COR: Received block %d, starting mcnt = %lld\n", curblock_in, (long long int)tmp_header.mcnt);
+            //printf("COR: Received block %d, starting mcnt = %lld\n", curblock_in, (long long int)tmp_header.mcnt);
             good_data &= tmp_header.good_data;
             hashpipe_status_lock_safe(&st);
             hputi4(st.buf, "CORMCNT", tmp_header.mcnt);
@@ -151,8 +151,8 @@ static void * run(hashpipe_thread_args_t * args) {
                 // Check to see if block's starting mcnt matches INTSYNC
                 if (db_in->block[curblock_in].header.mcnt < start_mcnt) {
 
-		    // If we get here, then there is a bug since the net thread shouldn't
-		    // mark blocks as filled that are before the starting mcnt
+                    // If we get here, then there is a bug since the net thread shouldn't
+                    // mark blocks as filled that are before the starting mcnt
                     // fprintf(stderr, "COR: Unable to start yet... waiting for mcnt = %lld\n", (long long int)start_mcnt);
 
                     // starting mcnt not yet reached
@@ -163,7 +163,9 @@ static void * run(hashpipe_thread_args_t * args) {
                 }
                 else if (db_in->block[curblock_in].header.mcnt == start_mcnt) {
                     // set correlator integrator to "on"
-                    // fprintf(stderr, "COR: Starting correlator!\n");
+                    #if VERBOSE
+                    fprintf(stderr, "COR: Starting correlator!\n");
+                    #endif
                     strcpy(integ_status, "on");
                     float requested_integration_time = 0.0;
                     float actual_integration_time = 0.0;
@@ -185,7 +187,7 @@ static void * run(hashpipe_thread_args_t * args) {
                 }
                 else {
                     // fprintf(stdout, "COR: We missed the start of the integration\n");
-		    fprintf(stdout, "COR: Missed start. Expected start_mcnt = %lld, got %lld\n", (long long int)start_mcnt, (long long int)db_in->block[curblock_in].header.mcnt);
+                    fprintf(stdout, "COR: Missed start. Expected start_mcnt = %lld, got %lld\n", (long long int)start_mcnt, (long long int)db_in->block[curblock_in].header.mcnt);
                     // we apparently missed the start of the integation... ouch...
                 }
             }
@@ -201,7 +203,15 @@ static void * run(hashpipe_thread_args_t * args) {
             context.output_offset = curblock_out * sizeof(flag_gpu_correlator_output_block_t) / sizeof(Complex);
         
             int doDump = 0;
-            if ((db_in->block[curblock_in].header.mcnt + int_count*Nm - 1) >= last_mcnt) {
+            if ((db_in->block[curblock_in].header.mcnt + Nm - 1) >= last_mcnt) {
+
+                #if VERBOSE
+                printf("COR: Setting dump\n\t last_mcnt=%lld\n\t int_count=%d\n\t rx_mcnt=%lld\n\t Nm=%d\n",
+                                    (long long int)last_mcnt,
+                                    int_count,
+                                    (long long int)(db_in->block[curblock_in].header.mcnt),
+                                    Nm);
+                #endif
                 doDump = 1;
 
                 // Wait for new output block to be free
@@ -259,8 +269,21 @@ static void * run(hashpipe_thread_args_t * args) {
         }
         }
         else if (cur_state == CLEANUP) {
-            printf("COR: In Cleanup\n");
-            next_state = ACQUIRE;
+
+            if (VERBOSE) {
+                printf("COR: In Cleanup\n");
+            }
+
+            hashpipe_status_lock_safe(&st);
+            hgets(st.buf, "NETSTAT", 16, netstat);
+            hashpipe_status_unlock_safe(&st);
+
+            if (strcmp(netstat, "IDLE") == 0) {
+                next_state = ACQUIRE;
+                flag_databuf_clear((hashpipe_databuf_t *) db_out);
+                printf("COR: Finished CLEANUP, clearing output databuf and returning to ACQUIRE\n");
+            }
+            else {
             // Set interntal integ_status to start
             hashpipe_status_lock_safe(&st);
             hputs(st.buf, "INTSTAT", "start");
@@ -277,6 +300,7 @@ static void * run(hashpipe_thread_args_t * args) {
             hashpipe_status_lock_safe(&st);
             hputl(st.buf, "CLEANB", 1);
             hashpipe_status_unlock_safe(&st);
+            }
         }
         
         // Next state processing

@@ -8,8 +8,9 @@
 #include "pfb.h"
 #include "config.h"
 
-#define VERBOSE 0 
+#define VERBOSE 0
 #define SAVE 0
+#define DEBUG 0
 
 // Total number of antennas (nominally 40)
 #define N_INPUTS 64
@@ -162,7 +163,7 @@ typedef uint8_t hashpipe_databuf_cache_alignment[
  * It is the input buffer of the flag_transpose_thread.
  */
 
-#define N_INPUT_BLOCKS 100
+#define N_INPUT_BLOCKS 4 //50
 
 // A typedef for a block header
 typedef struct flag_input_header {
@@ -398,6 +399,9 @@ int flag_pfb_gpu_input_databuf_wait_free   (flag_pfb_gpu_input_databuf_t * d, in
 int flag_pfb_gpu_input_databuf_wait_filled (flag_pfb_gpu_input_databuf_t * d, int block_id);
 int flag_pfb_gpu_input_databuf_set_free    (flag_pfb_gpu_input_databuf_t * d, int block_id);
 int flag_pfb_gpu_input_databuf_set_filled  (flag_pfb_gpu_input_databuf_t * d, int block_id);
+void flag_pfb_gpu_input_databuf_clear(flag_pfb_gpu_input_databuf_t * d);
+
+void flag_databuf_clear(hashpipe_databuf_t * d);
 
 /********************
  * GPU Output Buffer Functions
@@ -436,6 +440,7 @@ int flag_gpu_pfb_output_databuf_wait_free   (flag_gpu_pfb_output_databuf_t * d, 
 int flag_gpu_pfb_output_databuf_wait_filled (flag_gpu_pfb_output_databuf_t * d, int block_id);
 int flag_gpu_pfb_output_databuf_set_free    (flag_gpu_pfb_output_databuf_t * d, int block_id);
 int flag_gpu_pfb_output_databuf_set_filled  (flag_gpu_pfb_output_databuf_t * d, int block_id);
+void flag_gpu_pfb_output_databuf_clear(flag_gpu_pfb_output_databuf_t* d);
 
 hashpipe_databuf_t * flag_gpu_power_output_databuf_create(int instance_id, int databuf_id);
 
@@ -443,6 +448,15 @@ int flag_gpu_power_output_databuf_wait_free   (flag_gpu_power_output_databuf_t *
 int flag_gpu_power_output_databuf_wait_filled (flag_gpu_power_output_databuf_t * d, int block_id);
 int flag_gpu_power_output_databuf_set_free    (flag_gpu_power_output_databuf_t * d, int block_id);
 int flag_gpu_power_output_databuf_set_filled  (flag_gpu_power_output_databuf_t * d, int block_id);
+
+// overloaded helper methods
+int flag_pfb_gpu_correlator_output_databuf_total_status (flag_pfb_gpu_correlator_output_databuf_t * d);
+int flag_gpu_pfb_output_databuf_total_status (flag_gpu_pfb_output_databuf_t * d);
+
+int flag_pfb_gpu_input_databuf_total_status(flag_pfb_gpu_input_databuf_t * d);
+int flag_gpu_correlator_output_databuf_total_status(flag_gpu_correlator_output_databuf_t * d);
+
+int flag_input_databuf_total_status(flag_input_databuf_t * d);
 
 #endif
 

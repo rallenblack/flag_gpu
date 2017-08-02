@@ -94,17 +94,16 @@ static void * run(hashpipe_thread_args_t * args) {
 
     state cur_state = ACQUIRE;
     state next_state = ACQUIRE;
-    int64_t good_data = 1;
-    char weight_flag[8];
+
+    int weight_flag;
     char netstat[17];
     char weight_file[17];
 
     // Indicate in shared memory buffer that this thread is ready to start
     hashpipe_status_lock_safe(&st);
-    hputi4(st.buf, "CORREADY", 1);
+    hputi4(st.buf, "RBFREADY", 1);
     hashpipe_status_unlock_safe(&st);
     
-    int check_count = 0;
     // Main loop for thread
     while (run_threads()) {
         
@@ -117,26 +116,23 @@ static void * run(hashpipe_thread_args_t * args) {
                     hashpipe_status_lock_safe(&st);
                     hgetl(st.buf, "CLEANB", &cleanb);
                     hgets(st.buf, "NETSTAT", 16, netstat);
-                    hgets(st.buf, "WFLAG", 8, weight_flag);
+                    hgetl(st.buf, "WFLAG", &weight_flag);
                     hashpipe_status_unlock_safe(&st);
                     if (cleanb == 0 && strcmp(netstat, "CLEANUP") == 0) {
                         next_state = CLEANUP;
-                        printf("BF: Entering CLEANUP state\n");
                         break;
                     }
-                    if (strcmp(weight_flag,"1") == 0){
+                    if(weight_flag) {
                         hashpipe_status_lock_safe(&st);
                         hgets(st.buf,"BWEIFILE",16,weight_file);
                         hashpipe_status_unlock_safe(&st);
 
                         sprintf(w_dir, "%s\%s", weightdir, weight_file);
-                        printf("BF: Weight file name: %s\n", w_dir);
+                        printf("RTBF: Weight file name: %s\n", w_dir);
                         
-
-                        printf("RTB: Initializing beamformer weights...\n");
-                        // update_weights(weight_file);
+                        printf("RTBF: Initializing beamformer weights...\n");
                         update_weights(w_dir);
-                        printf("RTB: Finished updating weights...\n");
+                        printf("RTBF: Finished updating weights...\n");
                         // Put metadata into status shared memory
                         float offsets[BN_BEAM];
                         char cal_filename[65];
@@ -169,10 +165,7 @@ static void * run(hashpipe_thread_args_t * args) {
                         hputs(st.buf, "BALGORIT", algorithm);
                         hputs(st.buf, "BWFILE", weight_filename);
                         hgeti4(st.buf, "XID", &act_xid);
-                        hashpipe_status_unlock_safe(&st);
-                         
-                        hashpipe_status_lock_safe(&st);
-                        hputs(st.buf,"WFLAG","0");
+                        hputl(st.buf,"WFLAG",0);
                         hashpipe_status_unlock_safe(&st); 
                     }
                 }
@@ -186,71 +179,78 @@ static void * run(hashpipe_thread_args_t * args) {
 
             // If CLEANUP, don't continue processing
             if (next_state != CLEANUP) {
-                
 
-		    // Print out the header information for this block 
-		    flag_gpu_input_header_t tmp_header;
-		    memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_gpu_input_header_t));
-		    good_data = tmp_header.good_data;
+                if (DEBUG) {
+                    // Print out the header information for this block 
+                    flag_gpu_input_header_t tmp_header;
+                    memcpy(&tmp_header, &db_in->block[curblock_in].header, sizeof(flag_gpu_input_header_t));
+                    hashpipe_status_lock_safe(&st);
+                    hputi4(st.buf, "BEAMMCNT", tmp_header.mcnt);
+                    hashpipe_status_unlock_safe(&st);
+                }
 
-		    hashpipe_status_lock_safe(&st);
-		    hputi4(st.buf, "BEAMMCNT", tmp_header.mcnt);
-		    hashpipe_status_unlock_safe(&st);
-
-		    // Wait for output block to become free
-		    while ((rv=flag_gpu_beamformer_output_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
-		        if (rv==HASHPIPE_TIMEOUT) {
-		            continue;
-		        } else {
-		            hashpipe_error(__FUNCTION__, "error waiting for free databuf");
-		            fprintf(stderr, "rv = %d\n", rv);
-		            pthread_exit(NULL);
-		            break;
-		        }
-		    }
+                // Wait for output block to become free
+                while ((rv=flag_gpu_beamformer_output_databuf_wait_free(db_out, curblock_out)) != HASHPIPE_OK) {
+                    if (rv==HASHPIPE_TIMEOUT) {
+                        continue;
+                    } else {
+                        hashpipe_error(__FUNCTION__, "error waiting for free databuf");
+                        fprintf(stderr, "rv = %d\n", rv);
+                        pthread_exit(NULL);
+                        break;
+                    }
+                }
 		   
-		    // Run the beamformer
-            struct timeval tval_before, tval_after, tval_result;
-            gettimeofday(&tval_before, NULL);
-		    run_beamformer((signed char *)&db_in->block[curblock_in].data, (float *)&db_out->block[curblock_out].data);
-            gettimeofday(&tval_after, NULL);
-            timersub(&tval_after, &tval_before, &tval_result);
-            if ((float) tval_result.tv_usec/1000 > 13) {
-                printf("RTBF: Warning!!!!!!!!! Time = %f ms\n", (float) tval_result.tv_usec/1000);
+                // Run the beamformer
+                struct timeval tval_before, tval_after, tval_result;
+                gettimeofday(&tval_before, NULL);
+                run_beamformer((signed char *)&db_in->block[curblock_in].data, (float *)&db_out->block[curblock_out].data);
+                gettimeofday(&tval_after, NULL);
+                timersub(&tval_after, &tval_before, &tval_result);
+                if ((float) tval_result.tv_usec/1000 > 13) {
+                    printf("RTBF: Warning!!!!!!!!! Time = %f ms\n", (float) tval_result.tv_usec/1000);
+                }
+           
+                // Get block's starting mcnt for output block
+                db_out->block[curblock_out].header.mcnt = db_in->block[curblock_in].header.mcnt;
+                db_out->block[curblock_out].header.good_data = db_in->block[curblock_in].header.good_data;		        
+
+                if (VERBOSE) {
+                    printf("BF: Setting block %d, mcnt %lld as filled\n", curblock_out, (long long int)db_out->block[curblock_out].header.mcnt);
+                }
+                // Mark output block as full and advance
+                flag_gpu_beamformer_output_databuf_set_filled(db_out, curblock_out);
+                curblock_out = (curblock_out + 1) % db_out->header.n_block;
+                start_mcnt = last_mcnt + 1;
+                last_mcnt = start_mcnt + Nm - 1;
+		    
+                // Mark input block as free
+                flag_gpu_input_databuf_set_free(db_in, curblock_in);
+                curblock_in = (curblock_in + 1) % db_in->header.n_block;
             }
 
-		    check_count++;
-		   // if(check_count == 1000){
-		   // }
-			// Get block's starting mcnt for output block
-		    db_out->block[curblock_out].header.mcnt = tmp_header.mcnt;
-		    db_out->block[curblock_out].header.good_data = good_data;
-            //printf("BF: good_data = %lld\n", (long long int)good_data);
-		        
-		    // Mark output block as full and advance
-		    #if VERBOSE==1
-		        printf("BF: Setting block %d, mcnt %lld as filled\n", curblock_out, (long long int)tmp_header.mcnt);
-		    #endif
-		    flag_gpu_beamformer_output_databuf_set_filled(db_out, curblock_out);
-		    curblock_out = (curblock_out + 1) % db_out->header.n_block;
-		    start_mcnt = last_mcnt + 1;
-		    last_mcnt = start_mcnt + Nm - 1;
-		    
-		    // Mark input block as free
-		    flag_gpu_input_databuf_set_free(db_in, curblock_in);
-		    curblock_in = (curblock_in + 1) % db_in->header.n_block;
-		}
-	}
-	else if (cur_state == CLEANUP) {
-	    next_state = ACQUIRE;
-	    curblock_in = 0;
-	    curblock_out = 0;
-	    hashpipe_status_lock_safe(&st);
-	    hputl(st.buf, "CLEANB",1);
-	    hashpipe_status_unlock_safe(&st);
-	    printf("RTBF: Finished CLEANUP, returning to ACQUIRE\n");
-	}
+        } else if (cur_state == CLEANUP) {
+            if (VERBOSE) {
+                printf("RTBF: In Cleanup\n");
+            }
 
+            hashpipe_status_lock_safe(&st);
+            hgets(st.buf, "NETSTAT", 16, netstat);
+            hashpipe_status_unlock_safe(&st);
+
+            if (strcmp(netstat, "IDLE") == 0) {
+                next_state = ACQUIRE;
+                flag_databuf_clear((hashpipe_databuf_t *) db_out);
+                printf("RTBF: Finished CLEANUP, clearing output databuf and returning to ACQUIRE\n");
+            } else {
+                next_state = CLEANUP;
+                curblock_in = 0;
+                curblock_out = 0;
+                hashpipe_status_lock_safe(&st);
+                hputl(st.buf, "CLEANB",1);
+                hashpipe_status_unlock_safe(&st);
+            }
+        }
 
         // Next state processing
         hashpipe_status_lock_safe(&st);

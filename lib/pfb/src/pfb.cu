@@ -117,11 +117,17 @@ int runPFB(signed char* inputData_h, float* outputData_h, params pfbParams) {
 
 	int outDataSize = countFFT * g_iNumSubBands * g_iNFFT;
 	//CUDASafeCallWithCleanUp(cudaMemcpy(outputData_h, fftOutPtr, outDataSize*sizeof(cufftComplex), cudaMemcpyDeviceToHost));
-	//printf("making sure new build...\n");
 	CUDASafeCallWithCleanUp(cudaMemcpy(outputData_h, g_pf2FFTOut_d, outDataSize*sizeof(cufftComplex), cudaMemcpyDeviceToHost));
 
 	return iRet;
 
+}
+
+void flushBuffer(params pfbParams) {
+
+	int start = pfbParams.fine_channels*pfbParams.elements*pfbParams.nfft*pfbParams.taps;
+	CUDASafeCallWithCleanUp(cudaMemset((void *)   g_pc2Data_d, 0, start*2*sizeof(char)));
+	return;
 }
 
 // return true or false upon successful setup.

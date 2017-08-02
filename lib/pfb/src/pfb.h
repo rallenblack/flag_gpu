@@ -16,7 +16,7 @@
 
 #define FALSE 					0
 #define TRUE  					1
-#define DEBUG					1
+//#define DEBUG					1
 
 #define DEF_CUDA_DEVICE			0
 
@@ -56,5 +56,6 @@ int runPFB(signed char* inputData_h, float* outputData_h, params pfbParams);
 int doFFT();
 int resetDevice(void);
 void cleanUp(void);
+void flushBuffer(params pfbParams);
 
 #endif
