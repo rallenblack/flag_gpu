@@ -9,11 +9,7 @@ else
 fi
 
 # Change this to match your destination directory
-<<<<<<< Updated upstream
-prefix=/home/groups/flag/hash/
-=======
 prefix=/home/groups/flag/hash
->>>>>>> Stashed changes
 
 # Add prefix to PATH
 if [[ "$PATH" == ?(*:)"$prefix/bin"?(:*) ]]
