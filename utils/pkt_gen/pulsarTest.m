@@ -14,10 +14,17 @@ Ntime = 4000;
 % time samples.
 D = 10; % DM; 10 with these parameters gives a fairly fast pulsar
 freq = (0:499)*(303e3) + 1300e6; % All frequencies
-fo = freq(floor(length(freq)/2)); % Center frequency
-m_D = 4.1488e3*((fo^-2)-(freq.^-2))*D; % Frequency dependent timing offset
-tau = -2.8e-14:((2.5e-14)+(2.8e-14))/(Ntime-1):2.5e-14; % Range of timing offsets
-% tau = -3e-14:(max(m_D)+3e-14)/(Nbins-1):max(m_D); % Range of timing offsets
+% fo = freq(floor(length(freq)/2)); % Center frequency
+% tau = 4.1488e-3*((fo^-2)-(freq.^-2))*D; % Frequency dependent timing offset
+% t = -2.8e-20:((2.5e-20)+(2.8e-20))/(Ntime-1):2.5e-20; % Range of timing offsets
+tau = zeros(size(freq));
+for k = 1:length(freq)
+    if (k-1) ~= 0
+        tau(k-1) = 4.1488e-3*((freq(k-1)^-2)-(freq(k)^-2))*D;
+    end
+end
+tau(end) = 4.1488e-3*((freq(end-1)^-2)-(freq(end)^-2))*D;
+t = 5e-24:((10e-23)-(5e-24))/(Ntime-1):10e-23; % Range of timing offsets
 pulseData = zeros(Ninputs, Nbins, Ntime);
 % Noisy environment
 for ii = 1:size(pulseData,3)
@@ -39,14 +46,18 @@ end
 % end
 
 % Pulsar
-pulse = 1;
-for cyc = [0, -1000, 1000]
+pulse = 100;
+for cyc = [0]
     for m = 1:Ninputs
         for k = 1:Nbins
-            tmp = abs(m_D(k)-tau);
-            [~,idx] = min(tmp);
-            phi = m*2*pi*freq(k)*tau(idx+cyc);
-            pulseData(m,k,idx+cyc) = pulse*exp(1j*phi) + 0.1*(randn(1) + 1j*randn(1));
+%             tmp = abs(t - tau(k));
+%             [~,idx] = min(tmp);
+%             phi = m*2*pi*freq(k)*t(idx+cyc);
+%             pulseData(m,k,idx+cyc) = pulse*exp(1j*phi) + pulseData(m,k,idx+cyc); % 0.1*(randn(1) + 1j*randn(1));
+            [tmp,idx] = min(abs(t - tau(k)));
+            phi = m*2*pi*freq(k)*t(idx+cyc);
+            noise = pulseData(m,k,idx+cyc);
+            pulseData(m,k,idx+cyc) = pulse*exp(1j*phi) + noise; % 0.1*(randn(1) + 1j*randn(1));
         end
     end
 end
@@ -65,3 +76,30 @@ end
 figure(1); 
 imagesc(squeeze(abs(pulseData(20,:,:))));
 % imagesc(abs(exp(1j*phi)));
+
+wei = ones(40,500,14);
+bf_data = zeros(4000,500,14);
+for b = 1:14
+    for f = 1:500
+        w = wei(:,f,b);
+        xn = squeeze(pulseData(:,f,:));
+        bf_data(:,f,b) = w'*xn;
+    end
+end
+
+bf_sti = zeros(100,25,14);
+for k = 1:100
+    bf_sti(k,:,:) = mean(bf_data(1+(k-1)*40:k*40,1:25,:),1);
+end
+
+figure(2);
+imagesc(10*log10(abs(bf_data(:,:,6))).');
+title('Simulated pulsar output (500 bins)');
+ylabel('Frequency bin index');
+xlabel('Time samples')
+
+figure(3);
+imagesc(10*log10(abs(bf_sti(:,:,6))).');
+title('Simulated pulsar STI output (25 bins)');
+ylabel('Frequency bin index');
+xlabel('Time samples')

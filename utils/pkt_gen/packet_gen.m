@@ -144,8 +144,8 @@ CEN_N = 4000;
 CEN = CEN_Asqr/sqrt(2)*(randn(Ninputs, CEN_N) + 1j*randn(Ninputs, CEN_N));
 
 CEN_R = 1/CEN_N*(CEN*CEN');
-figure(99);
-imagesc(abs(CEN_R));
+% figure(99);
+% imagesc(abs(CEN_R));
 
 c_max = 4;
 c_min = -4;
@@ -159,10 +159,19 @@ CEN_imag = int8(((imag(CEN) - c_min)/(c_max - c_min) - 0.5) * 256);
 % time samples.
 D = 10; % Dispersion measure 
 freq = (0:499)*(303e3) + 1300e6; % All frequencies
-fo = freq(floor(length(freq)/2)); % Center frequency
-m_D = 4.1488e3*((fo^-2)-(freq.^-2))*D; % Frequency dependent timing offset
+% fo = freq(floor(length(freq)/2)); % Center frequency
+% m_D = 4.1488e3*((fo^-2)-(freq.^-2))*D; % Frequency dependent timing offset
+% Ntime = 4000;
+% tau = -2.8e-14:((2.5e-14)+(2.8e-14))/(Ntime-1):2.5e-14; % Range of timing offsets
 Ntime = 4000;
-tau = -2.8e-14:((2.5e-14)+(2.8e-14))/(Ntime-1):2.5e-14; % Range of timing offsets
+tau = zeros(size(freq));
+for k = 1:length(freq)
+    if (k-1) ~= 0
+        tau(k-1) = 4.1488e-3*((freq(k-1)^-2)-(freq(k)^-2))*D;
+    end
+end
+tau(end) = 4.1488e-3*((freq(end-1)^-2)-(freq(end)^-2))*D;
+t = 5e-24:((10e-23)-(5e-24))/(Ntime-1):10e-23; % Range of timing offsets
 pulseData = zeros(Ninputs, Nbins, Ntime);
 % Noisy environment
 for ii = 1:size(pulseData,3)
@@ -172,14 +181,20 @@ for ii = 1:size(pulseData,3)
 end
 
 % Pulsar
-pulse = 1;
+pulse = 100;
 for cyc = [0] % [0, -1000, 1000]
     for m = 1:Ninputs
         for k = 1:Nbins
-            tmp = abs(m_D(k)-tau);
-            [~,idx] = min(tmp);
-            phi = m*2*pi*freq(k)*tau(idx+cyc);
-            pulseData(m,k,idx+cyc) = pulse*exp(1j*phi) + 0.1*(randn(1) + 1j*rand(1));
+%             tmp = abs(m_D(k)-tau);
+%             [~,idx] = min(tmp);
+%             phi = m*2*pi*freq(k)*tau(idx+cyc);
+%             pulseData(m,k,idx+cyc) = pulse*exp(1j*phi) + pulseData(m,k,idx+cyc); % 0.1*(randn(1) + 1j*rand(1));
+            
+            [tmp,idx] = min(abs(t - tau(k)));
+            phi = m*2*pi*freq(k)*t(idx+cyc);
+            noise = pulseData(m,k,idx+cyc);
+            pulseData(m,k,idx+cyc) = pulse*exp(1j*phi) + noise; % 0.1*(randn(1) + 1j*randn(1));
+
         end
     end
 end
@@ -203,9 +218,9 @@ for xid = 1:Nxengines
     if xid == 4
         remoteHost = '10.17.16.203'; % It was 208 before
     end
-    if xid == 12
-        remoteHost = '10.17.16.211'; % It was 208 before
-    end
+%     if xid == 12
+%         remoteHost = '10.17.16.211'; % It was 208 before
+%     end
     %if xid == 14
     %    remoteHost = '10.10.1.1';
     %end
@@ -219,7 +234,7 @@ end
 mcnt = 0; % Each mcnt represents 20 packets across all F-engines in the
           % same time frame
   
-for mcnt = [0:401] %while mcnt <= 10000
+for mcnt = [0:401,600,800] %while mcnt <= 10000
     disp(['Sending mcnt = ', num2str(mcnt)]);
     for xid = [1:4] % Set to a single X-engine for single HPC testing (Richard B.)
         for fid = 1:Nfengines

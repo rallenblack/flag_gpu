@@ -52,7 +52,8 @@ PFB_FLAGS=
 FRB_FLAGS =
 X_FLAGS =
 
-NVCCFLAGS += $(DEBUG) -arch=$(CUDA_ARCH) -Xptxas -abi=no --ptxas-options=-v -prec-sqrt=false -Xcompiler -fPIC 
+NVCCFLAGS += $(DEBUG) -Xcompiler -fPIC 
+#NVCCFLAGS += $(DEBUG) -arch=$(CUDA_ARCH) -Xptxas -abi=no --ptxas-options=-v -prec-sqrt=false -Xcompiler -fPIC 
 NVCCFLAGS += -DTEXTURE_DIM=$(TEXTURE_DIM)
 
 ifeq ($(strip $(CUDA_ARCH)),sm_35)
