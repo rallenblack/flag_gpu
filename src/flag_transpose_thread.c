@@ -182,7 +182,7 @@ static void * run(hashpipe_thread_args_t * args) {
                 printf("TRA: Finished CLEANUP, clearing output databuf and returning to ACQUIRE\n");
             }
             else {
-                next_state = CLEANUP;
+                next_state = ACQUIRE;
 
                 curblock_in = 0;
                 curblock_out = 0;

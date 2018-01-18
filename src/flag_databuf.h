@@ -8,9 +8,9 @@
 #include "pfb.h"
 #include "config.h"
 
-#define VERBOSE 0
+#define VERBOSE 1
 #define SAVE 0
-#define DEBUG 0
+#define DEBUG 1
 
 // Total number of antennas (nominally 40)
 #define N_INPUTS 64
