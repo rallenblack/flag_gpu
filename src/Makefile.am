@@ -42,15 +42,15 @@ flag_x_threads = flag_net_thread.c \
                  flag_corsave_thread.c
 
 # CPU Transpose
-#flag_b_threads = flag_net_thread.c \
-#                 flag_transpose_thread.c \
-#                 flag_beamform_thread.c \
-#                 flag_beamsave_thread.c
+flag_b_threads = flag_net_thread.c \
+                 flag_transpose_thread.c \
+                 flag_beamform_thread.c \
+                 flag_beamsave_thread.c
 
 # GPU Transpose
-flag_b_threads = flag_net_thread.c \
-                 flag_transpose_beamform_thread.c \
-                 flag_beamsave_thread.c
+#flag_b_threads = flag_net_thread.c \
+#                 flag_transpose_beamform_thread.c \
+#                 flag_beamsave_thread.c
 
 flag_f_threads = flag_net_thread.c \
                  flag_pfb_transpose_thread.c \

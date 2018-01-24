@@ -8,9 +8,9 @@
 #include "pfb.h"
 #include "config.h"
 
-#define VERBOSE 1
+#define VERBOSE 0
 #define SAVE 0
-#define DEBUG 1
+#define DEBUG 0
 
 // Total number of antennas (nominally 40)
 #define N_INPUTS 64
@@ -163,7 +163,9 @@ typedef uint8_t hashpipe_databuf_cache_alignment[
  * It is the input buffer of the flag_transpose_thread.
  */
 
-#define N_INPUT_BLOCKS 4 //50
+//#define N_INPUT_BLOCKS 4 //50
+//RTBF number of input blocks
+#define N_INPUT_BLOCKS 100 //50
 
 // A typedef for a block header
 typedef struct flag_input_header {
