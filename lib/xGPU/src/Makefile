@@ -52,8 +52,9 @@ PFB_FLAGS=
 FRB_FLAGS =
 X_FLAGS =
 
-NVCCFLAGS += $(DEBUG) -Xcompiler -fPIC 
+# Hack for the JIT problem.
 #NVCCFLAGS += $(DEBUG) -arch=$(CUDA_ARCH) -Xptxas -abi=no --ptxas-options=-v -prec-sqrt=false -Xcompiler -fPIC 
+NVCCFLAGS += $(DEBUG) -Xcompiler -fPIC 
 NVCCFLAGS += -DTEXTURE_DIM=$(TEXTURE_DIM)
 
 ifeq ($(strip $(CUDA_ARCH)),sm_35)
