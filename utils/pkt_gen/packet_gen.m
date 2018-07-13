@@ -9,7 +9,7 @@ delete(u);
 % System Constants
 fs        = 155e6; % Sampling frequency - used for noise level
 Ninputs   = 40;    % Number of inputs/antennas
-Nbins     = 500;   % Total number of frequency bins
+Nbins     = 500;%400;   % Total number of frequency bins
 Nfft      = 512;   % F-engine FFT size
 Nfengines = 5;     % Number of F-engines
 Nxengines = 20;    % Number of X-engines (i.e. Number of GPUs)
@@ -144,8 +144,8 @@ CEN_N = 4000;
 CEN = CEN_Asqr/sqrt(2)*(randn(Ninputs, CEN_N) + 1j*randn(Ninputs, CEN_N));
 
 CEN_R = 1/CEN_N*(CEN*CEN');
-% figure(99);
-% imagesc(abs(CEN_R));
+figure(99);
+imagesc(abs(CEN_R));
 
 c_max = 4;
 c_min = -4;
@@ -201,10 +201,11 @@ end
 
 keyboard;
 
+tic;
 % Create UDP sockets - 1 IP address per Xengine (xid)
 for xid = 1:Nxengines
 
-    remoteHost = ['10.10.1.', num2str(xid)];
+%     remoteHost = ['10.10.1.', num2str(xid)];
 
     if xid == 1
         remoteHost = '10.17.16.200'; % It was 208 before
@@ -234,7 +235,7 @@ end
 mcnt = 0; % Each mcnt represents 20 packets across all F-engines in the
           % same time frame
   
-for mcnt = [0:401,600,800,1000,1200] %while mcnt <= 10000
+for mcnt = [0:401,600,800,1000,1200] % [0:801,1200,1600,2000,2400] % No scalloping fix %while mcnt <= 10000
     disp(['Sending mcnt = ', num2str(mcnt)]);
     for xid = [1:4] % Set to a single X-engine for single HPC testing (Richard B.)
         for fid = 1:Nfengines
@@ -392,3 +393,4 @@ for mcnt = [0:401,600,800,1000,1200] %while mcnt <= 10000
         end
     end
 end
+toc;

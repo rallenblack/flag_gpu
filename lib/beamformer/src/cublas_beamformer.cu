@@ -369,7 +369,7 @@ void data_restructure(signed char * data, cuComplex * data_restruc){
 		in the GPU which would be faster anyway.
 	*/
 
-        /*
+
 	int i = threadIdx.x; 
 	int c = threadIdx.y;
 
@@ -391,8 +391,9 @@ void data_restructure(signed char * data, cuComplex * data_restruc){
 	data_restruc[out_idx].y = data[2*in_idx + 1]*1.0f;
 
 	return;
-        */
-	
+        
+        
+        /*	
 	// Original Code
 	int e = threadIdx.x;
 	int t = blockIdx.x;
@@ -404,7 +405,7 @@ void data_restructure(signed char * data, cuComplex * data_restruc){
 	
 
 	return;
-
+        */
 }
 
 
@@ -501,13 +502,13 @@ void run_beamformer(signed char * data_in, float * data_out) {
 	dim3 gridDim_transpose(Nm, Nf, Nt);
 	dim3 blockDim_transpose(Ni, Nc, 1);
 
-	//signed char* d_tra_data_in = d_data1;
+	signed char* d_tra_data_in = d_data1;
 	//signed char* d_tra_data_out = d_data2;
-	signed char * d_restruct_in = d_data1;
+	//signed char * d_restruct_in = d_data1;
 	cuComplex * d_restruct_out = d_data;
 
-	cudaMemcpy(d_restruct_in, data_in, 2*BN_SAMP*sizeof(signed char), cudaMemcpyHostToDevice);
-	//cudaMemcpy(d_tra_data_in, data_in, 2*BN_SAMP*sizeof(signed char), cudaMemcpyHostToDevice);
+	//cudaMemcpy(d_restruct_in, data_in, 2*BN_SAMP*sizeof(signed char), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_tra_data_in, data_in, 2*BN_SAMP*sizeof(signed char), cudaMemcpyHostToDevice);
 	err_code = cudaGetLastError();
 	if (err_code != cudaSuccess) {
 		printf("RTBF: cudaMemcpy Failed: %s\n", cudaGetErrorString(err_code));
@@ -520,9 +521,9 @@ void run_beamformer(signed char * data_in, float * data_out) {
 	// }
 
 	// Restructure data for cublasCgemmBatched function.
-	//data_restructure<<<gridDim_transpose, blockDim_transpose>>>(d_tra_data_in, d_restruct_out);
+	data_restructure<<<gridDim_transpose, blockDim_transpose>>>(d_tra_data_in, d_restruct_out);
 	//data_restructure<<<gridDim_transpose, blockDim_transpose>>>(d_restruct_in, d_restruct_out);
-	data_restructure<<<dimGrid_d, dimBlock_d>>>(d_restruct_in, d_restruct_out);
+	//data_restructure<<<dimGrid_d, dimBlock_d>>>(d_restruct_in, d_restruct_out);
 	if (err_code != cudaSuccess) {
 		printf("RTBF: CUDA Error (data_restructure): %s\n", cudaGetErrorString(err_code));
 	}

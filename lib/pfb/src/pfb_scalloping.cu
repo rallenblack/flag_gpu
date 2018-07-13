@@ -13,7 +13,6 @@ char2* g_pc2DataRead_d = NULL;
 
 float2* g_pf2FFTIn_d = NULL;
 float2* g_pf2FFTOut_d = NULL;
-float2* g_pf2DiscShift_d = NULL;
 
 float *g_pfPFBCoeff = NULL;
 float *g_pfPFBCoeff_d = NULL;
@@ -86,10 +85,6 @@ int runPFB(signed char* inputData_h, float* outputData_h, params pfbParams) {
 	while(!g_IsProcDone) {
 		//FFT
 		iRet = doFFT();
-                // New Code ///////////////////////////////////
-                Discard_Shift_kernel<<<g_dimGPFB, g_dimBPFB>>>(g_pf2FFTOut_d, g_pf2DiscShift_d);
-               /////////////////////////////////////////////////
-
 		if(iRet != EXIT_SUCCESS) {
 			(void) fprintf(stderr, "ERROR: FFT failed\n");
 			cleanUp();
@@ -101,7 +96,6 @@ int runPFB(signed char* inputData_h, float* outputData_h, params pfbParams) {
 		// step input and output buffers.
 		g_pf2FFTIn_d += g_iNumSubBands * g_iNFFT;
 		g_pf2FFTOut_d += g_iNumSubBands * g_iNFFT;
-                g_pf2DiscShift_d += g_iNumSubBands * (g_iNFFT/2);
 
 		lProcData += g_iNumSubBands * g_iNFFT;
 		if(lProcData >= ltotData - NUM_TAPS*g_iNumSubBands*g_iNFFT){ // >= process 117 ffts leaving 256 time samples, > process 118 ffts leaving 224 time samples.
@@ -120,14 +114,10 @@ int runPFB(signed char* inputData_h, float* outputData_h, params pfbParams) {
 	//wind back in/out ptrs - should put in another pointer as a process read ptr instead of updating the global ptr.
 	g_pf2FFTOut_d = g_pf2FFTOut_d - countFFT*g_iNumSubBands*g_iNFFT;
 	g_pf2FFTIn_d = g_pf2FFTIn_d -countFFT*g_iNumSubBands*g_iNFFT;
-        g_pf2DiscShift_d = g_pf2DiscShift_d - countFFT*g_iNumSubBands*(g_iNFFT/2);
 
-	//int outDataSize = countFFT * g_iNumSubBands * g_iNFFT;
-        // Modified variable outDataSize 1/2 of g_iNFFT due to the discard of half the channels //////
-	int outDataSize = countFFT * g_iNumSubBands * (g_iNFFT/2);
+	int outDataSize = countFFT * g_iNumSubBands * g_iNFFT;
 	//CUDASafeCallWithCleanUp(cudaMemcpy(outputData_h, fftOutPtr, outDataSize*sizeof(cufftComplex), cudaMemcpyDeviceToHost));
-	CUDASafeCallWithCleanUp(cudaMemcpy(outputData_h, g_pf2DiscShift_d, outDataSize*sizeof(cufftComplex), cudaMemcpyDeviceToHost));
-        ////////////////////////////////////////////////////////////////////////////////////////////
+	CUDASafeCallWithCleanUp(cudaMemcpy(outputData_h, g_pf2FFTOut_d, outDataSize*sizeof(cufftComplex), cudaMemcpyDeviceToHost));
 
 	return iRet;
 
@@ -312,20 +302,11 @@ int initPFB(int iCudaDevice, params pfbParams){
 	//int sizeDataBlock_in = g_iNumSubBands * g_iNFFT * sizeof(float2);
 	int sizeDataBlock_in = pfbParams.samples*g_iNumSubBands * sizeof(float2);
 	int sizeTotalDataBlock_out = pfbParams.samples*g_iNumSubBands * sizeof(float2); // output fft array same size as output data for convinence the full size is not used. In the pfb function the output data will be the fft counter times block amount in the fft.
-        // New variables ///////////////////////////////////
-        int g_iNwindows = 125; // with 8000 time samples, but with 4032 samples, Nwindows = 63
-        int sizeTotalDataBlock_disc = (g_iNFFT/2)*g_iNwindows*g_iNumSubBands * sizeof(float2); // Not sure about the value of this yet.
-        //////////////////////////////////////////////////
 	CUDASafeCallWithCleanUp(cudaMalloc((void **) &g_pf2FFTIn_d, sizeDataBlock_in));
 	CUDASafeCallWithCleanUp(cudaMalloc((void **) &g_pf2FFTOut_d, sizeTotalDataBlock_out)); // goal will be to update the output ptr each time it fires.
-        // New Code ////////////////////////////////////////////////////////
-        CUDASafeCallWithCleanUp(cudaMalloc((void **) &g_pf2DiscShift_d, sizeTotalDataBlock_disc)); // Discard and shift array
-        ////////////////////////////////////////////////////////////////////
+
 	CUDASafeCallWithCleanUp(cudaMemset((void *) g_pf2FFTIn_d, 0, sizeDataBlock_in));
 	CUDASafeCallWithCleanUp(cudaMemset((void *) g_pf2FFTOut_d, 0, sizeTotalDataBlock_out));
-        // New Code ////////////////////////////////////////////////////////////
-        CUDASafeCallWithCleanUp(cudaMemset((void *) g_pf2DiscShift_d, 0, sizeTotalDataBlock_disc));
-        ////////////////////////////////////////////////////////////////////////
 
 	// set kernel parameters
 	(void) fprintf(stdout, "\tSetting kernel parameters...\n");
@@ -339,11 +320,8 @@ int initPFB(int iCudaDevice, params pfbParams){
 	g_dimGPFB.x  = (g_iNumSubBands * g_iNFFT) / g_dimBPFB.x;
 	g_dimGCopy.x = (g_iNumSubBands * g_iNFFT) / g_dimBCopy.x;
 
-	g_dimGPFB.y = 125; // with 8000 time samples, but with 4032 samples, g_dimBPFB.y = 63
-	g_dimGCopy.y = 125; // same as g_dimGPFB.y
-
-        // g_dimBPFB.y = 63; // No. of windows given 64 point FFTs and 4000 time samples per block. Since 4000/64=62.5, I need to see whether 32 samples should be discarded.
-        // g_dimGPFB.y = 63; // No. of windows given 64 point FFTs and 4000 time samples per block
+	g_dimGPFB.y = 125;
+	g_dimGCopy.y = 125;
 
 	// map kernel params	
 	mapGSize.x = pfbParams.samples;
@@ -465,10 +443,6 @@ void cleanUp() {
     if (g_pf2FFTOut_d != NULL) {
         (void) cudaFree(g_pf2FFTOut_d);
         g_pf2FFTOut_d = NULL;
-    }
-    if (g_pf2DiscShift_d != NULL) {
-        (void) cudaFree(g_pf2DiscShift_d);
-        g_pf2DiscShift_d = NULL;
     }
 
     free(g_pfPFBCoeff);

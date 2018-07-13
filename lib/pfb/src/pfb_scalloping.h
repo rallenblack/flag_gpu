@@ -21,12 +21,12 @@
 #define DEF_CUDA_DEVICE			0
 
 #define DEF_SIZE_READ			262144	// data block size. should this be set dynamically once I get the data?
-#define DEF_LEN_SPEC			64	// Transform size (previously 32)
+#define DEF_LEN_SPEC			32	// Transform size
 #define NUM_TAPS				8	// PFB Decimation factor
-#define DEF_NUM_CHANNELS		20  // System spec for total number of channels (previously 25)
+#define DEF_NUM_CHANNELS		25  // System spec for total number of channels
 #define PFB_CHANNELS			5	// Number of coarse channels through PFB
 #define DEF_NUM_ELEMENTS		64  // System spec for number of elements
-#define SAMPLES					8000// Time samples. Used to be 4000 with 64 points
+#define SAMPLES					4000// Time samples.
 
 #define PFB_OUTPUT_BLOCK_SIZE	(SAMPLES+3*32)*PFB_CHANNELS*DEF_NUM_ELEMENTS*2 // (3*DEF_LEN_SPEC is to add more samples on the end to make it look like 128 pfb windows had been processed for the pfb correlator)
 
@@ -42,10 +42,6 @@
 #define FILE_COEFF_PREFIX		"coeff"
 #define FILE_COEFF_DATATYPE		"float"
 #define FILE_COEFF_SUFFIX		".dat"
-
-// // Discard channels and perform FFT shift
-// #define recover_idx(pt,i,sb,st)         ((pt+(47*i)) + DEF_LEN_SPEC*(sb) + DEF_LEN_SPEC*DEF_NUM_ELEMENTS*PFB_CHANNELS*(st))
-// #define fftshift_idx(pt,i,sb,st)        ((pt+(17*(1-i))) + DEF_LEN_SPEC*(sb) + DEF_LEN_SPEC*DEF_NUM_ELEMENTS*PFB_CHANNELS*(st))
 
 #define USEC2SEC            1e-6
 

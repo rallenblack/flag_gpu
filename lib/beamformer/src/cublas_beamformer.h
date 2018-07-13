@@ -7,12 +7,12 @@
 #include <math.h>
 
 #define BN_ELE	   38	// Number of elements/antennas in the array
-#define BN_BIN	   25	// Number of frequency bins
-#define BN_TIME	   4000	//40 // Number of decimated time samples
+#define BN_BIN	   20	// 25 // Number of frequency bins
+#define BN_TIME	   8000 // 4000	//40 // Number of decimated time samples
 #define BN_BEAM     14   // Number of beams we are forming
 #define BN_POL     4
 #define BN_BEAM1    (BN_BEAM/2)   // Number of beams we are forming
-#define BN_TIME_STI 40	//40 // Number of decimated time samples per integrated beamformer output
+#define BN_TIME_STI 80	//40 // Number of decimated time samples per integrated beamformer output
 #define BN_STI	   (BN_TIME/BN_TIME_STI) // Number of short time integrations
 #define BN_STI_BLOC 64
 #define BN_ELE_BLOC 64

@@ -10,7 +10,7 @@ import getopt
 import math
 import numpy
 import scipy.signal as sp
-import matplotlib.pyplot as plotter
+#import matplotlib.pyplot as plotter
 
 # function definitions
 def PrintUsage(ProgName):
@@ -142,16 +142,16 @@ FileCoeff = open("coeff_"                                                     \
 if ("signedchar" == DataType):
     FileCoeff.write(PFBCoeffInt8)
     # plot the coefficients
-    if (Plot):
-        plotter.plot(PFBCoeffInt8)
+    #if (Plot):
+    #    plotter.plot(PFBCoeffInt8)
 else:
     FileCoeff.write(PFBCoeffFloat32)
     # plot the coefficients
-    if (Plot):
-        plotter.plot(PFBCoeffFloat32)
+    #if (Plot):
+    #    plotter.plot(PFBCoeffFloat32)
 
 FileCoeff.close()
 
-if (Plot):
-    plotter.show()
+#if (Plot):
+#    plotter.show()
 

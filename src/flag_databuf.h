@@ -64,7 +64,10 @@
 #define N_CHAN_TOTAL 512
 
 // Number of throwaway channels
-#define N_CHAN_THROWAWAY 12
+// Changed variable for scalloping fix /////////////////////////////////
+//#define N_CHAN_THROWAWAY 12
+#define N_CHAN_THROWAWAY 112
+////////////////////////////////////////////////////////////////////////
 
 // Total number of processed channels
 #define N_CHAN (N_CHAN_TOTAL - N_CHAN_THROWAWAY)
@@ -73,7 +76,10 @@
 #define N_CHAN_PER_PACKET (N_CHAN/N_XENGINES)
 
 // Number of channels processed per XGPU instance?
-#define N_CHAN_PER_X 25
+// Changed variable for scalloping fix /////////////////////////////////
+//#define N_CHAN_PER_X 25
+#define N_CHAN_PER_X 20
+///////////////////////////////////////////////////////////////////////
 #if N_CHAN_PER_X!=XGPU_NFREQUENCY
     #warning "N_CHAN_PER_X must match frequency channels needed by xGPU"
 #endif
@@ -85,7 +91,10 @@
 #endif
 
 // Number of time samples processed per XGPU instance
-#define N_TIME_PER_BLOCK 4000
+// Changed variable for scalloping fix /////////////////////////////////
+//#define N_TIME_PER_BLOCK 4000
+#define N_TIME_PER_BLOCK 8000
+////////////////////////////////////////////////////////////////////////
 #if N_TIME_PER_BLOCK!=XGPU_NTIME
     #warning "N_TIME_PER_BLOCK must match the time samples needed by xGPU"
 #endif
@@ -163,9 +172,9 @@ typedef uint8_t hashpipe_databuf_cache_alignment[
  * It is the input buffer of the flag_transpose_thread.
  */
 
-//#define N_INPUT_BLOCKS 4 //50
+#define N_INPUT_BLOCKS 4 //50
 //RTBF number of input blocks
-#define N_INPUT_BLOCKS 100 //50
+//#define N_INPUT_BLOCKS 100 //50
 
 // A typedef for a block header
 typedef struct flag_input_header {
