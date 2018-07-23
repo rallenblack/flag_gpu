@@ -1,3 +1,4 @@
+% Previously called interp_data.m
 % Read correlations
 clearvars;
 %close all;
@@ -20,8 +21,8 @@ clearvars;
 
 Nele = 40;
 Nele_tot = 64;
-Nbin = 160;
-Nsamp = 125;
+Nbin = 25;
+Nsamp = 4000;
 Nbaselines_tot = (Nele_tot/2 + 1)*Nele_tot;
 Nbaselines     = (Nele + 1)*Nele/2;
 Nblocks        = (Nele_tot/2 + 1)*Nele_tot/4;
@@ -38,12 +39,16 @@ for i = 1:Nele_tot/2
 end
 
 Rtot = zeros(Nele_tot, Nele_tot, Nbin);
-PATH = '/lustre/projects/flag/';
-mcnt = [0]%, 200, 400, 600];
+% % PFB correlator path %%%%%%%%%%%%%%%%%%%%%%%%
+% PATH = '/lustre/flag/';
+% Coarse correlator path %%%%%%%%%%%%%%%%%%%%%%%%
+PATH = '/lustre/flag/TGBT16A_508_01/TMP/BF/';
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+mcnt = [0];%, 200, 400, 600];
 %for mcnt = 0:2:198
 for k = 1:length(mcnt)
     disp(['Processing mcnt=', num2str(mcnt(k))]);
-    FILE = fopen([PATH, sprintf('cor_mcnt_%d.out', mcnt(k))], 'r');
+    FILE = fopen([PATH, sprintf('cor_mcnt_%d_B.out', mcnt(k))], 'r');
     [R, count] = fscanf(FILE, '%g\n');
     fclose(FILE);
 

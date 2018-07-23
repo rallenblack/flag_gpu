@@ -60,21 +60,6 @@ __global__ void PFB_kernel(char2* pc2Data,
     return;
 }
 
-// Discard channels and perform FFT shift (part of scalloping solution)
-__global__ void Discard_Shift_kernel(float2* pf2FFTOut, float2* pf2DiscShift)
-{
-    int pt = threadIdx.x; // N-point FFT index
-    int sb = blockIdx.x;  // Number of elements x coarse channels (time series) index
-    int st = blockIdx.y;  // Windows index (4000/32 = 125 windows)
-    int i  = blockIdx.z;  // Chunks of channels to recover
-    
-    // Both pre-processor macros are defined in kernels.h
-    pf2DiscShift[fftshift_idx(pt,i,sb,st)].x = pf2FFTOut[recover_idx(pt,i,sb,st)].x;
-    pf2DiscShift[fftshift_idx(pt,i,sb,st)].y = pf2FFTOut[recover_idx(pt,i,sb,st)].y;
-
-    return;
-}
-
 // When PFB disabled just perform FFT.
 __global__ void CopyDataForFFT(char2 *pc2Data, float2 *pf2FFTIn)
 {

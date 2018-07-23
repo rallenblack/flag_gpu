@@ -13,13 +13,13 @@
 #endif
 
 #ifndef NFREQUENCY
-//#define NFREQUENCY 25
-#define NFREQUENCY 20
+#define NFREQUENCY 25
+//#define NFREQUENCY 20
 #endif
 
 #ifndef NTIME
-//#define NTIME 4000
-#define NTIME 8000
+#define NTIME 4000
+//#define NTIME 8000
 #endif
 
 #ifndef NTIME_PIPE

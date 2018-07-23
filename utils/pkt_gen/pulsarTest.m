@@ -73,7 +73,7 @@ end
 % data(data < 0) = 2^8 + data(data < 0);
 
 %%
-figure(1); 
+figure(10); 
 imagesc(squeeze(abs(pulseData(20,:,:))));
 % imagesc(abs(exp(1j*phi)));
 
@@ -92,13 +92,13 @@ for k = 1:100
     bf_sti(k,:,:) = mean(bf_data(1+(k-1)*40:k*40,1:25,:),1);
 end
 
-figure(2);
+figure(12);
 imagesc(10*log10(abs(bf_data(:,:,6))).');
 title('Simulated pulsar output (500 bins)');
 ylabel('Frequency bin index');
 xlabel('Time samples')
 
-figure(3);
+figure(13);
 imagesc(10*log10(abs(bf_sti(:,:,6))).');
 title('Simulated pulsar STI output (25 bins)');
 ylabel('Frequency bin index');

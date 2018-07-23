@@ -9,7 +9,7 @@
 #include "config.h"
 
 #define VERBOSE 0
-#define SAVE 0
+#define SAVE 1
 #define DEBUG 0
 
 // Total number of antennas (nominally 40)
@@ -65,8 +65,8 @@
 
 // Number of throwaway channels
 // Changed variable for scalloping fix /////////////////////////////////
-//#define N_CHAN_THROWAWAY 12
-#define N_CHAN_THROWAWAY 112
+#define N_CHAN_THROWAWAY 12
+//#define N_CHAN_THROWAWAY 112
 ////////////////////////////////////////////////////////////////////////
 
 // Total number of processed channels
@@ -77,8 +77,8 @@
 
 // Number of channels processed per XGPU instance?
 // Changed variable for scalloping fix /////////////////////////////////
-//#define N_CHAN_PER_X 25
-#define N_CHAN_PER_X 20
+#define N_CHAN_PER_X 25
+//#define N_CHAN_PER_X 20
 ///////////////////////////////////////////////////////////////////////
 #if N_CHAN_PER_X!=XGPU_NFREQUENCY
     #warning "N_CHAN_PER_X must match frequency channels needed by xGPU"
@@ -92,8 +92,8 @@
 
 // Number of time samples processed per XGPU instance
 // Changed variable for scalloping fix /////////////////////////////////
-//#define N_TIME_PER_BLOCK 4000
-#define N_TIME_PER_BLOCK 8000
+#define N_TIME_PER_BLOCK 4000
+//#define N_TIME_PER_BLOCK 8000
 ////////////////////////////////////////////////////////////////////////
 #if N_TIME_PER_BLOCK!=XGPU_NTIME
     #warning "N_TIME_PER_BLOCK must match the time samples needed by xGPU"
