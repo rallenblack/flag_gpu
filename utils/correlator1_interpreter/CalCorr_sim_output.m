@@ -21,8 +21,8 @@ clearvars;
 
 Nele = 40;
 Nele_tot = 64;
-Nbin = 25;
-Nsamp = 4000;
+Nbin = 20; % 25
+Nsamp = 8000; % 4000
 Nbaselines_tot = (Nele_tot/2 + 1)*Nele_tot;
 Nbaselines     = (Nele + 1)*Nele/2;
 Nblocks        = (Nele_tot/2 + 1)*Nele_tot/4;
@@ -48,7 +48,7 @@ mcnt = [0];%, 200, 400, 600];
 %for mcnt = 0:2:198
 for k = 1:length(mcnt)
     disp(['Processing mcnt=', num2str(mcnt(k))]);
-    FILE = fopen([PATH, sprintf('cor_mcnt_%d_B.out', mcnt(k))], 'r');
+    FILE = fopen([PATH, sprintf('cor_mcnt_%d_A.out', mcnt(k))], 'r');
     [R, count] = fscanf(FILE, '%g\n');
     fclose(FILE);
 

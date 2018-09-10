@@ -1,6 +1,6 @@
 fs        = 155e6; % Sampling frequency - used for noise level
 Ninputs   = 40;    % Number of inputs/antennas
-Nbins     = 500;   % Total number of frequency bins
+Nbins     = 400;   % Total number of frequency bins
 Nfft      = 512;   % F-engine FFT size
 Nfengines = 5;     % Number of F-engines
 Nxengines = 20;    % Number of X-engines (i.e. Number of GPUs)
@@ -8,12 +8,12 @@ Nxengines = 20;    % Number of X-engines (i.e. Number of GPUs)
 Nin_per_f        = Ninputs/Nfengines; % Number of inputs per F-engine
 Nbin_per_x       = Nbins/Nxengines; % Number of bins per X-engine
 Ntime_per_packet = 20; % Number of time samples (spectra snapshots) per packet
-Ntime = 4000;
+Ntime = 8000;
 
 % Increase the range of tau when dispersion measure causes m_D to exceed
 % time samples.
 D = 10; % DM; 10 with these parameters gives a fairly fast pulsar
-freq = (0:499)*(303e3) + 1300e6; % All frequencies
+freq = (0:399)*(303e3) + 1300e6; % All frequencies
 % fo = freq(floor(length(freq)/2)); % Center frequency
 % tau = 4.1488e-3*((fo^-2)-(freq.^-2))*D; % Frequency dependent timing offset
 % t = -2.8e-20:((2.5e-20)+(2.8e-20))/(Ntime-1):2.5e-20; % Range of timing offsets
@@ -77,29 +77,29 @@ figure(10);
 imagesc(squeeze(abs(pulseData(20,:,:))));
 % imagesc(abs(exp(1j*phi)));
 
-wei = ones(40,500,14);
-bf_data = zeros(4000,500,14);
+wei = ones(40,400,14);
+bf_data = zeros(8000,400,14);
 for b = 1:14
-    for f = 1:500
+    for f = 1:400
         w = wei(:,f,b);
         xn = squeeze(pulseData(:,f,:));
         bf_data(:,f,b) = w'*xn;
     end
 end
 
-bf_sti = zeros(100,25,14);
+bf_sti = zeros(100,20,14);
 for k = 1:100
-    bf_sti(k,:,:) = mean(bf_data(1+(k-1)*40:k*40,1:25,:),1);
+    bf_sti(k,:,:) = mean(bf_data(1+(k-1)*40:k*40,1:20,:),1);
 end
 
 figure(12);
 imagesc(10*log10(abs(bf_data(:,:,6))).');
-title('Simulated pulsar output (500 bins)');
+title('Simulated pulsar output (400 bins)');
 ylabel('Frequency bin index');
 xlabel('Time samples')
 
 figure(13);
 imagesc(10*log10(abs(bf_sti(:,:,6))).');
-title('Simulated pulsar STI output (25 bins)');
+title('Simulated pulsar STI output (20 bins)');
 ylabel('Frequency bin index');
 xlabel('Time samples')

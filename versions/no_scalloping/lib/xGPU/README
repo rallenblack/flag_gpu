@@ -1,0 +1,120 @@
+Release Notes for xGPU v0.0.1
+-----------------------------
+
+Overview:
+
+xGPU is a library for performing the cross-multiplication step of the
+FX correlator algorithm, which is popular for radio astronomy signal
+processing.
+
+Software Compatibility:
+
+The library has been tested under Linux (Ubuntu 10.04 and 10.10) and
+Mac OS X using release 4.0 of the CUDA toolkit.  Default compilation
+creates a 32-bit binary, so 64-bit systems will require 32-bit c and
+c++ libraries installed for cross-compilation (gcc and g++ multilib).
+
+Hardward Compatibility:
+
+For a list of supported devices see,
+
+http://www.nvidia.com/object/cuda_learn_products.html
+
+While this library will run on pre-Fermi GPUs with appropriate changes
+to the Makefile, note that the kernels make Fermi-specific
+optimizations and so will likely lead to sub-standard performance on
+sm1.x CUDA architectures.  Initial tuning has taken place for the
+Kepler architecture, but this is far from complete.
+
+Building the Library:
+
+The library, library query tool "xgpuinfo", and the sample program
+"cuda_correlator" can be built by changing into the src subdirectoy
+and running "make".
+
+  $ cd src
+  $ make
+
+Currently, a number of sizing parameters must be specified when
+building the library.  Default values of these parameters are
+specified near the top of src/xgpu_info.h.  The default values can be
+overridden on the make command line to suit your instrument's needs.
+The options that can be given on the make command line are shown here
+with there default values.
+
+  NPOL=2
+  NSTATION=256
+  NFREQUENCY=10
+  NTIME=1000
+  NTIME_PIPE=100
+
+Note that NTIME_PIPE must be a multiple of 4 and NTIME must be a
+multiple of NTIME_PIPE.  The preprocessor will error out if those two
+conditions are not met.
+
+For example, to compile with NSTATION set to 128 and all other
+parameters at their default values:
+  
+  $ make NSTATION=128
+
+Installing the Library:
+
+The library can be installed by changing into the src subdirectoy and
+running "make install".  By default, this will install xgpuinfo into
+/usr/local/bin, xgpu.h into /usr/local/include, and libxgpu.so (or
+libxgpu.dll on Cygwin) to /usr/local/lib.  Specifying
+"prefix=/some/path" on the "make install" command line will install
+these files into /some/path/bin, /some/path/include, and
+/some/path/lib instead.
+
+  $ cd src
+  $ make install                    # install under /usr/local
+  $ make install prefix=$HOME/local # install under $HOME/local
+
+Using the Library:
+
+The library can be called from C or C++ code.  To use the library,
+your source files need to #include <xpgu.h> and your executable needs
+to be linked with libxpgu.so (or libxgpu.dll on Cygwin).  On UNIX
+systems, this usaually means adding "-L/path/to/lib/dir" and "-lxpgu"
+to the link command line.
+
+Please see the comments in xgpu.h as well as the usage in the sample
+program cuda_correlator.cu for more details on how to use the library.
+
+This library has been designed to be interfaced with other parts of an
+FX correlator pipeline, and so not much can be achieved in isolation.
+A simple test program "cuda_correlator.cu" is included which performs
+cross-multiplication on the host and the device and verifies the
+device obtained the correct answer.  The many options regarding number
+of stations, frequency channels etc. are set in the top of this file.
+
+Benchmarking Performance:
+
+xGPU includes an additional benchmarking utility: CUBE - CUDA
+BEnchmarking.  This uses C-preprocessor directive to obtain arithmetic
+throughput and device memory bandwidth performance.  To invoke a
+benchmarking run, one simply has to execute the "bench" script.  This
+will perform four runs of the test.  The first two of these are
+concerned with counting all flops and transfers performed by the
+kernels, and measuring the time taken for each of these steps.  The
+latter two are concerened with measuring the asynchronous performance
+of the device<->host transfers.  By default the results are printed to
+stdout, though they are output to file (cube_benchmark.log and
+cube_benchmark.csv).
+
+Acknowledging xGPU:
+
+If you find this code useful in your work, please cite:
+
+M. A. Clark, P. C. La Plante, and L. J. Greenhill, "Accelerating Radio
+Astronomy Cross-Correlation with Graphics Processing units",
+[arXiv:1107.4264 [astro-ph]].
+
+Authors:
+
+Michael Clark (NVIDIA)
+Paul La Plante (Loyola University Maryland)
+Lincoln Greenhill (Harvard-Smithsonian Center for Astrophysics)
+David MacMahon (University of California, Berkeley)
+Ben Barsdell (Harvard-Smithsonian Center for Astrophysics)

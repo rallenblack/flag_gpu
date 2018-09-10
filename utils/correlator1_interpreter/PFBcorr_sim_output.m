@@ -22,7 +22,7 @@ Nele = 40;
 Nele_tot = 64;
 Nbin = 160;
 Nsamp = 125;
-Nbaselines_tot = (Nele_tot/2 + 1)*Nele_tot;
+Nbaselines_tot = (Nele_tot/2 + 1)*Nele_tot; % Upper or lower triangular elements plus the diagonals.
 Nbaselines     = (Nele + 1)*Nele/2;
 Nblocks        = (Nele_tot/2 + 1)*Nele_tot/4;
 
@@ -38,12 +38,12 @@ for i = 1:Nele_tot/2
 end
 
 Rtot = zeros(Nele_tot, Nele_tot, Nbin);
-PATH = '/lustre/projects/flag/';
-mcnt = [0]%, 200, 400, 600];
+PATH = '/lustre/flag/';
+mcnt = [1600]; %, 200, 400, 600];
 %for mcnt = 0:2:198
 for k = 1:length(mcnt)
     disp(['Processing mcnt=', num2str(mcnt(k))]);
-    FILE = fopen([PATH, sprintf('cor_mcnt_%d.out', mcnt(k))], 'r');
+    FILE = fopen([PATH, sprintf('cor_mcnt_%d_B.out', mcnt(k))], 'r');
     [R, count] = fscanf(FILE, '%g\n');
     fclose(FILE);
 
@@ -71,45 +71,46 @@ for k = 1:length(mcnt)
         Rtot(:,:,Nb) = Rtot(:,:,Nb) + Rb.*Nsamp;
         
         % Commented out in recent file modified by mitch %%%%%%%%%%%%%
-%         fig_mod = ceil(Nb/40);
-%         fig_mod_plot = mod(Nb,40);
-%         figure(fig_mod);
-%         if fig_mod_plot == 0
-%             fig_mod_plot = 40;
-%         end
-%         subplot(8,5,fig_mod_plot);
-%         imagesc(abs(Rtot(1:Nele, 1:Nele, Nb)));
-%         title(['Bin ', num2str(Nb)]);
-%         drawnow;
+        fig_mod = ceil(Nb/40);
+        fig_mod_plot = mod(Nb,40);
+        figure(fig_mod);
+        if fig_mod_plot == 0
+            fig_mod_plot = 40;
+        end
+        subplot(8,5,fig_mod_plot);
+        imagesc(abs(Rtot(1:Nele, 1:Nele, Nb)));
+%         imagesc(abs(Rtot(:, :, Nb)));
+        title(['Bin ', num2str(Nb)]);
+        drawnow;
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     end
 end
 
-% Added from more recent file to plot PFB output
-idx = 1:160;
-idx1 = reshape(idx, [5,32]);
-idx2 = idx1';
-stitch_idx = reshape(idx2, [160,1]);
-
-% stitch_idx = [];
-% for kk = 0:31
-%     stitch_idx = [stitch_idx, kk:32:kk+128];
-% end
-% stitch_idx = stitch_idx + 1;
-% tmp2 = squeeze(Rtot(1,1,stitch_idx));
+% % Added from more recent file to plot PFB output
+% idx = 1:160;
+% idx1 = reshape(idx, [5,32]);
+% idx2 = idx1';
+% stitch_idx = reshape(idx2, [160,1]);
 % 
-% mat_idx = [];
-% for jj = 0:4
-%     mat_idx = [mat_idx, (jj:32:jj+128)'];
-% end
-% stitch_idx = [mat_idx; mat_idx+4; mat_idx+8; mat_idx+12; mat_idx+16; mat_idx+20; mat_idx+24] + 1;
-% keyboard;
-% tmp3 = squeeze(Rtot(1,1,stitch_idx));
-
-tmp2 = squeeze(Rtot(1,1,stitch_idx));
-figure(11);
-plot(0:length(tmp2)-1, 10*log10(abs(tmp2))); grid on;
-tmp = squeeze(Rtot(1,1,:));
-figure(10);
-plot(0:length(tmp)-1, 10*log10(abs(tmp))); grid on;
+% % stitch_idx = [];
+% % for kk = 0:31
+% %     stitch_idx = [stitch_idx, kk:32:kk+128];
+% % end
+% % stitch_idx = stitch_idx + 1;
+% % tmp2 = squeeze(Rtot(1,1,stitch_idx));
+% % 
+% % mat_idx = [];
+% % for jj = 0:4
+% %     mat_idx = [mat_idx, (jj:32:jj+128)'];
+% % end
+% % stitch_idx = [mat_idx; mat_idx+4; mat_idx+8; mat_idx+12; mat_idx+16; mat_idx+20; mat_idx+24] + 1;
+% % keyboard;
+% % tmp3 = squeeze(Rtot(1,1,stitch_idx));
+% 
+% tmp2 = squeeze(Rtot(18,18,stitch_idx));
+% figure(11);
+% plot(0:length(tmp2)-1, 10*log10(abs(tmp2))); grid on;
+% tmp = squeeze(Rtot(18,18,:));
+% figure(10);
+% plot(0:length(tmp)-1, 10*log10(abs(tmp))); grid on;
 

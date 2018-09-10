@@ -9,7 +9,7 @@ delete(u);
 % System Constants
 fs        = 155e6; % Sampling frequency - used for noise level
 Ninputs   = 40;    % Number of inputs/antennas
-Nbins     = 500;%400;   % Total number of frequency bins
+Nbins     = 400;%500;   % Total number of frequency bins
 Nfft      = 512;   % F-engine FFT size
 Nfengines = 5;     % Number of F-engines
 Nxengines = 20;    % Number of X-engines (i.e. Number of GPUs)
@@ -83,8 +83,8 @@ end
 % create time samples
 rng(1);
 data_windows = 5;
-N = 4000*data_windows;
-kwNs = 4000;
+N = 8000*data_windows;
+kwNs = 8000;
 kw_z = (randn(Nel, kwNs) + 1j*randn(Nel,kwNs))/sqrt(2);
 kwM = sqrtm(kwR);
 kw_x = kwM*kw_z;
@@ -140,7 +140,12 @@ CEN_A = toeplitz(CEN_rho.^(0:Ninputs-1));
 CEN_G = diag(max(.2, 1+CEN_stdG*randn(Ninputs,1)));
 CEN_Asqr = sqrtm(CEN_G*CEN_A*CEN_G');
 
-CEN_N = 4000;
+% Regular correlator %%%%%%%%%%%%%%%%%%%%%%%%%%%
+% CEN_N = 4000;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Scalloping fix %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+CEN_N = 8000;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 CEN = CEN_Asqr/sqrt(2)*(randn(Ninputs, CEN_N) + 1j*randn(Ninputs, CEN_N));
 
 CEN_R = 1/CEN_N*(CEN*CEN');
@@ -158,12 +163,13 @@ CEN_imag = int8(((imag(CEN) - c_min)/(c_max - c_min) - 0.5) * 256);
 % Increase the range of tau when dispersion measure causes m_D to exceed
 % time samples.
 D = 10; % Dispersion measure 
-freq = (0:499)*(303e3) + 1300e6; % All frequencies
+% freq = (0:499)*(303e3) + 1300e6; % All frequencies
+freq = (0:399)*(303e3) + 1300e6; % All frequencies
 % fo = freq(floor(length(freq)/2)); % Center frequency
 % m_D = 4.1488e3*((fo^-2)-(freq.^-2))*D; % Frequency dependent timing offset
 % Ntime = 4000;
 % tau = -2.8e-14:((2.5e-14)+(2.8e-14))/(Ntime-1):2.5e-14; % Range of timing offsets
-Ntime = 4000;
+Ntime = 8000; % 4000
 tau = zeros(size(freq));
 for k = 1:length(freq)
     if (k-1) ~= 0
@@ -234,8 +240,13 @@ end
 % Generate packet payloads
 mcnt = 0; % Each mcnt represents 20 packets across all F-engines in the
           % same time frame
-  
-for mcnt = [0:801,1200,1600,2000,2400] % [0:801,1200,1600,2000,2400] [0:401,600,800,1000,1200]  % No scalloping fix %while mcnt <= 10000
+
+% Regular coarse and fine correlator %%%%%%%%%%%%%%%%%%%%%%%%%%%
+% for mcnt = [0:801,1200,1600,2000,2400] % [0:801,1200,1600,2000,2400] [0:401,600,800,1000,1200]  % No scalloping fix %while mcnt <= 10000
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Scalloping fix fine correlator %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+for mcnt = [0:1601,2400,3200,4000,4800]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     disp(['Sending mcnt = ', num2str(mcnt)]);
     for xid = [1:4] % Set to a single X-engine for single HPC testing (Richard B.)
         for fid = 1:Nfengines
@@ -353,7 +364,8 @@ for mcnt = [0:801,1200,1600,2000,2400] % [0:801,1200,1600,2000,2400] [0:401,600,
                     t_idxs = mod(mcnt*20 + 1:(mcnt+1)*20, Ntime);
                     t_idxs(t_idxs == 0) = Ntime;
                     f_idxs = (fid - 1)*8+1:fid*8;
-                    freq_idxs = 5*(xid-1) + [1:5, 101:105, 201:205, 301:305, 401:405];
+%                     freq_idxs = 5*(xid-1) + [1:5, 101:105, 201:205, 301:305, 401:405];
+                    freq_idxs = 5*(xid-1) + [1:5, 101:105, 201:205, 301:305];
                     tmp = pulseData(f_idxs, freq_idxs, t_idxs);
                     data(:,1,:,:) = real(tmp);
                     data(:,2,:,:) = imag(tmp);
