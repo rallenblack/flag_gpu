@@ -1,0 +1,23 @@
+#!/bin/bash
+set +x
+
+if test -z "$1"; then
+    echo "Usage: $0 new_version";
+    exit;
+fi
+
+export SCALLOP_VERSIONS_ROOT=versions
+cd ~/flag_gpu/
+
+if test ! -e $SCALLOP_VERSIONS_ROOT/$1; then
+    echo "$SCALLOP_VERSIONS_ROOT/$1 does not exist!"
+    echo "Version not changed";
+    exit;
+fi
+
+rm -f src lib
+ln -s $SCALLOP_VERSIONS_ROOT/$1/src src
+ln -s $SCALLOP_VERSIONS_ROOT/$1/lib lib
+ls -ld src lib
+
+echo "Switched dibas software to $1"

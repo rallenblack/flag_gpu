@@ -448,7 +448,7 @@ void sti_reduction(cuComplex * data_in, float * data_out) {
 
 		// Cross polarization (XY*).
 		cross_power1 = (samp1.x * samp2.x) + (samp1.y * samp2.y);	// Real part of cross polarization.
-		cross_power2 = (samp1.y * samp2.x) - (samp1.x * samp2.y);	// Imaginary part of cross polarization.
+	        cross_power2 = (samp1.y * samp2.x) - (samp1.x * samp2.y);	// Imaginary part of cross polarization.
 		reduced_array1[t].x = cross_power1;
 		reduced_array1[t].y = cross_power2;
 	}
@@ -466,7 +466,7 @@ void sti_reduction(cuComplex * data_in, float * data_out) {
 		if(t<k){
 			reduced_array[t].x += reduced_array[t+k].x;
 			reduced_array[t].y += reduced_array[t+k].y;
-			reduced_array1[t].x += reduced_array1[t+k].x;
+		        reduced_array1[t].x += reduced_array1[t+k].x;
 			reduced_array1[t].y += reduced_array1[t+k].y;
 		}
 		__syncthreads();
@@ -494,12 +494,12 @@ void run_beamformer(signed char * data_in, float * data_out) {
 	dim3 dimBlock_d(BN_ELE_BLOC, 1, 1);
 	dim3 dimGrid_d(BN_TIME, BN_BIN, 1);
 
-	//int Nm = 200;
-	int Nm = 400;
+	int Nm = 200;
+	//int Nm = 400;
 	int Nf = 8;
 	int Nt = 20;
-	//int Nc = 25;
-	int Nc = 20;
+	int Nc = 25;
+	//int Nc = 20;
 	int Ni = 8;
 	dim3 gridDim_transpose(Nm, Nf, Nt);
 	dim3 blockDim_transpose(Ni, Nc, 1);

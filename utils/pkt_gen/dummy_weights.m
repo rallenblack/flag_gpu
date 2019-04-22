@@ -3,7 +3,9 @@
 % files
 
 % Reshape weights
-N_beam = 14;
+N_beam = 14; % Should be 7, but the number of offsets is wrong (line 56) so the weights read in the CUDA are off.
+             % Leave this as it is because it is the simplest case of all
+             % ones and the produces a weight vector of all ones.
 N_ele = 64;
 N_bin_total = 500;
 N_bin = 25;

@@ -135,7 +135,10 @@
 // Number of entries in output correlation matrix
 // #define N_COR_MATRIX (N_INPUTS*(N_INPUTS + 1)/2*N_CHAN_PER_X)
 #define N_COR_MATRIX (N_INPUTS/2*(N_INPUTS/2 + 1)/2*N_CHAN_PER_X*4)
+// Change to remove cross-pol terms in RTBF (remove mult. by 2)/////////
 #define N_BEAM_SAMPS (2*BN_OUTPUTS)
+//#define N_BEAM_SAMPS (BN_OUTPUTS)
+////////////////////////////////////////////////////////////////////////
 #define N_POWER_SAMPS NA
 
 // Macros specific to the rapid-dump correlator (FRB correlator)

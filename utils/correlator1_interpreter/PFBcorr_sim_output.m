@@ -25,6 +25,7 @@ Nsamp = 125;
 Nbaselines_tot = (Nele_tot/2 + 1)*Nele_tot; % Upper or lower triangular elements plus the diagonals.
 Nbaselines     = (Nele + 1)*Nele/2;
 Nblocks        = (Nele_tot/2 + 1)*Nele_tot/4;
+Nfft = 32;
 
 %big = figure();
 %big2 = figure();
@@ -35,54 +36,99 @@ tmp = [1 6 11 17 22];
 blk_rows = zeros(Nele_tot/2, Nele_tot/2);
 for i = 1:Nele_tot/2
     blk_rows(i,1:i) = (i-1)*i/2+1:(i-1)*i/2+i;
-end
+end 
 
 Rtot = zeros(Nele_tot, Nele_tot, Nbin);
 PATH = '/lustre/flag/';
-mcnt = [1600]; %, 200, 400, 600];
+mcnt = [0]; %, 200, 400, 600];
 %for mcnt = 0:2:198
+% for k = 1:length(mcnt)
+%     disp(['Processing mcnt=', num2str(mcnt(k))]);
+%     FILE = fopen([PATH, sprintf('cor_mcnt_%d_B.out', mcnt(k))], 'r');
+%     [R, count] = fscanf(FILE, '%g\n');
+%     fclose(FILE);
+% 
+%     for Nb = 1:Nbin
+% 
+%         rb_real = R(2*Nbaselines_tot*(Nb - 1)+1:2:2*Nbaselines_tot*Nb);
+%         rb_imag = R(2*Nbaselines_tot*(Nb - 1)+2:2:2*Nbaselines_tot*Nb);
+%         rb = rb_real + 1j*rb_imag;
+% 
+%         Rb = zeros(Nele_tot, Nele_tot);
+%         for Nblk = 1:Nblocks
+%             block_r = rb(4*(Nblk-1)+1:4*Nblk);
+%             [row, col] = find(blk_rows == Nblk);
+%             Rb(2*row - 1, 2*col - 1) = block_r(1);
+%             if sum(diag(blk_rows) == Nblk) == 0
+%                 Rb(2*row - 1, 2*col) = block_r(2);
+%             end
+%             Rb(2*row    , 2*col - 1) = block_r(3);
+%             Rb(2*row    , 2*col    ) = block_r(4);
+%         end
+% 
+%         Rb = Rb + (Rb' - diag(diag(Rb'))); % Exploit symmetry
+%         Rb = Rb./Nsamp;
+% 
+%         Rtot(:,:,Nb) = Rtot(:,:,Nb) + Rb.*Nsamp;
+%         
+%         % Commented out in recent file modified by mitch %%%%%%%%%%%%%
+%         fig_mod = ceil(Nb/40);
+%         fig_mod_plot = mod(Nb,40);
+%         figure(fig_mod);
+%         if fig_mod_plot == 0
+%             fig_mod_plot = 40;
+%         end
+%         subplot(8,5,fig_mod_plot);
+%         imagesc(abs(Rtot(1:Nele, 1:Nele, Nb)));
+% %         imagesc(abs(Rtot(:, :, Nb)));
+%         title(['Bin ', num2str(Nb)]);
+%         drawnow;
+%         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%     end
+% end
+
+coarseBin = 5;
+Rtot1 = zeros(Nele_tot, Nele_tot, coarseBin);
 for k = 1:length(mcnt)
     disp(['Processing mcnt=', num2str(mcnt(k))]);
     FILE = fopen([PATH, sprintf('cor_mcnt_%d_B.out', mcnt(k))], 'r');
     [R, count] = fscanf(FILE, '%g\n');
     fclose(FILE);
 
-    for Nb = 1:Nbin
-
-        rb_real = R(2*Nbaselines_tot*(Nb - 1)+1:2:2*Nbaselines_tot*Nb);
-        rb_imag = R(2*Nbaselines_tot*(Nb - 1)+2:2:2*Nbaselines_tot*Nb);
-        rb = rb_real + 1j*rb_imag;
-
-        Rb = zeros(Nele_tot, Nele_tot);
-        for Nblk = 1:Nblocks
-            block_r = rb(4*(Nblk-1)+1:4*Nblk);
-            [row, col] = find(blk_rows == Nblk);
-            Rb(2*row - 1, 2*col - 1) = block_r(1);
-            if sum(diag(blk_rows) == Nblk) == 0
-                Rb(2*row - 1, 2*col) = block_r(2);
+    for bb = 1:coarseBin
+        Rtmp = zeros(Nele_tot, Nele_tot);
+        for Nb = (0:Nfft-1)*coarseBin+bb
+            
+            rb_real = R(2*Nbaselines_tot*(Nb - 1)+1:2:2*Nbaselines_tot*Nb);
+            rb_imag = R(2*Nbaselines_tot*(Nb - 1)+2:2:2*Nbaselines_tot*Nb);
+            rb = rb_real + 1j*rb_imag;
+            
+            Rb = zeros(Nele_tot, Nele_tot);
+            for Nblk = 1:Nblocks
+                block_r = rb(4*(Nblk-1)+1:4*Nblk);
+                [row, col] = find(blk_rows == Nblk);
+                Rb(2*row - 1, 2*col - 1) = block_r(1);
+                if sum(diag(blk_rows) == Nblk) == 0
+                    Rb(2*row - 1, 2*col) = block_r(2);
+                end
+                Rb(2*row    , 2*col - 1) = block_r(3);
+                Rb(2*row    , 2*col    ) = block_r(4);
             end
-            Rb(2*row    , 2*col - 1) = block_r(3);
-            Rb(2*row    , 2*col    ) = block_r(4);
+            
+            Rb = Rb + (Rb' - diag(diag(Rb'))); % Exploit symmetry
+            Rb = Rb./Nsamp;
+            
+            Rtmp = Rtmp + Rb.*Nsamp;
+%             Rtot(:,:,Nb) = Rtot(:,:,Nb) + Rb.*Nsamp;
+            
         end
-
-        Rb = Rb + (Rb' - diag(diag(Rb'))); % Exploit symmetry
-        Rb = Rb./Nsamp;
-
-        Rtot(:,:,Nb) = Rtot(:,:,Nb) + Rb.*Nsamp;
-        
-        % Commented out in recent file modified by mitch %%%%%%%%%%%%%
-        fig_mod = ceil(Nb/40);
-        fig_mod_plot = mod(Nb,40);
-        figure(fig_mod);
-        if fig_mod_plot == 0
-            fig_mod_plot = 40;
-        end
-        subplot(8,5,fig_mod_plot);
-        imagesc(abs(Rtot(1:Nele, 1:Nele, Nb)));
+        Rtot1(:,:,bb) = Rtmp;
+        figure(1);
+        subplot(5,5,bb);
+        imagesc(abs(Rtot1(1:Nele, 1:Nele, bb)));
 %         imagesc(abs(Rtot(:, :, Nb)));
-        title(['Bin ', num2str(Nb)]);
+        title(['Bin ', num2str(bb)]);
         drawnow;
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     end
 end
 

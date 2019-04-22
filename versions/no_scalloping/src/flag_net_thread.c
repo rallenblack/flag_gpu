@@ -108,8 +108,9 @@ void print_pkt_header(packet_header_t * pkt_header) {
 
     static long long prior_mcnt;
 
-    printf("packet header : mcnt %012lx (diff from prior %lld) cal %hx fid %d xid %d\n",
-	           pkt_header->mcnt, pkt_header->mcnt-prior_mcnt, pkt_header->cal, pkt_header->fid, pkt_header->xid);
+    //printf("packet header : mcnt %012lx (diff from prior %lld) cal %hx fid %d xid %d\n",
+    printf("packet header : mcnt %lld (diff from prior %lld) cal %d fid %d xid %d\n",
+	           (long long unsigned)pkt_header->mcnt, pkt_header->mcnt-prior_mcnt, pkt_header->cal, pkt_header->fid, pkt_header->xid);
 
     prior_mcnt = pkt_header->mcnt;
 }
@@ -119,7 +120,7 @@ void print_pkt_header(packet_header_t * pkt_header) {
 static inline void get_header (struct hashpipe_udp_packet *p, packet_header_t * pkt_header) {
     uint64_t raw_header;
     raw_header = be64toh(*(unsigned long long *)p->data);
-    // printf("raw_header: %016lx\n", raw_header);
+    //printf("raw_header: %016lx\n", raw_header);
     pkt_header->mcnt        = raw_header >> 20;
     pkt_header->cal         = (raw_header >> 16) & 0x000000000000000F;
     pkt_header->xid         = raw_header         & 0x00000000000000FF;
@@ -656,6 +657,9 @@ static void *run(hashpipe_thread_args_t * args) {
                  else {
                     // Log warning and ignore wrongly sized packet
                     hashpipe_warn("flag_net_thread", "Incorrect pkt_size (%d)", p.packet_size);
+                    packet_header_t pkt_header_now;
+                    get_header(&p, &pkt_header_now);
+                    print_pkt_header(&pkt_header_now);
                     pthread_testcancel();
                     continue;
                 }

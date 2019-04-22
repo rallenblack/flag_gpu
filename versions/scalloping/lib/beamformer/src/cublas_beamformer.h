@@ -10,7 +10,10 @@
 #define BN_BIN	   25	// 20 // Number of frequency bins
 #define BN_TIME	   4000 // 8000	//40 // Number of decimated time samples
 #define BN_BEAM     14   // Number of beams we are forming
+// Change to remove cross-pol terms in output ////////////////////
 #define BN_POL     4
+//#define BN_POL     2
+//////////////////////////////////////////////////////////////////
 #define BN_BEAM1    (BN_BEAM/2)   // Number of beams we are forming
 #define BN_TIME_STI 40	//80 // Number of decimated time samples per integrated beamformer output
 #define BN_STI	   (BN_TIME/BN_TIME_STI) // Number of short time integrations

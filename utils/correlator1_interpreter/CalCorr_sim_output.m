@@ -21,8 +21,8 @@ clearvars;
 
 Nele = 40;
 Nele_tot = 64;
-Nbin = 20; % 25
-Nsamp = 8000; % 4000
+Nbin = 25; % 20
+Nsamp = 4000; % 8000
 Nbaselines_tot = (Nele_tot/2 + 1)*Nele_tot;
 Nbaselines     = (Nele + 1)*Nele/2;
 Nblocks        = (Nele_tot/2 + 1)*Nele_tot/4;

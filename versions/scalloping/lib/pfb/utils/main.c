@@ -155,8 +155,8 @@ int main(int argc, char *argv[]) {
 		// generate data
 		//generate freq array for data
 		int i = 0;
-		float fs = 606.0; // 303.0; // KHz - a default sample rate.
-		int channelBandgap = 1.0; // 10.0;		// KHz jumps
+		float fs = 303.0; // 303.0; // KHz - a default sample rate.
+		int channelBandgap = 10.0; // 10.0;		// KHz jumps
 		float* freq = (float *) malloc(pfbParams.coarse_channels*sizeof(float));
 		for(i = 0; i <= pfbParams.coarse_channels; i++) {
 			freq[i] = channelBandgap * i + 5.0;
@@ -177,8 +177,8 @@ int main(int argc, char *argv[]) {
 	ret = initPFB(iCudaDevice, pfbParams);
 
 	// malloc data arrays
-	//int outputSize = pfbParams.samples * pfbParams.fine_channels * pfbParams.elements * (2*sizeof(float)); // need to convince myself of this output data size.
-	int outputSize = (pfbParams.samples/2) * pfbParams.fine_channels * pfbParams.elements * (2*sizeof(float)); // need to convince myself of this output data size.
+	int outputSize = pfbParams.samples * pfbParams.fine_channels * pfbParams.elements * (2*sizeof(float)); // need to convince myself of this output data size.
+	//int outputSize = (pfbParams.samples/2) * pfbParams.fine_channels * pfbParams.elements * (2*sizeof(float)); // need to convince myself of this output data size.
 
 	g_outputData = (float*) malloc(outputSize);
 	memset(g_outputData, 0, outputSize);
