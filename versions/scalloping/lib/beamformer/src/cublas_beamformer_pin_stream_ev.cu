@@ -433,8 +433,8 @@ void transpose(signed char* data, signed char* tra_data) {
 }
 
 __global__
-void data_restructure(signed char * data, cuComplex * data_restruc){
-//void data_restructure(signed char * data, cuComplex * data_restruc, int offset){
+void data_restructure(signed char * data, cuComplex * data_restruc, int offset){
+//void data_restructure(signed char * data, cuComplex * data_restruc){
 
 	/*
 		Repurpose the transpose thread in the hashpipe codes by performing the transpose in the GPU.
@@ -458,12 +458,12 @@ void data_restructure(signed char * data, cuComplex * data_restruc){
 	int Nc = blockDim.y; // bins per mcnt
 
 	// Offset for CUDA streams //////////////////////////////////////////////
-	//int in_idx  = offset + (i + Ni*c + Nc*Ni*t + Nt*Nc*Ni*f + Nf*Nt*Nc*Ni*m);
-	//int out_idx = offset + (i + Ni*f + Nf*Ni*t + Nt*Nf*Ni*m + Nm*Nt*Nf*Ni*c);
+	int in_idx  = offset + (i + Ni*c + Nc*Ni*t + Nt*Nc*Ni*f + Nf*Nt*Nc*Ni*m);
+	int out_idx = offset + (i + Ni*f + Nf*Ni*t + Nt*Nf*Ni*m + Nm*Nt*Nf*Ni*c);
 	/////////////////////////////////////////////////////////////////////////
 
-	int in_idx  = i + Ni*c + Nc*Ni*t + Nt*Nc*Ni*f + Nf*Nt*Nc*Ni*m;
-	int out_idx = i + Ni*f + Nf*Ni*t + Nt*Nf*Ni*m + Nm*Nt*Nf*Ni*c;
+	//int in_idx  = i + Ni*c + Nc*Ni*t + Nt*Nc*Ni*f + Nf*Nt*Nc*Ni*m;
+	//int out_idx = i + Ni*f + Nf*Ni*t + Nt*Nf*Ni*m + Nm*Nt*Nf*Ni*c;
 
 	data_restruc[out_idx].x = data[2*in_idx]*1.0f;
 	data_restruc[out_idx].y = data[2*in_idx + 1]*1.0f;
@@ -488,15 +488,18 @@ void data_restructure(signed char * data, cuComplex * data_restruc){
 
 
 __global__
-void sti_reduction(cuComplex * data_in, float * data_out) {
+void sti_reduction(cuComplex * data_in, float * data_out, int offset) {
+//void sti_reduction(cuComplex * data_in, float * data_out) {
 
 	int f = blockIdx.x;
 	int b = blockIdx.y;
 	int t = threadIdx.x;
 	int s = blockIdx.z;
 
-	int h = sample_idx(s*BN_TIME_STI + t,b,f);						// Preprocessor macro used for the output of the beamformer. More detail can be seen in the header file. (First set of beams)
-	int h1 = sample_idx(s*BN_TIME_STI + t,b+BN_BEAM1,f);			// Preprocessor macro used for the output of the beamformer. More detail can be seen in the header file. (Last set of beams)
+	//int h = sample_idx(s*BN_TIME_STI + t,b,f);						// Preprocessor macro used for the output of the beamformer. More detail can be seen in the header file. (First set of beams)
+	//int h1 = sample_idx(s*BN_TIME_STI + t,b+BN_BEAM1,f);			// Preprocessor macro used for the output of the beamformer. More detail can be seen in the header file. (Last set of beams)
+	int h = sample_idx((s+offset)*BN_TIME_STI + t,b,f);						// Preprocessor macro used for the output of the beamformer. More detail can be seen in the header file. (First set of beams)
+	int h1 = sample_idx((s+offset)*BN_TIME_STI + t,b+BN_BEAM1,f);			// Preprocessor macro used for the output of the beamformer. More detail can be seen in the header file. (Last set of beams)
 
 	// Temporary variables used for updating.
 	float beam_power1;
@@ -511,6 +514,7 @@ void sti_reduction(cuComplex * data_in, float * data_out) {
 	__shared__ cuFloatComplex reduced_array1[BN_STI_BLOC];
 	__shared__ cuFloatComplex reduced_array[BN_STI_BLOC];
 
+	//if (t < BN_TIME_STI) {
 	if (t < BN_TIME_STI) {
 		// X polarization (XX*).
 		samp1.x = data_in[h].x;
@@ -552,10 +556,10 @@ void sti_reduction(cuComplex * data_in, float * data_out) {
 
 	// After reduction is complete, assign each reduced to value to appropriate position in output array.
 	if(t == 0){
-		data_out[output_idx(0,b,s,f)] = reduced_array[0].x*scale; 	// XX*.
-		data_out[output_idx(1,b,s,f)] = reduced_array[0].y*scale; 	// YY*.
-		data_out[output_idx(2,b,s,f)] = reduced_array1[0].x*scale; 	// XY* real.
-		data_out[output_idx(3,b,s,f)] = reduced_array1[0].y*scale;	// XY* imaginary.
+		data_out[output_idx(0,b,(s+offset),f)] = reduced_array[0].x*scale; 	// XX*.
+		data_out[output_idx(1,b,(s+offset),f)] = reduced_array[0].y*scale; 	// YY*.
+		data_out[output_idx(2,b,(s+offset),f)] = reduced_array1[0].x*scale; 	// XY* real.
+		data_out[output_idx(3,b,(s+offset),f)] = reduced_array1[0].y*scale;	// XY* imaginary.
 	}
 
 	return;
@@ -565,14 +569,15 @@ void run_beamformer(signed char * data_in, float * data_out) {
 
 	cudaError_t err_code;
 	// Specify grid and block dimensions
+	const int time_streamSTI = 2;
 	dim3 dimBlock(BN_STI_BLOC, 1, 1);
-	dim3 dimGrid(BN_BIN, BN_BEAM1, BN_STI);
+	dim3 dimGrid(BN_BIN, BN_BEAM1, BN_STI/time_streamSTI);
 
-	// Specify grid and block dimensions
+	// Specify grid and block dimensions for STI kernel
 	dim3 dimBlock_d(BN_ELE_BLOC, 1, 1);
 	dim3 dimGrid_d(BN_TIME, BN_BIN, 1);
 
-	int Nm = 200; // Halfed for CUDA streams offset = 100;
+	int Nm = 100; //200; // Halfed for CUDA streams offset = 100;
 	//int Nm = 400;
 	int Nf = 8;
 	int Nt = 20;
@@ -587,68 +592,59 @@ void run_beamformer(signed char * data_in, float * data_out) {
 	//signed char * d_restruct_in = d_data1;
 	cuComplex * d_restruct_out = d_data;
 
+	cuComplex * d_sti_in = d_beamformed;
+	float * d_sti_out = d_outputs;
+
 	//cudaMemcpy(d_restruct_in, data_in, 2*BN_SAMP*sizeof(signed char), cudaMemcpyHostToDevice);
 
 	// Previously the cudaMemcpy below /////////////////////////////////////////////
-	cudaMemcpy(d_tra_data_in, data_in, 2*BN_SAMP*sizeof(signed char), cudaMemcpyHostToDevice);
+	// cudaMemcpy(d_tra_data_in, data_in, 2*BN_SAMP*sizeof(signed char), cudaMemcpyHostToDevice);
 	////////////////////////////////////////////////////////////////////////////////
 
 	// CUDA streams and events applied for optimization to possibly eliminate stalls.
-	// const int time_streamIn = 2000;
-	// const int nStreamsIn = BN_TIME/time_streamIn; // Number of streams  
-	// const int streamSizeIn = 2*BN_ELE_BLOC*BN_BIN*time_streamIn;
-	// const int streamBytesIn = streamSizeIn * sizeof(signed char);
+	const int time_streamIn = 2000;
+	const int nStreamsIn = BN_TIME/time_streamIn; // Number of streams  
+	const int streamSizeIn = 2*BN_ELE_BLOC*BN_BIN*time_streamIn;
+	const int streamBytesIn = streamSizeIn * sizeof(signed char);
+
+	const int time_streamOut = 50;
+	const int nStreamsOut = BN_STI/time_streamOut; // Number of streams  
+	const int streamSizeOut = BN_POL*BN_BEAM1*BN_BIN*time_streamOut;
+	const int streamBytesOut = streamSizeOut * sizeof(float);
+
+	const int streamSizeSTI = time_streamOut; 
+	//const int streamSizeSTIOut = BN_BEAM1*BN_BIN*time_streamOut;
+	//const int streamWinSTI = 2;	
+
 	// Create events and streams
 	// Events ////////////////////////////////////
-	// cudaEvent_t startEvent, stopEvent;
+	cudaEvent_t startEvent, stopEvent;
 	//////////////////////////////////////////////
-	// //cudaStream_t streamIn[nStreamsIn];
-	// cudaStream_t stream[nStreamsIn];
+	//cudaStream_t streamIn[nStreamsIn];
+	cudaStream_t stream[nStreamsIn];
 	// Events ////////////////////////////////////
-	// cudaEventCreate(&startEvent);
-	// cudaEventCreate(&stopEvent);
-	// cudaEventRecord(startEvent, 0);
+	cudaEventCreate(&startEvent);
+	cudaEventCreate(&stopEvent);
+	cudaEventRecord(startEvent, 0);
 	/////////////////////////////////////////////
-	// for (int i = 0; i < nStreamsIn; ++i) {
-	//	//cudaStreamCreate(&streamIn[i]);
-	//	cudaStreamCreate(&stream[i]);
-	//}
-
-	// for (int i = 0; i < nStreamsIn; ++i){
-	//	int offset = i * streamSizeIn;
-	//	//cudaMemcpyAsync(&d_tra_data_in[offset], &data_in[offset], streamBytesIn, cudaMemcpyHostToDevice, streamIn[i]);
-	//	cudaMemcpyAsync(&d_tra_data_in[offset], &data_in[offset], streamBytesIn, cudaMemcpyHostToDevice, stream[i]);
-	// }
-	// Events ////////////////////////////////////
-	// cudaEventRecord(stopEvent, 0);
-	// cudaEventSynchronize(stopEvent);
-	/////////////////////////////////////////////
-	////////////////////////////////////////////////////////////////////////////////
-
-	err_code = cudaGetLastError();
-	if (err_code != cudaSuccess) {
-		printf("RTBF: cudaMemcpy Failed: %s\n", cudaGetErrorString(err_code));
+	for (int i = 0; i < nStreamsIn; ++i) {
+		//cudaStreamCreate(&streamIn[i]);
+		cudaStreamCreate(&stream[i]);
 	}
 
-	// Transpose the data
-	// transpose<<<gridDim_transpose, blockDim_transpose>>>(d_tra_data_in, d_tra_data_out);
-	// if (err_code != cudaSuccess) {
-	// 	printf("RTBF: CUDA Error (transpose): %s\n", cudaGetErrorString(err_code));
-	// }
+	for (int i = 0; i < nStreamsIn; ++i){
+		int offset_in = i * streamSizeIn;
+		cudaMemcpyAsync(&d_tra_data_in[offset_in], &data_in[offset_in], streamBytesIn, cudaMemcpyHostToDevice, stream[i]);
+		err_code = cudaGetLastError();
+	 	if (err_code != cudaSuccess) {
+			printf("RTBF: cudaMemcpy Failed: %s\n", cudaGetErrorString(err_code));
+	 	}
 
-	// Restructure data for cublasCgemmBatched function.
-	// Original data_restructure() kernel /////////////////////////////////////////////////////
-	data_restructure<<<gridDim_transpose, blockDim_transpose>>>(d_tra_data_in, d_restruct_out);
-	///////////////////////////////////////////////////////////////////////////////////////////
-	//for (int i = 0; i < nStreamsIn; ++i) {
-	//	int offset = i * (streamSizeIn/2);
-	//	data_restructure<<<gridDim_transpose, blockDim_transpose, 0, streamIn[i]>>>(d_tra_data_in, d_restruct_out,offset);
-	//}
-	///////////////////////////////////////////////////////////////////////////////////////////
-	//data_restructure<<<gridDim_transpose, blockDim_transpose>>>(d_restruct_in, d_restruct_out);
-	//data_restructure<<<dimGrid_d, dimBlock_d>>>(d_restruct_in, d_restruct_out);
-	if (err_code != cudaSuccess) {
-		printf("RTBF: CUDA Error (data_restructure): %s\n", cudaGetErrorString(err_code));
+		int offset_data = i * (streamSizeIn/2);
+		data_restructure<<<gridDim_transpose, blockDim_transpose, 0, stream[i]>>>(d_tra_data_in, d_restruct_out, offset_data);
+		if (err_code != cudaSuccess) {
+			printf("RTBF: CUDA Error (data_restructure): %s\n", cudaGetErrorString(err_code));
+		}
 	}
 
 	// Call beamformer function containing cublasCgemmBatched()
@@ -658,59 +654,122 @@ void run_beamformer(signed char * data_in, float * data_out) {
 		printf("CUDA Error (beamform): %s\n", cudaGetErrorString(err_code));
 	}
 
-	cuComplex * d_sti_in = d_beamformed;
-	float * d_sti_out = d_outputs;
+	for (int i = 0; i < nStreamsOut; ++i){
+	 	// Call STI reduction kernel.
+		int offset_sti = i * streamSizeSTI;
+	 	sti_reduction<<<dimGrid, dimBlock, 0, stream[i]>>>(d_sti_in, d_sti_out, offset_sti);
 
-	// Call STI reduction kernel.
-	sti_reduction<<<dimGrid, dimBlock>>>(d_sti_in, d_sti_out);
+	 	err_code = cudaGetLastError();
+	 	if (err_code != cudaSuccess) {
+			printf("CUDA Error (sti_reduction): %s\n", cudaGetErrorString(err_code));
+	 	}
 
-	err_code = cudaGetLastError();
-	if (err_code != cudaSuccess) {
-		printf("CUDA Error (sti_reduction): %s\n", cudaGetErrorString(err_code));
+		int offset_out = i * streamSizeOut;
+		cudaMemcpyAsync(&data_out[offset_out], &d_sti_out[offset_out], streamBytesOut,cudaMemcpyDeviceToHost, stream[i]);
+	
+
 	}
-
-	// Copy output data from device to host.
-	// Previously the cudaMemcpy below //////////////////////////////////////////////
-	cudaMemcpy(data_out, d_sti_out, BN_POL*(BN_OUTPUTS*sizeof(float)/2),cudaMemcpyDeviceToHost);
+	// Events ////////////////////////////////////
+	cudaEventRecord(stopEvent, 0);
+	cudaEventSynchronize(stopEvent);
+	/////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
-
-	// CUDA streams applied for optimization to possibly eliminate stalls.
-	// const int time_streamOut = 50;
-	// const int nStreamsOut = BN_STI/time_streamOut; // Number of streams  
-	// const int streamSizeOut = BN_POL*BN_BEAM1*BN_BIN*time_streamOut;
-	// const int streamBytesOut = streamSizeOut * sizeof(float);
-	// Create events and streams
-	// //cudaStream_t streamOut[nStreamsOut];
-	// //for (int i = 0; i < nStreamsOut; ++i) {
-	// //	cudaStreamCreate(&streamOut[i]);
-	// //}
-	// Events ////////////////////////////////////
-	// cudaEventRecord(startEvent, 0);
-	/////////////////////////////////////////////
-
-	// for (int i = 0; i < nStreamsOut; ++i){
-	//	int offset = i * streamSizeOut;
-	//	//cudaMemcpyAsync(&data_out[offset], &d_sti_out[offset], streamBytesOut,cudaMemcpyDeviceToHost, streamOut[i]);
-	//	cudaMemcpyAsync(&data_out[offset], &d_sti_out[offset], streamBytesOut,cudaMemcpyDeviceToHost, stream[i]);
-	// }
-	// Events ////////////////////////////////////
-	// cudaEventRecord(stopEvent, 0);
-	// cudaEventSynchronize(stopEvent);
-	/////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////
 	// Clean up streams
-	// cudaEventDestroy(startEvent);
-	// cudaEventDestroy(stopEvent);
-	// //for (int i = 0; i < nStreamsIn; ++i) {
-	// //	cudaStreamDestroy(streamIn[i]);
-	// //}
-	// for (int i = 0; i < nStreamsIn; ++i) {
-	//	cudaStreamDestroy(stream[i]);
-	// }
-	// //for (int i = 0; i < nStreamsOut; ++i) {
-	// //	cudaStreamDestroy(streamOut[i]);
-	// //}
+	cudaEventDestroy(startEvent);
+	cudaEventDestroy(stopEvent);
+	for (int i = 0; i < nStreamsIn; ++i) {
+		cudaStreamDestroy(stream[i]);
+	}
 	//////////////////////////////////////////////////////////////////////////////
+
+
+	// err_code = cudaGetLastError();
+	// if (err_code != cudaSuccess) {
+	//	printf("RTBF: cudaMemcpy Failed: %s\n", cudaGetErrorString(err_code));
+	// }
+
+	// // Transpose the data
+	// // transpose<<<gridDim_transpose, blockDim_transpose>>>(d_tra_data_in, d_tra_data_out);
+	// // if (err_code != cudaSuccess) {
+	// // 	printf("RTBF: CUDA Error (transpose): %s\n", cudaGetErrorString(err_code));
+	// // }
+
+	// // Restructure data for cublasCgemmBatched function.
+	// // Original data_restructure() kernel /////////////////////////////////////////////////////
+	// data_restructure<<<gridDim_transpose, blockDim_transpose>>>(d_tra_data_in, d_restruct_out);
+	// ///////////////////////////////////////////////////////////////////////////////////////////
+	// //for (int i = 0; i < nStreamsIn; ++i) {
+	// //	int offset = i * (streamSizeIn/2);
+	// //	data_restructure<<<gridDim_transpose, blockDim_transpose, 0, streamIn[i]>>>(d_tra_data_in, d_restruct_out,offset);
+	// //}
+	// ///////////////////////////////////////////////////////////////////////////////////////////
+	// //data_restructure<<<gridDim_transpose, blockDim_transpose>>>(d_restruct_in, d_restruct_out);
+	// //data_restructure<<<dimGrid_d, dimBlock_d>>>(d_restruct_in, d_restruct_out);
+	// if (err_code != cudaSuccess) {
+	//	printf("RTBF: CUDA Error (data_restructure): %s\n", cudaGetErrorString(err_code));
+	// }
+
+	// // Call beamformer function containing cublasCgemmBatched()
+	// beamform();
+	// err_code = cudaGetLastError();
+	// if (err_code != cudaSuccess) {
+	//	printf("CUDA Error (beamform): %s\n", cudaGetErrorString(err_code));
+	// }
+
+	// cuComplex * d_sti_in = d_beamformed;
+	// float * d_sti_out = d_outputs;
+
+	// // Call STI reduction kernel.
+	// sti_reduction<<<dimGrid, dimBlock>>>(d_sti_in, d_sti_out);
+
+	// err_code = cudaGetLastError();
+	// if (err_code != cudaSuccess) {
+	//	printf("CUDA Error (sti_reduction): %s\n", cudaGetErrorString(err_code));
+	// }
+
+	// // Copy output data from device to host.
+	// // Previously the cudaMemcpy below //////////////////////////////////////////////
+	// cudaMemcpy(data_out, d_sti_out, BN_POL*(BN_OUTPUTS*sizeof(float)/2),cudaMemcpyDeviceToHost);
+	// ////////////////////////////////////////////////////////////////////////////////
+
+	// // CUDA streams applied for optimization to possibly eliminate stalls.
+	// // const int time_streamOut = 50;
+	// // const int nStreamsOut = BN_STI/time_streamOut; // Number of streams  
+	// // const int streamSizeOut = BN_POL*BN_BEAM1*BN_BIN*time_streamOut;
+	// // const int streamBytesOut = streamSizeOut * sizeof(float);
+	// // Create events and streams
+	// // //cudaStream_t streamOut[nStreamsOut];
+	// // //for (int i = 0; i < nStreamsOut; ++i) {
+	// //	cudaStreamCreate(&streamOut[i]);
+	// // //}
+	// // Events ////////////////////////////////////
+	// cudaEventRecord(startEvent, 0);
+	// /////////////////////////////////////////////
+
+	// // for (int i = 0; i < nStreamsOut; ++i){
+	// //	int offset = i * streamSizeOut;
+	// //	//cudaMemcpyAsync(&data_out[offset], &d_sti_out[offset], streamBytesOut,cudaMemcpyDeviceToHost, streamOut[i]);
+	// //	cudaMemcpyAsync(&data_out[offset], &d_sti_out[offset], streamBytesOut,cudaMemcpyDeviceToHost, stream[i]);
+	// // }
+	// // Events ////////////////////////////////////
+	// // cudaEventRecord(stopEvent, 0);
+	// // cudaEventSynchronize(stopEvent);
+	// /////////////////////////////////////////////
+	// ////////////////////////////////////////////////////////////////////////////////
+	// // Clean up streams
+	// // cudaEventDestroy(startEvent);
+	// // cudaEventDestroy(stopEvent);
+	// // //for (int i = 0; i < nStreamsIn; ++i) {
+	// // //	cudaStreamDestroy(streamIn[i]);
+	// // //}
+	// // for (int i = 0; i < nStreamsIn; ++i) {
+	// //	cudaStreamDestroy(stream[i]);
+	// // }
+	// // //for (int i = 0; i < nStreamsOut; ++i) {
+	// // //	cudaStreamDestroy(streamOut[i]);
+	// // //}
+	// //////////////////////////////////////////////////////////////////////////////
 
 	return;
 }

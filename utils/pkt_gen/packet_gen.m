@@ -44,7 +44,7 @@ sigma2 = kb*Tsys*BW;    % Noise power per channel
 % 8 -> Send exponentially correlated noise.
 % 9 -> Send pulsar data
 % else -> Send all zeros
-data_flag = 8;
+data_flag = 9;
 
 % Sinusoid parameters (only used if data_flag = 2)
 % It should be noted that the phase of the sinusoid will not change between
@@ -160,8 +160,8 @@ CEN_N = 4000;
 CEN = CEN_Asqr/sqrt(2)*(randn(Ninputs, CEN_N) + 1j*randn(Ninputs, CEN_N));
 
 CEN_R = 1/CEN_N*(CEN*CEN');
-figure(99);
-imagesc(abs(CEN_R));
+% figure(99);
+% imagesc(abs(CEN_R));
 
 c_max = 4;
 c_min = -4;
@@ -173,7 +173,7 @@ CEN_imag = int8(((imag(CEN) - c_min)/(c_max - c_min) - 0.5) * 256);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Increase the range of tau when dispersion measure causes m_D to exceed
 % time samples.
-D = 10; % Dispersion measure 
+D = 10; % 20; % Dispersion measure 
 % freq = (0:499)*(303e3) + 1300e6; % All frequencies
 % freq = (0:399)*(303e3) + 1300e6; % All frequencies
 % No scalloping %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -384,8 +384,8 @@ for mcnt = [0:401,800,1200,1600,2000] % [0:801,1200,1600,2000,2400]  % No scallo
                     t_idxs = mod(mcnt*20 + 1:(mcnt+1)*20, Ntime);
                     t_idxs(t_idxs == 0) = Ntime;
                     f_idxs = (fid - 1)*8+1:fid*8;
-%                     freq_idxs = 5*(xid-1) + [1:5, 101:105, 201:205, 301:305, 401:405];
-                    freq_idxs = 5*(xid-1) + [1:5, 101:105, 201:205, 301:305];
+                    freq_idxs = 5*(xid-1) + [1:5, 101:105, 201:205, 301:305, 401:405];
+%                     freq_idxs = 5*(xid-1) + [1:5, 101:105, 201:205, 301:305];
                     tmp = pulseData(f_idxs, freq_idxs, t_idxs);
                     data(:,1,:,:) = real(tmp);
                     data(:,2,:,:) = imag(tmp);
